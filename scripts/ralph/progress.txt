@@ -14,3 +14,14 @@ Started: Sun Oct 18 07:32:52 UTC 2026
   - .gitignore already had every required entry.
   - The spec's CSS has no @font-face; `--f-*` tokens resolve to the fontsource family names.
 ---
+
+## 2026-10-18 - US-002
+- Added the spec extractor, typed data module, slug helpers and data tests.
+- Files: scripts/extract-spec-data.mjs (+ .d.mts typings), src/data/{spells.json,items.json,index.ts,data.test.ts}, src/lib/{types.ts,slug.ts}
+- Checks: typecheck ok, npm test 11 passed, npm run build ok. No smoke (no browser change).
+- Broke on purpose: changed one heal value in items.json (extractor equality test failed), and removed the apostrophe rule in slugify (slug tests failed); both restored.
+- **Learnings for future iterations:**
+  - Data lives in `src/data/index.ts`: `ITEMS` (ids db0..db154, slugs), `SPELLS`, `SLOTS`, `PROFESSIONS`, `itemBySlug`. `slotFromSlug` and `SLOT_SLUGS` are in `src/lib/slug.ts`.
+  - `src/data/*.json` is generated: edit the spec and re-run `node scripts/extract-spec-data.mjs`, never hand-edit.
+  - Tests may import the `.mjs` extractor; its types come from `scripts/extract-spec-data.d.mts`.
+---
