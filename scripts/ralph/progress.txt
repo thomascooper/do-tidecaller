@@ -131,3 +131,13 @@ Started: Sun Oct 18 07:32:52 UTC 2026
   - New user items get id `"u" + Date.now()`, slug from `slugify(name)`, armor "-", and are saved by the existing save effect; no extra storage code was needed.
   - Candidate item names are plain text for now; US-017 links database items to their item pages (user items stay plain).
 ---
+
+## 2026-10-18 - US-012
+- Footer ("How it works", "Downranking", "Unconfirmed", word for word from the reference), focus outline extended to textarea and focusable table rows, smoke checks for accessible names, keyboard and the 400px pass with every panel open.
+- Files: src/calculator/{Footer.tsx,Calculator.tsx}, src/styles/app.css, test/smoke.mjs
+- Checks: typecheck ok, npm test 67 passed, npm run build ok, npm run smoke 26 passed.
+- Broke on purpose: dropped `aria-label` from `NumField` (accessible-name check failed) and set `.scroll` to `overflow-x:visible` (both 400px checks failed). Both restored.
+- **Learnings for future iterations:**
+  - The reference CSS already had tabular numbers, `:focus-visible` outlines and the reduced-motion rule; only textarea and row focus were missing. The `.add` media query was already ported.
+  - The accessible-name check opens every `<details>` and ticks "Show gear you can't use" first, so new controls inside panels are covered automatically.
+---
