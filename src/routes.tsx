@@ -11,6 +11,9 @@ import {
   GUIDES_TRAIL,
   STAT_WEIGHTS_DESCRIPTION,
   STAT_WEIGHTS_TRAIL,
+  SPIRIT_REGEN_DESCRIPTION,
+  SPIRIT_REGEN_TRAIL,
+  SpiritRegenGuide,
   StatWeightsGuide,
 } from "./pages/Guides";
 import { ItemPage, ItemsIndex, ITEMS_DESCRIPTION, ITEMS_TITLE, ITEMS_TRAIL, itemDescription, itemTitle, itemTrail } from "./pages/ItemPage";
@@ -139,6 +142,19 @@ export const routes: Route[] = [
       article({ headline: "How Resto Shaman stat weights work", description: STAT_WEIGHTS_DESCRIPTION, path: "/guides/stat-weights", dateModified: DATA_UPDATED }),
     ],
     render: () => <StatWeightsGuide />,
+  },
+  {
+    path: "/guides/spirit-regen",
+    title: "Spirit and Mana Regen in WoW Forever | Tidecaller",
+    description: SPIRIT_REGEN_DESCRIPTION,
+    ogImage: "/og/guides.png",
+    ogType: "article",
+    hydrate: false,
+    breadcrumbs: SPIRIT_REGEN_TRAIL,
+    jsonLd: [
+      article({ headline: "Spirit and mana regen in Forever", description: SPIRIT_REGEN_DESCRIPTION, path: "/guides/spirit-regen", dateModified: DATA_UPDATED }),
+    ],
+    render: () => <SpiritRegenGuide />,
   },
   {
     path: "/guides/downranking",

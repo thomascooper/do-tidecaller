@@ -377,9 +377,10 @@ try {
     await sp.goto(BASE + "/");
     eq(await sp.locator('#h-what ~ p a[href="/bis"]').count(), 1, "link in What Tidecaller does");
   });
-  await check("both guides return 200 with their h1 and no module script; downranking shows 65% kept for Healing Wave 2 at level 30", async () => {
+  await check("all three guides return 200 with their h1 and no module script; downranking shows 65% kept for Healing Wave 2 at level 30", async () => {
     for (const [path, h1] of [
       ["/guides/stat-weights", "How Resto Shaman stat weights work"],
+      ["/guides/spirit-regen", "Spirit and mana regen in Forever"],
       ["/guides/downranking", "Healing Wave downranking"],
     ]) {
       const res = await sp.goto(BASE + path);
@@ -394,13 +395,26 @@ try {
     await sp.goto(BASE + "/guides/stat-weights");
     eq(await sp.locator("#presetWeights tbody tr").count(), 3, "preset rows");
     await sp.goto(BASE + "/guides");
-    eq(await sp.locator('main a[href^="/guides/"]').count(), 2, "guide links");
+    eq(await sp.locator('main a[href^="/guides/"]').count(), 3, "guide links");
+  });
+  await check("the Spirit guide draws 12 points (43 hollow), keeps the table, and has no horizontal scroll at 400px", async () => {
+    const res = await sp.goto(BASE + "/guides/spirit-regen");
+    eq(res.status(), 200, "status");
+    eq(await sp.locator("svg#spiritChart circle.pt").count(), 12, "points");
+    eq(await sp.locator("svg#spiritChart circle.pt.excluded").count(), 1, "excluded point");
+    eq(await sp.locator("svg#spiritChart title").count(), 1, "svg title");
+    eq(await sp.locator("#spiritReadings tbody tr").count(), 12, "table rows");
+    await sp.setViewportSize({ width: 400, height: 800 });
+    const wide = await sp.evaluate(() => document.documentElement.scrollWidth > innerWidth);
+    await sp.setViewportSize({ width: 1280, height: 900 });
+    eq(wide, false, "horizontal scroll at 400px");
   });
   await check("the calculator page and /bis link the guides", async () => {
     for (const path of ["/", "/bis"]) {
       await sp.goto(BASE + path);
       eq(await sp.locator('main a[href="/guides/stat-weights"]').count() > 0, true, "stat weights link on " + path);
       eq(await sp.locator('main a[href="/guides/downranking"]').count() > 0, true, "downranking link on " + path);
+      eq(await sp.locator('main a[href="/guides/spirit-regen"]').count() > 0, true, "spirit regen link on " + path);
     }
   });
   await check("the header nav is present on / and /about, with the current page marked", async () => {

@@ -24,10 +24,15 @@ export const GUIDE_LIST = [
     title: "Healing Wave downranking",
     summary: "How much of your gear bonus each heal rank keeps at your level, with every rank worked out.",
   },
+  {
+    path: "/guides/spirit-regen",
+    title: "Spirit and mana regen",
+    summary: "The five-second rule, Mindfulness, the twelve measured Spirit readings and the fitted formula.",
+  },
 ];
 
 export const GUIDES_DESCRIPTION =
-  "Guides to Resto Shaman stat weights and Healing Wave downranking in WoW Forever, with the formulas and worked numbers.";
+  "Guides to Resto Shaman stat weights, Healing Wave downranking and Spirit regen in WoW Forever, with the formulas and worked numbers.";
 export const STAT_WEIGHTS_DESCRIPTION =
   "How Resto Shaman stat weights work in WoW Forever: what a weight means, why mana stats depend on your fight, and the weights for three fights.";
 export const DOWNRANKING_DESCRIPTION =
@@ -162,8 +167,8 @@ export function StatWeightsGuide() {
         </li>
       </ul>
       <p>
-        Spirit regen itself comes from your own tooltip readings: see the calibration box in{" "}
-        <a href="/">the calculator</a>. For which rank to cast, read <a href="/guides/downranking">the downranking guide</a>.
+        Spirit regen itself comes from tooltip readings: read <a href="/guides/spirit-regen">the Spirit and mana regen
+        guide</a>, and use the calibration box in <a href="/">the calculator</a> for your own. For which rank to cast, read <a href="/guides/downranking">the downranking guide</a>.
       </p>
     </div>
   );
@@ -264,6 +269,174 @@ export function DownrankingGuide() {
         Ranks above level 30 are listed for completeness. The right rank to spam depends on your mana as well as your
         heal: the stat weights change with the rank you pick, so compare them in <a href="/">the calculator</a> and
         read <a href="/guides/stat-weights">how stat weights work</a>.
+      </p>
+    </div>
+  );
+}
+
+export const SPIRIT_REGEN_TRAIL: Crumb[] = [...GUIDES_TRAIL, { name: "Spirit and mana regen", path: "/guides/spirit-regen" }];
+export const SPIRIT_REGEN_DESCRIPTION =
+  "How Spirit and mana regen work in WoW Forever: the five-second rule, Mindfulness, the measured Spirit readings, the fitted line and what is still unconfirmed.";
+
+/** The owner's twelve tooltip readings (spec section 3), level 22 Orc Shaman, MP5 while not casting. */
+const READINGS: [number, number][] = [
+  [43, 53], [48, 60], [53, 64], [56, 66], [60, 68], [61, 69], [65, 71], [71, 75], [76, 78], [81, 81], [87, 85], [90, 87],
+];
+const EXCLUDED_SPIRIT = 43;
+
+const CHART = { w: 640, h: 360, l: 56, r: 16, t: 16, b: 48, x0: 40, x1: 95, y0: 40, y1: 100 };
+
+function cx(spirit: number): number {
+  return CHART.l + ((spirit - CHART.x0) / (CHART.x1 - CHART.x0)) * (CHART.w - CHART.l - CHART.r);
+}
+function cy(mp5: number): number {
+  return CHART.h - CHART.b - ((mp5 - CHART.y0) / (CHART.y1 - CHART.y0)) * (CHART.h - CHART.t - CHART.b);
+}
+
+function path(f: (s: number) => number): string {
+  const pts: string[] = [];
+  for (let s = CHART.x0; s <= CHART.x1; s += 1) pts.push(`${pts.length ? "L" : "M"}${cx(s).toFixed(1)} ${cy(f(s)).toFixed(1)}`);
+  return pts.join(" ");
+}
+
+function SpiritChart() {
+  const line = (s: number) => DEFAULTS.sbase + DEFAULTS.sper * s;
+  const curve = (s: number) => DEFAULTS.sA - DEFAULTS.sB / s;
+  const xs = [40, 50, 60, 70, 80, 90];
+  const ys = [40, 50, 60, 70, 80, 90, 100];
+  const baseY = CHART.h - CHART.b;
+  return (
+    <figure className="chart">
+      <svg id="spiritChart" viewBox={`0 0 ${CHART.w} ${CHART.h}`} role="img" aria-labelledby="spiritChartT spiritChartD">
+        <title id="spiritChartT">Mana regen while not casting against Spirit</title>
+        <desc id="spiritChartD">
+          Twelve measured readings from 43 to 90 Spirit, rising from 53 to 87 MP5. The straight line 30.5 plus 0.626
+          times Spirit stays within 0.6 MP5 of the eleven readings from 48 to 90 Spirit. The levels-off curve 114.0
+          minus 2666 divided by Spirit fits worse. The 43 Spirit reading sits off the line and is excluded. The table
+          below holds the same data.
+        </desc>
+        {ys.map((y) => (
+          <g key={y}>
+            <line className="grid" x1={CHART.l} x2={CHART.w - CHART.r} y1={cy(y)} y2={cy(y)} />
+            <text className="tick" x={CHART.l - 8} y={cy(y) + 4} textAnchor="end">{y}</text>
+          </g>
+        ))}
+        {xs.map((x) => (
+          <text key={x} className="tick" x={cx(x)} y={baseY + 18} textAnchor="middle">{x}</text>
+        ))}
+        <line className="axis" x1={CHART.l} x2={CHART.w - CHART.r} y1={baseY} y2={baseY} />
+        <line className="axis" x1={CHART.l} x2={CHART.l} y1={CHART.t} y2={baseY} />
+        <text className="axis-label" x={(CHART.l + CHART.w - CHART.r) / 2} y={CHART.h - 8} textAnchor="middle">Spirit</text>
+        <text className="axis-label" transform={`translate(14 ${(CHART.t + baseY) / 2}) rotate(-90)`} textAnchor="middle">
+          MP5 while not casting
+        </text>
+        <path className="fit-curve" d={path(curve)} fill="none" />
+        <path className="fit-line" d={path(line)} fill="none" />
+        {READINGS.map(([s, m]) => (
+          <circle key={s} className={s === EXCLUDED_SPIRIT ? "pt excluded" : "pt"} cx={cx(s)} cy={cy(m)} r={5} />
+        ))}
+        <text className="note" x={cx(EXCLUDED_SPIRIT) + 6} y={cy(53) + 24}>43 excluded</text>
+        <g transform={`translate(${CHART.l + 14} ${CHART.t + 8})`}>
+          <line className="fit-line" x1={0} x2={22} y1={0} y2={0} />
+          <text className="note" x={30} y={4}>Line 30.5 + 0.626 × Spirit</text>
+          <line className="fit-curve" x1={0} x2={22} y1={18} y2={18} />
+          <text className="note" x={30} y={22}>Levels off 114.0 − 2666 ÷ Spirit</text>
+        </g>
+      </svg>
+      <figcaption>
+        Measured Spirit readings (points), the fitted line and the levels-off curve. The table below has the same
+        numbers.
+      </figcaption>
+    </figure>
+  );
+}
+
+export function SpiritRegenGuide() {
+  const worstLine = Math.max(...READINGS.filter(([s]) => s !== EXCLUDED_SPIRIT).map(([s, m]) => Math.abs(DEFAULTS.sbase + DEFAULTS.sper * s - m)));
+  const worstCurve = Math.max(...READINGS.map(([s, m]) => Math.abs(DEFAULTS.sA - DEFAULTS.sB / s - m)));
+  return (
+    <div className="wrap page wide">
+      <Breadcrumbs trail={SPIRIT_REGEN_TRAIL} />
+      <h1>Spirit and mana regen in Forever</h1>
+      <p className="lead">
+        What is measured about Spirit and mana regen in the Forever beta, the formula Tidecaller uses for it, and what
+        is still unconfirmed.
+      </p>
+
+      <h2>The five-second rule and regen while casting</h2>
+      <p>
+        Mana regen in Forever is continuous: there are no two-second ticks. The five-second rule still applies, so
+        regen from Spirit stops for five seconds after you spend mana. Gear MP5 keeps working inside the five-second
+        rule: a level 20 mage&apos;s casting regen equalled exactly the staff&apos;s +2 MP5.
+      </p>
+      <p>
+        The Shaman talent Mindfulness lets 17%, 33% or 50% of Spirit regen continue while casting, for 1, 2 or 3
+        points. Every healer class has an equivalent talent. The Polished Driftwood Icon, a relic, lets 8% of regen
+        continue while casting. Whether it adds to Mindfulness is unconfirmed: Tidecaller assumes it adds, capped at
+        100%.
+      </p>
+
+      <h2>Intellect and mana</h2>
+      <p>
+        Intellect does not change Spirit regen: 56 Spirit gave 66 MP5 at both 50 and 64 Intellect. Each point of
+        Intellect gives 15 mana.
+      </p>
+
+      <h2>The measured readings</h2>
+      <p>
+        These are readings of the Spirit tooltip, &quot;Mana Regeneration by N per 5 sec while not casting&quot;, from a
+        level 22 Orc Shaman. The tooltip rounds to whole numbers.
+      </p>
+      <SpiritChart />
+      <div className="scroll">
+        <table id="spiritReadings">
+          <thead>
+            <tr>
+              <th>Spirit</th>
+              <th>MP5 not casting</th>
+              <th>Line fit</th>
+              <th>Levels-off fit</th>
+              <th>Note</th>
+            </tr>
+          </thead>
+          <tbody>
+            {READINGS.map(([s, m]) => (
+              <tr key={s}>
+                <td className="score">{s}</td>
+                <td className="score">{m}</td>
+                <td className="score">{fmt(DEFAULTS.sbase + DEFAULTS.sper * s, 1)}</td>
+                <td className="score">{fmt(DEFAULTS.sA - DEFAULTS.sB / s, 1)}</td>
+                <td>{s === EXCLUDED_SPIRIT ? "Excluded: no bonus Spirit, sits off the line" : ""}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      <h2>The fitted line</h2>
+      <p>
+        From 48 to 90 Spirit the readings are a straight line: <strong>30.5 + 0.626 × Spirit</strong> MP5, within{" "}
+        {fmt(worstLine, 1)} MP5 of every reading. A worst miss under 1 fits, because the tooltip rounds.
+      </p>
+      <p>
+        The 43 reading has no bonus Spirit and sits off the line, so it is left out of the default fit.
+      </p>
+
+      <h2>The levels-off alternative</h2>
+      <p>
+        Tidecaller also offers a curve that levels off, <strong>114.0 − 2666 ÷ Spirit</strong>, fitted to all twelve
+        readings. It fits worse: its worst miss is {fmt(worstCurve, 1)} MP5. The calibration box in the calculator
+        fits both shapes to readings you type in, so you can check them against your own character.
+      </p>
+
+      <h2>What is unconfirmed</h2>
+      <ul>
+        <li>The Spirit rate above 90 Spirit, and at other levels. The readings come from a level 22 character.</li>
+        <li>Whether the Polished Driftwood Icon adds to Mindfulness.</li>
+      </ul>
+      <p>
+        Try your own numbers in <a href="/">the calculator</a>, and read{" "}
+        <a href="/guides/stat-weights">how stat weights work</a> to see how regen turns into a weight.
       </p>
     </div>
   );

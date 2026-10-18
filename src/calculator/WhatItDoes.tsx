@@ -15,7 +15,7 @@ export function WhatItDoes() {
         The game data is from the Forever beta, and the values that are not yet confirmed are marked Check. See the{" "}
         <a href="/bis">Resto Shaman best in slot list</a> for the set at the default settings, or read how{" "}
         <a href="/guides/stat-weights">stat weights work</a> and how <a href="/guides/downranking">downranking</a>{" "}
-        changes the heal you cast.
+        changes the heal you cast, and what is measured about <a href="/guides/spirit-regen">Spirit and mana regen</a>.
       </p>
       <p>
         Everything runs in your browser. Your settings and added items stay on your own device and nothing is sent

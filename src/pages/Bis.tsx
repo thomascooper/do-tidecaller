@@ -117,7 +117,8 @@ export function Bis() {
       <h2>Why these weights</h2>
       <p>
         The scores come from the stat weights for this fight. Read <a href="/guides/stat-weights">how Resto Shaman stat
-        weights work</a> and <a href="/guides/downranking">how downranking works</a> for the reasoning.
+        weights work</a> and <a href="/guides/downranking">how downranking works</a>, and the{" "}
+        <a href="/guides/spirit-regen">Spirit and mana regen guide</a>, for the reasoning.
       </p>
 
       <h2>Crafter upgrades</h2>

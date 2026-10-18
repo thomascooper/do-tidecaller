@@ -166,3 +166,14 @@ main:focus{outline:none}
 .slot-list{columns:3 12ch;list-style:none;padding:0;margin:0 0 8px}
 .guide-list{list-style:none;padding:0;margin:0}
 .guide-list h2{margin:18px 0 4px}
+.chart{margin:14px 0}
+.chart svg{display:block;width:100%;height:auto;max-width:640px}
+.chart figcaption{color:var(--muted);font-size:13px;margin-top:6px}
+.chart .grid{stroke:var(--line);stroke-width:1}
+.chart .axis{stroke:var(--muted);stroke-width:1}
+.chart .tick,.chart .axis-label,.chart .note{fill:var(--muted);font-family:var(--f-body);font-size:12px}
+.chart .axis-label{fill:var(--ink);font-size:13px}
+.chart .fit-line{stroke:var(--accent);stroke-width:2.5}
+.chart .fit-curve{stroke:var(--warn);stroke-width:2.5;stroke-dasharray:6 4}
+.chart .pt{fill:var(--mana);stroke:var(--mana);stroke-width:2}
+.chart .pt.excluded{fill:var(--bg);stroke:var(--ink)}

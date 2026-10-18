@@ -138,12 +138,13 @@ describe("site chrome and links", () => {
     expect(bis.route.description).toContain("Tidebringer's Claw");
   });
 
-  it("the guides have the PRD's titles and h1s, Article blocks on the two guides, and the index links both", () => {
+  it("the guides have the PRD's titles and h1s, Article blocks on the guides, and the index links all three", () => {
     const get = (path: string) => pages.find((p) => p.route.path === path)!;
     expect(get("/guides").route.title).toBe("Resto Shaman Guides for WoW Forever | Tidecaller");
     expect(get("/guides").doc.querySelector("h1")?.text).toBe("Resto Shaman guides");
     const expected: [string, string, string][] = [
       ["/guides/stat-weights", "Resto Shaman Stat Weights Explained, WoW Forever | Tidecaller", "How Resto Shaman stat weights work"],
+      ["/guides/spirit-regen", "Spirit and Mana Regen in WoW Forever | Tidecaller", "Spirit and mana regen in Forever"],
       ["/guides/downranking", "Healing Wave Downranking in WoW Forever | Tidecaller", "Healing Wave downranking"],
     ];
     const indexLinks = get("/guides").doc.querySelectorAll("main a").map((a) => a.getAttribute("href"));
@@ -156,6 +157,12 @@ describe("site chrome and links", () => {
       expect(indexLinks).toContain(path);
     }
     expect(get("/guides/downranking").doc.querySelectorAll("#rankTable tbody tr").length).toBe(12);
+    const spirit = get("/guides/spirit-regen").doc;
+    expect(spirit.querySelectorAll("#spiritReadings tbody tr").length).toBe(12);
+    expect(spirit.querySelectorAll("svg#spiritChart circle.pt").length).toBe(12);
+    expect(spirit.querySelectorAll("svg#spiritChart circle.excluded").length).toBe(1);
+    expect(spirit.querySelector("svg#spiritChart title")).not.toBeNull();
+    expect(spirit.querySelector("svg#spiritChart desc")).not.toBeNull();
   });
 
   it("every slot page has the PRD's title and h1, a slot link back from /bis and prev/next links", () => {
