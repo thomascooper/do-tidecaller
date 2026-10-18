@@ -66,3 +66,15 @@ Started: run 003 (header, icon, item popups, items table), 18 Oct 2026
   - The existing item-link smoke check counts `main td.nm a[href^="/items/"]` = 155, so the Item cell must keep `td.nm`.
   - Sticky first column needs an opaque `var(--bg)` background on both th and td.
 ---
+
+## 18 Oct 2026 - US-006
+- Item popups: `src/tips/tips.ts` is its own Vite entry (`vite.config.ts` input `tips`, non-SSR builds only, emitted as `assets/tips-<hash>.js`). `renderDocument` takes a `tipsScript` option and `scripts/prerender.mjs` finds the hashed file and adds the tag to every page, so the app script's strip rule is untouched. Event delegation on `document` for `a[href^="/items/"]`: 80 ms hover delay (only when `(hover: hover)`), follows the pointer, flips left or up near an edge; keyboard focus shows it under the link, blur or Escape hides it. Built with DOM text nodes from `items.json`, `equipText` and `noteText`. Styles are `.tip*` at the end of `app.css`. The dev entry imports the script too.
+- Build check: `prerender.mjs` sums the gzip size of the tips file and the chunks it imports and fails over 12 KB (now 7121 bytes). Broke it by setting the limit to 1 KB: build failed, restored.
+- Files: src/tips/tips.ts, vite.config.ts, src/entry-server.tsx, src/entry-client.tsx, scripts/prerender.mjs, src/styles/app.css, test/seo.test.ts, test/smoke.mjs, CLAUDE.md (the one SEO sentence).
+- Checks: typecheck ok, 2654 tests ok, build ok, smoke 54 of 54, reference 26 of 26. Broke the popup's flip-left (always `x + offset`): the 400 px smoke check failed, restored.
+- **Learnings for future iterations:**
+  - Two module scripts in `index.html` get merged by Vite into one bundle, hence the separate rollup input.
+  - The tips script shares a `slug-<hash>.js` chunk (items data) with the app; it is about 6 KB gzipped, so the popup costs about 7 KB.
+  - Smoke "no module script" checks now exclude `/assets/tips-`: use `script[type="module"]:not([src*="/assets/tips-"])`.
+  - The popup gets its icon in US-009 (40 px left of the name); `build()` in tips.ts is where it goes.
+---

@@ -96,7 +96,7 @@
         "`npm run typecheck`, `npm test`, `npm run build` and `npm run smoke` pass; `npm run reference` still 26 of 26 (the calculator page now loads a second script)"
       ],
       "priority": 6,
-      "passes": false,
+      "passes": true,
       "notes": ""
     },
     {
