@@ -339,6 +339,22 @@ try {
     eq(await sp.locator("main h2", { hasText: "Does it change for other fights?" }).count(), 1, "fights section");
     eq(await sp.locator("main h2", { hasText: "Crafter upgrades" }).count(), 1, "crafter section");
   });
+  await check("every slot page returns 200; /bis/head lists Holy Shroud first at 38.7; /bis/main-hand names Tidebringer's Claw", async () => {
+    for (const slug of "head neck shoulder back chest wrist hands waist legs feet finger trinket main-hand off-hand two-hand".split(" ")) {
+      const res = await sp.goto(BASE + "/bis/" + slug);
+      eq(res.status(), 200, "status " + slug);
+      eq(await sp.locator('script[type="module"]').count(), 0, "module scripts " + slug);
+    }
+    await sp.goto(BASE + "/bis/head");
+    const first = (await sp.locator("#slotItems tbody tr").first().innerText()).replace(/\s+/g, " ");
+    eq(first.startsWith("Holy Shroud"), true, "Holy Shroud first");
+    eq(first.includes("38.7"), true, "Dungeon 38.7");
+    await sp.goto(BASE + "/bis/main-hand");
+    eq((await sp.locator("main").innerText()).includes("Tidebringer's Claw"), true, "Tidebringer's Claw");
+    eq(await sp.locator('main a[href="/bis/two-hand"]').count() > 0, true, "link to two-hand");
+    await sp.goto(BASE + "/bis");
+    eq(await sp.locator('main a[href^="/bis/"]').count() >= 15, true, "slot links on /bis");
+  });
   await check("the calculator page links to /bis", async () => {
     await sp.goto(BASE + "/");
     eq(await sp.locator('#h-what ~ p a[href="/bis"]').count(), 1, "link in What Tidecaller does");

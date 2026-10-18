@@ -138,6 +138,28 @@ describe("site chrome and links", () => {
     expect(bis.route.description).toContain("Tidebringer's Claw");
   });
 
+  it("every slot page has the PRD's title and h1, a slot link back from /bis and prev/next links", () => {
+    const slotPages = pages.filter((p) => p.route.path.startsWith("/bis/"));
+    expect(slotPages.length).toBe(15);
+    const head = slotPages.find((p) => p.route.path === "/bis/head")!;
+    expect(head.route.title).toBe("Best Resto Shaman Head, Level 30 WoW Forever | Tidecaller");
+    expect(head.doc.querySelector("h1")?.text).toBe("Best Resto Shaman head gear, level 30");
+    const mh = slotPages.find((p) => p.route.path === "/bis/main-hand")!;
+    expect(mh.route.title).toContain("Main Hand");
+    expect(mh.doc.querySelector("h1")?.text).toBe("Best Resto Shaman main hand gear, level 30");
+    const bis = pages.find((p) => p.route.path === "/bis")!;
+    expect(bis.doc.querySelectorAll("#hordeSet tbody td.nm a").length).toBe(16);
+    const hrefs = bis.doc.querySelectorAll("main a").map((a) => a.getAttribute("href"));
+    for (const p of slotPages) {
+      expect(hrefs).toContain(p.route.path);
+      expect(p.doc.querySelectorAll('script[type="application/ld+json"]').map((b) => JSON.parse(b.text)["@type"])).toContain("Article");
+      expect(p.doc.querySelector('a[href="/bis"]')).not.toBeNull();
+    }
+    const links = mh.doc.querySelectorAll("main a").map((a) => a.getAttribute("href"));
+    expect(links).toContain("/bis/off-hand");
+    expect(links).toContain("/bis/two-hand");
+  });
+
   it("the 404 page is noindex, says Page not found and links to the sections", () => {
     const nf = pages.find((p) => p.route.path === "/404")!;
     expect(nf.route.noindex).toBe(true);

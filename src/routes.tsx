@@ -3,6 +3,9 @@ import { Calculator } from "./calculator/Calculator";
 import { About, ABOUT_TRAIL } from "./pages/About";
 import { Bis, BIS_TRAIL, topPicks } from "./pages/Bis";
 import { NotFound } from "./pages/NotFound";
+import { SlotPage, slotDescription, slotTitle, slotTrail } from "./pages/SlotPage";
+import { SLOTS } from "./data";
+import { slotPath, slotTitleCase } from "./lib/slotPage";
 import type { Crumb, JsonLd } from "./seo/jsonld";
 import { article, websiteAndApp } from "./seo/jsonld";
 import { DATA_UPDATED } from "./site";
@@ -56,6 +59,26 @@ export const routes: Route[] = [
     ],
     render: () => <Bis />,
   },
+  ...SLOTS.map(
+    (slot): Route => ({
+      path: slotPath(slot),
+      title: slotTitle(slot),
+      description: slotDescription(slot),
+      ogImage: "/og/bis.png",
+      ogType: "article",
+      hydrate: false,
+      breadcrumbs: slotTrail(slot),
+      jsonLd: [
+        article({
+          headline: `Best Resto Shaman ${slotTitleCase(slot)}, level 30`,
+          description: slotDescription(slot),
+          path: slotPath(slot),
+          dateModified: DATA_UPDATED,
+        }),
+      ],
+      render: () => <SlotPage slot={slot} />,
+    }),
+  ),
   {
     path: "/about",
     title: "About Tidecaller: Sources and Data Version",

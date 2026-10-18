@@ -162,3 +162,5 @@ main:focus{outline:none}
 .page h2{display:block;margin:26px 0 8px}
 .page p,.page li{margin:0 0 8px}
 .page a{color:var(--accent);overflow-wrap:anywhere}
+
+.slot-list{columns:3 12ch;list-style:none;padding:0;margin:0 0 8px}

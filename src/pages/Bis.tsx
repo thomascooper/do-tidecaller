@@ -3,6 +3,9 @@ import { fmt } from "../lib/format";
 import { PRESETS, sourceNote } from "../lib/model";
 import type { BestSet } from "../lib/model";
 import { gainText, PROFESSION_LIST, setDiff, siteSet } from "../lib/bis";
+import { SLOTS } from "../data";
+import { slotPath } from "../lib/slotPage";
+import type { Slot } from "../lib/types";
 import type { Crumb } from "../seo/jsonld";
 
 export const BIS_TRAIL: Crumb[] = [
@@ -34,7 +37,9 @@ function SetTable({ id, set }: { id: string; set: BestSet }) {
         <tbody>
           {set.rows.map((row, n) => (
             <tr key={n}>
-              <td className="nm">{row.slot}</td>
+              <td className="nm">
+                <a href={slotPath(row.slot)}>{row.slot}</a>
+              </td>
               <td>{row.item ? row.item.name : <span className="dim">Nothing usable listed</span>}</td>
               <td className="score">{row.item ? fmt(row.score, 1) : ""}</td>
               <td className="src">{row.item ? sourceNote(row.item) : ""}</td>
@@ -79,6 +84,16 @@ export function Bis() {
 
       <h2>Alliance best set</h2>
       <SetTable id="allianceSet" set={alliance} />
+
+      <h2>Best in slot by slot</h2>
+      <p>Every item for one slot, ranked, with the full stats and where it comes from.</p>
+      <ul className="slot-list">
+        {SLOTS.map((slot: Slot) => (
+          <li key={slot}>
+            <a href={slotPath(slot)}>{slot}</a>
+          </li>
+        ))}
+      </ul>
 
       <h2>Does it change for other fights?</h2>
       {fights.map((f) => (

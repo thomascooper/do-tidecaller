@@ -181,3 +181,14 @@ Started: Sun Oct 18 07:32:52 UTC 2026
   - Measured: Trash pull changes only Wrist; Raid boss changes many slots; Tailoring changes Feet, Leatherworking Waist and Legs, Enchanting and Engineering nothing.
   - `.page.wide` lifts the 76ch cap for pages with tables.
 ---
+
+## 2026-10-18 - US-016
+- 15 slot pages `/bis/<slot>` from `SLOTS`: lead sentence with the top Horde and Alliance picks, all-items table (Req, stats, Trash/Dungeon/Raid scores, Faction, where from), ring and trinket note, weapon comparison (two-hander vs main hand + off hand, per faction) with links between the three weapon pages, previous/next/back links, Article + BreadcrumbList. `/bis` has "Best in slot by slot" and its set tables link each slot name.
+- Files: src/lib/slotPage.ts, src/pages/{SlotPage.tsx,Bis.tsx}, src/routes.tsx, src/styles/app.css, test/{seo.test.ts,smoke.mjs}
+- Checks: typecheck ok, npm test 313 passed, npm run build ok, npm run smoke 38 passed. `npm run reference` not run (calculator and model unchanged).
+- Broke on purpose: sorted the slot table ascending (slot smoke check failed); removed the slot links from the /bis set tables (SEO test failed; first version of that test passed because the "by slot" list also links, so I added a count of links inside #hordeSet). Both restored.
+- **Learnings for future iterations:**
+  - `src/lib/slotPage.ts` has `slotRows(slot)` (all built-in items with Trash/Boss/Raid scores, best Dungeon first), `topFor(rows, faction)`, `slotPath`, `slotTitleCase`, `weaponCompare(faction)`. US-017 item pages can reuse `slotRows` for "how it ranks in its slot".
+  - The Horde set on /bis has 16 rows (10 armour, 2 rings, 2 trinkets, main hand + off hand); the set is Horde 111.59 pair vs Wind Spirit Staff 85.17.
+  - Routes are spread into the table with `...SLOTS.map(...)`; the SEO test and sitemap pick them up with no further change. Prerender writes `dist/bis/<slot>/index.html`.
+---
