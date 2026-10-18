@@ -204,3 +204,14 @@ Started: Sun Oct 18 07:32:52 UTC 2026
   - Item pages carry only BreadcrumbList JSON-LD (no Article, no Product). Rank is among all built-in items in the slot, whatever the faction.
   - The calculator's default candidate list hides unusable gear, so only about 128 item links show on `/` by default.
 ---
+
+## 2026-10-18 - US-018
+- `/guides` index, `/guides/stat-weights` (why mana stats scale by how often mana runs out, three-fight weights table with priority lines from `compute`, what moves the weights) and `/guides/downranking` (the rule with a worked example, coefficient, all 12 ranks with gear kept at 20, 25 and 30, heal and heal per mana at level 30 with 200 Healing, Check tags). Article + BreadcrumbList on both guides. The calculator's "What Tidecaller does" and `/bis` link both guides.
+- Files: src/pages/Guides.tsx, src/routes.tsx, src/styles/app.css, src/calculator/WhatItDoes.tsx, src/pages/Bis.tsx, test/{seo.test.ts,smoke.mjs}
+- Checks: typecheck ok, npm test 2226 passed, npm run build ok, npm run smoke 42 passed. `npm run reference` not run (calculator and model unchanged apart from a static link).
+- Broke on purpose: shifted the learned level by one in the downranking table (the 65% smoke check failed). Restored.
+- **Learnings for future iterations:**
+  - `src/pages/Guides.tsx` holds the guides index and both guides; `GUIDE_LIST` is the index list. US-019 adds its page to `GUIDE_LIST` (the SEO test then expects the index to link it, and the smoke "guide links" count of 2 must become 3).
+  - The nav test now sees `/guides` as a section: header and footer link it. Guides use og image `/og/guides.png`, which US-020 must create.
+  - In the model, `f` is the share of the fight inside the five-second rule (the "casting" slider) and `w` is how often mana runs out; the preset chips set t and f only.
+---
