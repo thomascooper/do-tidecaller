@@ -1,0 +1,18 @@
+# Ralph Progress Log
+Started: run 003 (header, icon, item popups, items table), 18 Oct 2026
+---
+
+## Codebase Patterns
+(Carried over from runs 001 and 002; their full logs are in tasks/ralph-runs/.)
+- All math is pure functions in `src/lib/model.ts` taking `state` first; code reads `effectivePool(state)`, never `state.pool`.
+- New State keys need a DEFAULTS entry: `mergeState` (storage and share) filters by DEFAULTS keys and type.
+- Every page is in the route table `src/routes.tsx`, which feeds the prerender (`scripts/prerender.mjs`), the sitemap and the SEO tests (`test/seo.test.ts`).
+- The header and footer are rendered by `SiteHeader.tsx` / `SiteFooter.tsx` into the prerender template around `#root`; `Layout.tsx` is the same tree for dev.
+- Head tags (icons, theme-color, manifest) are written by `src/seo/head.ts`.
+- `scripts/og.mjs` is run by hand (not by the build) with playwright-core and writes the social cards and PNG icons into `public/`; commit what it writes.
+- `src/data/items.json` and `spells.json` are extracted verbatim from `docs/spec.md` by `scripts/extract-spec-data.mjs`; a test checks they equal the spec. Never hand-edit them.
+- Item names on the calculator are rendered by `src/calculator/ItemName.tsx` (a link to `/items/<slug>`); content pages use `itemPath(item)`.
+- Smoke checks go beside the checks for the same page in `test/smoke.mjs`. Normalize whitespace in text checks: JSX line breaks collapse in rendered text.
+- Smoke can read `src/data/items.json` via readFileSync for item facts.
+- `fmt(x, 0)` already adds thousands separators.
+---

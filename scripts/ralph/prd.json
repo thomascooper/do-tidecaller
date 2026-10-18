@@ -1,0 +1,134 @@
+{
+  "project": "Tidecaller",
+  "branchName": "claude/sweet-hypatia-53cceb",
+  "description": "Run 003: a universal header with original storm-and-totems art, an original totem icon set, social cards with the art, item facts (equip, note, short source), the items page with stat columns, Tidecaller's own WoW-style item popups on every item link, View on Wowhead links from spec section 14.5, and visible labels on the Water Shield and talent boxes. FULL PRD: tasks/ralph-runs/003-header-icon-item-popups/prd.md (read its Design inputs and Research findings; the design files are in tasks/ralph-runs/003-header-icon-item-popups/design/). The run 001 PRD (tasks/ralph-runs/001-tidecaller-v1/prd.md) still describes the architecture; spec section 14 holds the owner's rulings. Item level and armor value are NOT in the spec: do not add them.",
+  "userStories": [
+    {
+      "id": "US-001",
+      "title": "The totem icon in the tab, on phones and in the manifest",
+      "description": "As a visitor, I want Tidecaller to have its own icon, so I can spot it among my tabs and on my home screen.",
+      "acceptanceCriteria": [
+        "`public/favicon.svg` is `design/totem.svg` (byte for byte, or minified without changing a shape)",
+        "`scripts/og.mjs` renders the PNG icons from `public/favicon.svg` instead of the old wave mark: `public/apple-touch-icon.png` 180 x 180 (the badge at about 84% on a full-bleed `#03060d` square: iOS does not keep transparency), `public/icon-192.png` and `public/icon-512.png` (the badge on transparent), and a new `public/icon-maskable-512.png` (the badge at 72% on full-bleed `#0a2a36`, inside the maskable safe zone)",
+        "A new `public/favicon.ico` holding 16, 32 and 48 px PNG images of the badge, written by `scripts/og.mjs` (a small ICO writer in the script; no new dependency)",
+        "`site.webmanifest`: the three icons, the maskable one with `\"purpose\": \"maskable\"`, `theme_color` `#03060d`",
+        "`src/seo/head.ts`: `<link rel=\"icon\" href=\"/favicon.ico\" sizes=\"48x48\">` before the SVG icon link; both `theme-color` metas become `#03060d`",
+        "Tests (Vitest): each PNG's width and height read from its IHDR chunk match the sizes above; the ICO header says 3 images of 16, 32 and 48; the manifest parses and lists the icons; every prerendered page's head has the ico, svg, apple-touch and manifest links",
+        "Run `node scripts/og.mjs` and commit what it writes. The social cards are redone in US-003; leave them as they render now",
+        "`npm run typecheck`, `npm test`, `npm run build` and `CHROMIUM_PATH=/opt/pw-browsers/chromium-1194/chrome-linux/chrome npm run smoke` pass"
+      ],
+      "priority": 1,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-002",
+      "title": "A universal header with the storm-and-totems art",
+      "description": "As a visitor, I want a header that looks like a WoW site, with the Tidecaller name styled and a line about what the site is, on every page.",
+      "acceptanceCriteria": [
+        "Look at `design/mock-desktop.png`, `design/mock-phone.png` and `design/header-mock.html` first; match them",
+        "`design/header-scene.mjs` becomes `scripts/header-art.mjs` (comment at the top: run by hand, writes `public/art/header-tide.svg`, commit the result); running it reproduces `design/header-tide.svg` byte for byte at `public/art/header-tide.svg`",
+        "`SiteHeader.tsx`: the wordmark link holds `<img src=\"/favicon.svg\" width=\"46\" height=\"46\" alt=\"\">`, the word **Tidecaller** and a small kicker **Restoration Shaman**, its accessible name being that visible text; the nav is unchanged (same links, same `aria-current`); under the nav row, a tagline block: a display-font line **\"Resto Shaman stat weights and best in slot\"** and a smaller line built from `src/site.ts` (add `SITE_TAGLINE` there): **\"WoW Forever beta 1.60.1, level 30. Every number is in points of Healing.\"**. No heading elements in the header (each page keeps exactly one `h1`)",
+        "CSS (port from the mock into `src/styles/app.css`, replacing the old `header.site` rules): the art as the header's background, `right bottom`, `background-size: max(100%, 2400px) auto` with `#03060d` behind it and `min-height: 270px` on desktop; at `max-width: 640px` the art is `auto 210px`, the tagline's second line hides and the nav fits one row at 400 px; a left-to-right dark overlay keeps the text readable; the wordmark in the display font with the pale-cyan gradient fill and soft glow; nav links light on dark, the current page underlined in cyan; a wave-shaped bottom edge filled with `var(--bg)` so the page flows out of the header in both themes; in print the header loses the art and prints as plain text",
+        "The header looks the same in the light and dark themes (only the wave edge follows `--bg`); focus outlines on the header links stay visible on the dark art",
+        "Smoke (beside the existing header checks): on `/`, `/bis` and an item page the header's computed `background-image` contains `header-tide.svg` and `GET /art/header-tide.svg` answers 200 with `image/svg+xml`; the tagline text is in the header; the wordmark image loads (`naturalWidth > 0`); at 400 px wide there is no sideways scroll and every nav link is inside the viewport; the page still has exactly one `h1`",
+        "`npm run typecheck`, `npm test`, `npm run build` and `npm run smoke` pass"
+      ],
+      "priority": 2,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-003",
+      "title": "Social cards with the art and the totem",
+      "description": "As someone sharing a Tidecaller link, I want the preview card to carry the same art and icon, so the link looks like the site.",
+      "acceptanceCriteria": [
+        "`scripts/og.mjs`: the five 1200 x 630 cards keep their text (kind, line, foot) and layout, and gain the header art along the bottom (anchored right bottom, about the lower 40% of the card, the text kept clear of the totems) and the totem badge (about 96 px) beside the wordmark; the old left bar goes",
+        "Run it and commit `public/og/*.png`; each stays 1200 x 630 (the IHDR test from US-001 covers them too) and under 300 KB",
+        "`npm run typecheck`, `npm test` and `npm run build` pass"
+      ],
+      "priority": 3,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-004",
+      "title": "Item facts: equip text, notes and where it comes from",
+      "description": "As a developer, I want one place that splits an item's extra text into equip effect and note, and shortens its source to a place, so the table and the popup say the same thing.",
+      "acceptanceCriteria": [
+        "New `src/lib/itemFacts.ts` exporting `equipText(item)`, `noteText(item)` and `whereShort(item)`, following the PRD's research findings (the rule for equip and note; the \"where\" labels)",
+        "Tests: every row of the PRD's \"where\" table, by item; for every one of the 155 items `whereShort` is one of: a kind alone (`World drop`, `Quest`, `Shaman quest`, `Vendor`, `Reputation`, `Unknown`), `Crafted, <profession>`, `<kind>, <place>`, or `<place>`, and every `<place>` appears verbatim in that item's `source` (the guard that nothing is invented)",
+        "Tests: every item with `other` gets exactly one of equip or note; Tidebringer's Claw's equip is \"+2% crit on Healing Wave and Lesser Healing Wave\"; Satchel of Potions's equip is \"Use: random potion\"; Painwalker Buckler's equip is \"Proc when struck: 12 mp5 for 10 sec\"; Ghostly Mantle's note is \"Nerfed Oct 8\"; Runemender's Seal's note is \"Unique\"",
+        "`npm run typecheck`, `npm test` and `npm run build` pass"
+      ],
+      "priority": 4,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-005",
+      "title": "The items page shows every stat in columns",
+      "description": "As a player, I want the items page to show each item's level, stats, equip effect and where it drops beside its score, so I can compare gear at a glance.",
+      "acceptanceCriteria": [
+        "`/items` keeps one table per slot, in slot order, and each table's columns are: **Item**, **Lvl**, **Int**, **Spr**, **SP**, **Heal**, **MP5**, **Equip**, **Where**, **Score**. Headers use `abbr` titles (Required level, Intellect, Spirit, Spell Power, Healing, Mana per 5 seconds, Dungeon boss score in points of Healing)",
+        "Item: the name links to the item page; a small Horde or Alliance tag follows the name when the item is not for both factions (the Faction column goes)",
+        "Lvl is `req`, blank when 0; the five stats are the spec's numbers, blank when 0; Equip is `equipText`; Where is `whereShort`, with the full `source` as the cell's `title`; Score is the Dungeon boss score as now (one decimal)",
+        "Numbers right-aligned in the mono font; Equip and Where in smaller text that wraps; on narrow screens the table scrolls sideways inside its box with the Item column sticky, and the page itself never scrolls sideways at 400 px",
+        "The lead paragraph says what the columns are, that blank means none, and that scores are for a Dungeon boss fight at the calculator defaults",
+        "Smoke (beside the existing `/items` checks): the Head table's header row reads the ten columns in order; Holy Shroud's row reads Lvl 27, Heal 33, Spr 6, Where \"World drop\", Score 38.9; Tidebringer's Claw's Equip shows \"+2% crit on Healing Wave and Lesser Healing Wave\"; at 400 px there is no page-level sideways scroll",
+        "`npm run typecheck`, `npm test`, `npm run build` and `npm run smoke` pass"
+      ],
+      "priority": 5,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-006",
+      "title": "Item popups on every item link",
+      "description": "As a player, I want to hover or tab to any item name on the site and see its stats in a popup, like Wowhead's, without leaving the page.",
+      "acceptanceCriteria": [
+        "A small script, its own Vite entry (for example `src/tips/tips.ts`), built, hashed and loaded with `<script type=\"module\">` on **every** page including `/`; the prerender writes the tag with the hashed path. No framework, no third-party request; the item data it needs is bundled in. Under 12 KB gzipped (a test or build check reads the built file's gzip size)",
+        "It works by event delegation on `document` for `a[href^=\"/items/\"]`, so links React renders later on `/` get popups too. On devices with hover: show after about 80 ms of hovering, place it beside the pointer, keep it inside the viewport (flip left or up near an edge), hide on leave. On keyboard focus: show beside the link, hide on blur or Escape. On touch: no popup (a tap opens the item page as now)",
+        "The popup (`role=\"tooltip\"`, the link gets `aria-describedby` while it shows) reads like a WoW tooltip, from spec section 12 and `itemFacts` only: the name; the slot, with the armor type on the right when not \"-\"; the stats that are not 0 (`+6 Spirit`, `+33 Healing`, `+12 Spell Power`, `+3 MP5`, `+11 Intellect`, `+4 Stamina`), Healing, Spell Power and MP5 in green; the equip text in green; \"Requires level N\" when `req` > 0; the note in muted text; \"Source: ...\" with the full source; \"Horde only\" or \"Alliance only\"; \"Only a Tailoring crafter can wear it\" style text for `prof` (Engineering: \"Needs Engineering to use\"). No score in the popup (the calculator's scores follow the visitor's own settings)",
+        "Styled dark navy with a thin blue-grey border and soft shadow in both themes, the name in the display font, max width about 320 px, never covering the pointer; no animation when `prefers-reduced-motion` is set",
+        "SEO test: `script[type=\"module\"]` count is the app script only where `hydrate` is true plus exactly one popup script on every page; update the root `CLAUDE.md` SEO rule sentence \"Only the calculator page hydrates; content pages ship no app JavaScript.\" to add that every page also loads the small item popup script, and nothing else in that file",
+        "Smoke (beside the item link checks of each page): on `/items` hovering \"Holy Shroud\" shows a popup containing \"+33 Healing\", \"+6 Spirit\", \"Requires level 27\" and \"World drop / auction house\" and hides on mouse out; focusing the link with the keyboard shows it and Escape hides it; on `/` hovering an item name in the best set shows a popup; at 400 px a popup near the right edge stays inside the viewport",
+        "`npm run typecheck`, `npm test`, `npm run build` and `npm run smoke` pass; `npm run reference` still 26 of 26 (the calculator page now loads a second script)"
+      ],
+      "priority": 6,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-007",
+      "title": "View on Wowhead from each item page",
+      "description": "As a player, I want a link from an item's page to the same item on Wowhead, so I can see its model, icon and comments there.",
+      "acceptanceCriteria": [
+        "Read `docs/spec.md` section 14.5 first. `scripts/extract-spec-data.mjs` also extracts its JSON block to `src/data/wowhead.json`; the existing test that the data files equal the spec covers it",
+        "Tests: every key in `wowhead.json` is an item name in `items.json`; every value is a positive integer; no two items share an ID; Holy Shroud is 2721 and Tidebringer's Claw is 280605; Invoker's Mantle has none",
+        "Item page, in \"Where it comes from\": when the item has an ID, a link **\"View <item name> on Wowhead\"** to `https://www.wowhead.com/forever/item=<ID>` (opens in a new tab, `rel=\"noopener noreferrer\"`), followed by one sentence: Wowhead's numbers can differ from Tidecaller's, which come from the Forever beta client, build 1.60.1. No link when there is no ID. The internal-link checks still pass (external `https://` links are allowed)",
+        "About page sources list: Wowhead's Forever database, used only for the \"View on Wowhead\" links; its stats are not used",
+        "Smoke: `/items/holy-shroud` links to `https://www.wowhead.com/forever/item=2721`; `/items/invokers-mantle` has no Wowhead link",
+        "`npm run typecheck`, `npm test`, `npm run build` and `npm run smoke` pass"
+      ],
+      "priority": 7,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-008",
+      "title": "Say what the boxes beside Water Shield and the talent are",
+      "description": "As a player, I want the number boxes beside Water Shield and the Spirit regen talent to say what they are, so I know Water Shield's 5 is my crit chance.",
+      "acceptanceCriteria": [
+        "The box beside Water Shield shows a visible label **\"Crit %\"** (small, above or beside the box) and the box beside the Spirit regen talent shows **\"Kept %\"**; their accessible names stay \"Heal crit chance, percent\" and \"Share kept while casting, percent\"",
+        "Water Shield's description reads: \"Each heal crit returns 2% of max mana. Enter your heal crit chance; 5% is the default.\"",
+        "Layout holds at 400 px and in both themes; disabled states still grey the label with the box",
+        "Smoke (beside the regen panel checks): the visible text \"Crit %\" sits within 60 px of `#crit`; \"Kept %\" within 60 px of `#pct`",
+        "`npm run typecheck`, `npm test`, `npm run build`, `npm run smoke` and `npm run reference` (26 of 26) pass"
+      ],
+      "priority": 8,
+      "passes": false,
+      "notes": ""
+    }
+  ]
+}
