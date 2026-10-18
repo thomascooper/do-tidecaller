@@ -36,9 +36,8 @@ try {
   const ctx = await browser.newContext({ viewport: { width: 1280, height: 900 } });
   const page = await ctx.newPage();
   const errors = [];
-  // No icon is served until US-020 adds one; drop the favicon filter there.
   page.on("console", (m) => {
-    if (m.type() === "error" && !m.location().url.endsWith("/favicon.ico")) errors.push(`${m.text()} (${m.location().url})`);
+    if (m.type() === "error") errors.push(`${m.text()} (${m.location().url})`);
   });
   page.on("pageerror", (e) => errors.push(String(e)));
   await page.goto(BASE + "/");
@@ -70,7 +69,7 @@ try {
     const p = await fresh.newPage();
     const errs = [];
     p.on("console", (m) => {
-      if (m.type() === "error" && !m.location().url.endsWith("/favicon.ico")) errs.push(m.text());
+      if (m.type() === "error") errs.push(m.text());
       if (m.type() === "warning" && /hydrat/i.test(m.text())) errs.push(m.text());
     });
     p.on("pageerror", (e) => errs.push(String(e)));
@@ -319,7 +318,14 @@ try {
   sp.on("console", (m) => {
     // The browser logs the 404 document itself as a failed resource load.
     const url = m.location().url;
-    if (m.type() === "error" && !url.endsWith("/favicon.ico") && !url.endsWith("/no-such-page")) siteErrors.push(m.text());
+    if (m.type() === "error" && !url.endsWith("/no-such-page")) siteErrors.push(m.text());
+  });
+  await check("/sitemap.xml, /robots.txt and /favicon.svg return 200", async () => {
+    for (const [path, needle] of [["/sitemap.xml", "<loc>https://tidecaller.drunkenoath.com/bis</loc>"], ["/robots.txt", "Sitemap: https://tidecaller.drunkenoath.com/sitemap.xml"], ["/favicon.svg", "<svg"]]) {
+      const res = await fetch(BASE + path);
+      eq(res.status, 200, `${path} status`);
+      if (!(await res.text()).includes(needle)) throw new Error(`${path} lacks ${needle}`);
+    }
   });
   await check("/about returns 200 with its h1 and no module script", async () => {
     const res = await sp.goto(BASE + "/about");

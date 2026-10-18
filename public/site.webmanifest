@@ -1,0 +1,13 @@
+{
+  "name": "Tidecaller",
+  "short_name": "Tidecaller",
+  "description": "Resto Shaman stat weights and best in slot gear for level 30 WoW Forever.",
+  "start_url": "/",
+  "display": "standalone",
+  "theme_color": "#0d6b62",
+  "background_color": "#eef2f1",
+  "icons": [
+    { "src": "/icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "/icon-512.png", "sizes": "512x512", "type": "image/png" }
+  ]
+}

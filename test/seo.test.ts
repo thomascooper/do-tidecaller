@@ -2,7 +2,7 @@ import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { parse } from "node-html-parser";
-import { renderDocument, routes } from "../src/entry-server";
+import { renderDocument, robotsTxt, routes, sitemapXml } from "../src/entry-server";
 import { canonicalUrl, DATA_UPDATED, SITE_URL } from "../src/site";
 
 const STUB = `<!doctype html><html lang="en"><head><meta charset="utf-8" /><!--app-head--></head><body><!--app-header--><main id="main"><div id="root"><!--app-html--></div></main><!--app-footer--><script type="module" src="/src/entry-client.tsx"></script></body></html>`;
@@ -300,5 +300,36 @@ describe("home page", () => {
   });
   it("escapes < in JSON-LD", () => {
     expect(renderDocument({ ...routes[0], jsonLd: [{ name: "</script><b>" }] }, STUB)).not.toContain("</script><b>");
+  });
+});
+
+describe("sitemap, robots, icons and social images", () => {
+  const indexablePaths = routes.filter((r) => !r.noindex).map((r) => r.path);
+  const locs = [...sitemapXml(indexablePaths).matchAll(/<loc>([^<]+)<\/loc>/g)].map((m) => m[1]);
+
+  it("lists exactly the indexable routes, absolute, with lastmod, and not the 404", () => {
+    expect(locs).toEqual(indexablePaths.map(canonicalUrl));
+    expect(locs).not.toContain(canonicalUrl("/404"));
+    expect(sitemapXml(indexablePaths).match(/<lastmod>/g)?.length).toBe(locs.length);
+    expect(sitemapXml(indexablePaths)).toContain(`<lastmod>${DATA_UPDATED}</lastmod>`);
+  });
+  it("robots allows everything and names the sitemap", () => {
+    expect(robotsTxt()).toBe(`User-agent: *\nAllow: /\n\nSitemap: ${SITE_URL}/sitemap.xml\n`);
+  });
+  it.each(pages)("$route.path og:image file exists in public/", ({ route }) => {
+    expect(existsSync(join(__dirname, "..", "public", route.ogImage)), route.ogImage).toBe(true);
+  });
+  it.each(pages)("$route.path links the icons and manifest", ({ doc }) => {
+    expect(doc.querySelector('link[rel="icon"]')?.getAttribute("href")).toBe("/favicon.svg");
+    expect(doc.querySelector('link[rel="apple-touch-icon"]')?.getAttribute("href")).toBe("/apple-touch-icon.png");
+    expect(doc.querySelector('link[rel="manifest"]')?.getAttribute("href")).toBe("/site.webmanifest");
+  });
+  it("manifest and icon files exist", () => {
+    const manifest = JSON.parse(readFileSync(join(__dirname, "..", "public", "site.webmanifest"), "utf8"));
+    expect(manifest.short_name).toBe("Tidecaller");
+    expect(manifest.start_url).toBe("/");
+    expect(manifest.display).toBe("standalone");
+    for (const icon of manifest.icons) expect(existsSync(join(__dirname, "..", "public", icon.src))).toBe(true);
+    for (const f of ["favicon.svg", "apple-touch-icon.png"]) expect(existsSync(join(__dirname, "..", "public", f))).toBe(true);
   });
 });

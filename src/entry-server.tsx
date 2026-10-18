@@ -7,6 +7,7 @@ import { routes } from "./routes";
 import type { Route } from "./routes";
 
 export { routes };
+export { robotsTxt, sitemapXml } from "./seo/sitemap";
 export type { Route };
 
 /** Fill the Vite template for one route: head tags and rendered HTML. Pages that do not

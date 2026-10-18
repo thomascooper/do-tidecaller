@@ -7,7 +7,7 @@ const root = join(dirname(fileURLToPath(import.meta.url)), "..");
 const dist = join(root, "dist");
 
 const template = await readFile(join(dist, "index.html"), "utf8");
-const { routes, renderDocument } = await import(pathToFileURL(join(root, "dist-ssr", "entry-server.js")).href);
+const { routes, renderDocument, sitemapXml, robotsTxt } = await import(pathToFileURL(join(root, "dist-ssr", "entry-server.js")).href);
 
 for (const route of routes) {
   // "/404" is the not-found page: Vercel serves dist/404.html for unknown paths.
@@ -17,3 +17,7 @@ for (const route of routes) {
   await writeFile(file, renderDocument(route, template));
   console.log(`prerendered ${route.path}`);
 }
+
+await writeFile(join(dist, "sitemap.xml"), sitemapXml(routes.filter((r) => !r.noindex).map((r) => r.path)));
+await writeFile(join(dist, "robots.txt"), robotsTxt());
+console.log("wrote sitemap.xml and robots.txt");
