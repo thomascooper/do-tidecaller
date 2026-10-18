@@ -46,3 +46,14 @@ Started: run 003 (header, icon, item popups, items table), 18 Oct 2026
   - The cards are close to the 300 KB cap (about 260 KB) because of the art; do not add more detail to them without checking size.
   - Cards load no files: fonts, art and totem are inlined, so `setContent` needs no base URL.
 ---
+
+## 18 Oct 2026 - US-004
+- `src/lib/itemFacts.ts`: `equipText(item)` (other starting with +, Use: or Proc), `noteText(item)` (any other `other`), `whereShort(item)` (kind, place or "kind, place" derived from `source` only). Tests in `src/lib/itemFacts.test.ts`: all 22 rows of the PRD where table, the shape and verbatim-place guard over all 155 items, and the five named equip/note examples.
+- Checks: typecheck ok, 2654 tests ok, build ok. Smoke and reference not run (nothing browser-rendered changed).
+- Broke the Proc prefix in the equip rule: the named-examples test failed, restored.
+- **Learnings for future iterations:**
+  - Quest place rule: the last "(...)" group, first part before a comma, minus " final boss", dropped if it starts with "from" or has a digit; with no parens, the text after ", ". Boss sources take the text after the last comma, minus a trailing "(...)", "trash" or "drop".
+  - Reputation items show the faction name ("Reputation, Defilers"); vendors with a parenthetical show it ("Vendor, Arathi Basin").
+  - All functions take `Pick<Item, ...>`, so the popup script can pass plain data objects.
+  - Do not `pkill -f` anything in a command that contains the same pattern: it kills the shell itself.
+---
