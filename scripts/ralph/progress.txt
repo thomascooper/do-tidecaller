@@ -16,3 +16,13 @@ Started: run 003 (header, icon, item popups, items table), 18 Oct 2026
 - Smoke can read `src/data/items.json` via readFileSync for item facts.
 - `fmt(x, 0)` already adds thousands separators.
 ---
+
+## 18 Oct 2026 - US-001
+- Totem icon: `public/favicon.svg` is `design/totem.svg` byte for byte. `scripts/og.mjs` now renders apple-touch-icon (84% on #03060d), icon-192/512 (transparent), the new icon-maskable-512 (72% on #0a2a36) from it, and writes `favicon.ico` (16, 32, 48 px PNG images, small ICO writer in the script). The social cards are untouched (US-003).
+- Files: public icons, favicon.ico, site.webmanifest, src/seo/head.ts (ico link before svg, both theme-color metas #03060d), scripts/og.mjs, test/seo.test.ts.
+- Checks: typecheck ok, 2624 tests ok, build ok, smoke 50 of 50. Broke the manifest (removed `purpose: maskable`): "manifest and icon files exist" failed, restored.
+- **Learnings for future iterations:**
+  - `scripts/og.mjs` output is deterministic: the og PNGs came out byte-identical, so only icon files show as changed.
+  - New "icon files" describe block in test/seo.test.ts reads IHDR and ICO headers; it reads the design totem.svg from tasks/ralph-runs/003-*/design/ to check favicon.svg.
+  - Screenshot with `omitBackground: true` gives transparent PNGs.
+---
