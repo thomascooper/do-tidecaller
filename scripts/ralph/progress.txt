@@ -78,3 +78,12 @@ Started: run 003 (header, icon, item popups, items table), 18 Oct 2026
   - Smoke "no module script" checks now exclude `/assets/tips-`: use `script[type="module"]:not([src*="/assets/tips-"])`.
   - The popup gets its icon in US-009 (40 px left of the name); `build()` in tips.ts is where it goes.
 ---
+
+## 18 Oct 2026 - US-007
+- `scripts/extract-spec-data.mjs` now also extracts spec 14.5 to `src/data/wowhead.json` (141 entries); `src/data/index.ts` exports `WOWHEAD` and `wowheadUrl(item)`. Item pages show "View <name> on Wowhead" (new tab, noopener noreferrer) and the caveat sentence under "Where it comes from", only when the item has an entry. About sources list gained the Wowhead Forever line.
+- Files: scripts/extract-spec-data.mjs and .d.mts, src/data/{wowhead.json,index.ts,data.test.ts}, src/pages/{ItemPage,About}.tsx, test/smoke.mjs, README.md.
+- Checks: typecheck ok, 2658 tests ok, build ok, smoke 54 of 54. Reference not run (calculator untouched). Broke the URL (forever to classic): the new unit test and the item page smoke check both failed, restored.
+- **Learnings for future iterations:**
+  - `scripts/extract-spec-data.d.mts` types the extractor for TypeScript; add new keys there too.
+  - `WOWHEAD[item.name]` is the lookup; US-009's icon helper goes beside `wowheadUrl`.
+---
