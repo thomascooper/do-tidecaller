@@ -1,0 +1,125 @@
+[
+  {
+    "id": "hw1",
+    "name": "Healing Wave",
+    "rank": 1,
+    "lvl": 1,
+    "base": 41.5,
+    "cost": 25,
+    "cast": 1.5,
+    "src": "Beta tooltip, 36 to 47"
+  },
+  {
+    "id": "hw2",
+    "name": "Healing Wave",
+    "rank": 2,
+    "lvl": 6,
+    "base": 76,
+    "cost": 45,
+    "cast": 2,
+    "src": "Beta tooltip, 69 to 83"
+  },
+  {
+    "id": "hw3",
+    "name": "Healing Wave",
+    "rank": 3,
+    "lvl": 12,
+    "base": 138.5,
+    "cost": 80,
+    "cast": 2.5,
+    "src": "Beta tooltip, 126 to 151"
+  },
+  {
+    "id": "hw4",
+    "name": "Healing Wave",
+    "rank": 4,
+    "lvl": 18,
+    "base": 267,
+    "cost": 155,
+    "cast": 3,
+    "src": "Read from a ForeverChanges chart, unconfirmed",
+    "warn": true
+  },
+  {
+    "id": "hw5",
+    "name": "Healing Wave",
+    "rank": 5,
+    "lvl": 24,
+    "base": 355.5,
+    "cost": 200,
+    "cast": 3,
+    "src": "Beta tooltip, 328 to 383"
+  },
+  {
+    "id": "hw6",
+    "name": "Healing Wave",
+    "rank": 6,
+    "lvl": 32,
+    "base": 500.5,
+    "cost": 265,
+    "cast": 3,
+    "src": "Beta tooltip, 463 to 538"
+  },
+  {
+    "id": "hw7",
+    "name": "Healing Wave",
+    "rank": 7,
+    "lvl": 40,
+    "base": 704.5,
+    "cost": 340,
+    "cast": 3,
+    "src": "Beta data, 654 to 755"
+  },
+  {
+    "id": "hw8",
+    "name": "Healing Wave",
+    "rank": 8,
+    "lvl": 48,
+    "base": 995.5,
+    "cost": 440,
+    "cast": 3,
+    "src": "Beta data, 927 to 1064"
+  },
+  {
+    "id": "hw9",
+    "name": "Healing Wave",
+    "rank": 9,
+    "lvl": 56,
+    "base": 1366,
+    "cost": 560,
+    "cast": 3,
+    "src": "Beta data, 1275 to 1457"
+  },
+  {
+    "id": "hw10",
+    "name": "Healing Wave",
+    "rank": 10,
+    "lvl": 60,
+    "base": 1615,
+    "cost": 620,
+    "cast": 3,
+    "src": "Heal 1508 to 1722; cost is Classic's, unconfirmed",
+    "warn": true
+  },
+  {
+    "id": "lhw1",
+    "name": "Lesser Healing Wave",
+    "rank": 1,
+    "lvl": 20,
+    "base": 161.5,
+    "cost": 105,
+    "cast": 1.5,
+    "src": "Heal 150 to 173; cost is Classic's, unconfirmed",
+    "warn": true
+  },
+  {
+    "id": "lhw2",
+    "name": "Lesser Healing Wave",
+    "rank": 2,
+    "lvl": 28,
+    "base": 228.5,
+    "cost": 145,
+    "cast": 1.5,
+    "src": "Beta tooltip, 214 to 243"
+  }
+]
