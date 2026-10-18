@@ -48,3 +48,16 @@ Started: Sun Oct 18 07:32:52 UTC 2026
   - Pass the full list (`[...ITEMS, ...userItems]`) as `items`; the functions only need `maxlvl`, `level`, `faction`, `profs` (and `showAll` for candidates) from state.
   - Dungeon boss best set measured: matches spec section 7 exactly (total 422.62, pair 111.59, Wind Spirit Staff 85.17).
 ---
+
+## 2026-10-18 - US-005
+- Added the calibration helpers to the model, `src/lib/storage.ts` and `src/lib/share.ts`.
+- Files: src/lib/{model.ts,storage.ts,share.ts,calibration.test.ts}
+- Checks: typecheck ok, npm test 67 passed, npm run build ok. No smoke (no browser change).
+- Broke on purpose: disabled the sA 107.9 / sB 2347 migration case (that migration test failed); flipped the sign of B in `fitSpirit` (both fit tests failed). Both restored.
+- **Learnings for future iterations:**
+  - `fitSpirit` returns UNROUNDED values `{line: {base, rate, worst}, curve: {cap, B, worst}}`; the apply buttons round (base 0.1, rate 0.001, cap 0.1, B integer). `parseReadings` returns `{spirit, mp5}[]`. `castingShare(N, C, g)` returns a fraction or null; the UI turns it into `Math.round(x * 100)`.
+  - `loadSaved(storage)` returns `{state, items}`; `save(storage, state, items)`; both accept `undefined`. `mergeState(raw)` (in storage.ts) keeps a saved key only when its type matches the default's, and is reused by share decoding.
+  - `encodeShare(state, items)` returns `{code, itemsOmitted}`, not a bare string: US-021 should use `.code`. `decodeShare(code)` returns `{state, items}` or null. Limit is `MAX_SHARE_LENGTH` (6000).
+  - `userItem(raw)` (storage.ts) sanitises any user item (id must start with `u`, slot must be known); missing faction/req/source take the reference defaults.
+  - The 43 Spirit reading: `DEFAULT_READINGS` has it commented out; uncommenting gives the twelve-reading fit (cap 113.95, B 2666, worst 2.67).
+---
