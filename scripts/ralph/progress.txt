@@ -87,3 +87,12 @@ Started: run 003 (header, icon, item popups, items table), 18 Oct 2026
   - `scripts/extract-spec-data.d.mts` types the extractor for TypeScript; add new keys there too.
   - `WOWHEAD[item.name]` is the lookup; US-009's icon helper goes beside `wowheadUrl`.
 ---
+
+## 18 Oct 2026 - US-008
+- Visible labels "Crit %" (beside Water Shield) and "Kept %" (beside the Spirit regen talent), small muted text above each box, greyed with the box when disabled. Accessible names unchanged (the label span is aria-hidden). Water Shield description now reads "Each heal crit returns 2% of max mana. Enter your heal crit chance; 5% is the default."
+- Files: src/calculator/RegenPanel.tsx, src/styles/app.css (`.pctf`), test/smoke.mjs.
+- Checks: typecheck ok, 2658 tests ok, build ok, smoke 55 of 55, reference 26 of 26. Broke the new smoke check by renaming "Kept %" to "Kept": it failed, restored.
+- **Learnings for future iterations:**
+  - docs/spec.md line 586 holds the old Water Shield wording in its HTML sample; the spec was left untouched (the story only changes the site's copy).
+  - `labelled()` in RegenPanel wraps a NumField with a label span; reuse it for any new boxed input in a toggle row.
+---

@@ -253,6 +253,17 @@ try {
     eq(await page.locator("#crit").isDisabled(), true, "crit disabled");
     await page.locator("#ws").setChecked(true, { force: true });
   });
+  await check("regen: the boxes beside Water Shield and the talent are labelled", async () => {
+    for (const [id, text] of [["#crit", "Crit %"], ["#pct", "Kept %"]]) {
+      const box = await page.locator(id).boundingBox();
+      const lab = await page.getByText(text, { exact: true }).first().boundingBox();
+      if (!box || !lab) throw new Error(`${text} or ${id} not visible`);
+      const dist = Math.hypot(box.x - lab.x, box.y - lab.y);
+      if (dist > 60) throw new Error(`${text} is ${Math.round(dist)} px from ${id}`);
+    }
+    eq(await page.locator("#crit").getAttribute("aria-label"), "Heal crit chance, percent", "crit name");
+    eq(await page.locator("#pct").getAttribute("aria-label"), "Share kept while casting, percent", "pct name");
+  });
   await check("calibration: levels-off fit, restore defaults, casting share", async () => {
     await page.locator("#spiritbox summary").click();
     eq(await page.locator("#sA").isDisabled(), true, "cap disabled on the line shape");
