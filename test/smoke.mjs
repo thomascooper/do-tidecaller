@@ -208,6 +208,34 @@ try {
     eq(changed.join(" | "), "Feet: Gilded Slippers", "picks Tailoring changes");
     await page.locator('[data-prof="Tailoring"]').uncheck();
   });
+  await check("candidates: add, pick, persist and remove your own item", async () => {
+    await page.evaluate(() => window.localStorage.clear());
+    await page.reload();
+    await page.waitForSelector("#itemTable");
+    await page.locator(".addbox summary").click();
+    await page.locator("#a-name").fill("Smoke Test Mace");
+    await page.locator("#a-slot").selectOption("Main hand");
+    await page.locator("#a-heal").fill("500");
+    await page.locator("#addForm button[type=submit]").click();
+    eq((await picks()).includes("Main hand: Smoke Test Mace"), true, "mace is the main hand pick");
+    const row = page.locator("#itemTable tbody tr", { hasText: "Smoke Test Mace" });
+    eq(await row.locator(".tag.mana").textContent(), "Yours", "Yours tag");
+    eq(await row.locator(".tag").first().textContent(), "Top", "Top tag");
+    await page.reload();
+    await page.waitForSelector("#itemTable");
+    eq(await page.locator("#itemTable tbody tr", { hasText: "Smoke Test Mace" }).count(), 1, "survives reload");
+    await page.locator('#itemTable [data-del]').click();
+    eq(await page.locator("#itemTable tbody tr", { hasText: "Smoke Test Mace" }).count(), 0, "removed from candidates");
+    eq((await picks()).some((r) => r.includes("Smoke Test Mace")), false, "removed from best set");
+  });
+  await check("candidates: unusable gear shows its reason when asked", async () => {
+    eq(await page.locator("#itemTable tbody tr", { hasText: "Giantstone Medallion" }).count(), 0, "hidden by default");
+    await page.locator("#showAll").check();
+    const row = page.locator("#itemTable tbody tr", { hasText: "Giantstone Medallion" });
+    eq((await row.locator(".why").textContent()), "Alliance only", "reason");
+    eq(await row.evaluate((tr) => tr.classList.contains("cant")), true, "dimmed");
+    await page.locator("#showAll").uncheck();
+  });
   await check("no console errors", async () => eq(errors.join(" | "), "", "console errors"));
   await ctx.close();
 

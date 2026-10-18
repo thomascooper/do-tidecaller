@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import { ITEMS, PROFESSIONS } from "../data";
 import { bestSet, maxLevel, sourceNote } from "../lib/model";
 import type { State, Weights } from "../lib/model";
@@ -10,9 +11,10 @@ interface Props {
   items: Item[];
   weights: Weights;
   set: (patch: Partial<State>) => void;
+  children?: ReactNode;
 }
 
-export function BestSet({ state, items, weights, set }: Props) {
+export function BestSet({ state, items, weights, set, children }: Props) {
   const best = bestSet(items, weights, state);
 
   return (
@@ -104,6 +106,7 @@ export function BestSet({ state, items, weights, set }: Props) {
           </tfoot>
         </table>
       </div>
+      {children}
     </section>
   );
 }
