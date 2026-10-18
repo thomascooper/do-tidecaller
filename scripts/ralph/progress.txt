@@ -74,3 +74,15 @@ Started: Sun Oct 18 07:32:52 UTC 2026
   - The console-error check ignores `/favicon.ico` because no icon exists until US-020: remove that filter when US-020 lands.
   - The entry client still uses `createRoot` (client render); hydration arrives with the prerender in US-013.
 ---
+
+## 2026-10-18 - US-007
+- Stat weights panel: note, verdict from `priorityLine` with styled operators, regime text, bars, seven readouts.
+- Files: src/calculator/StatWeights.tsx, src/calculator/Calculator.tsx, test/smoke.mjs
+- Checks: typecheck ok, npm test 67 passed, npm run build ok, npm run smoke 14 passed.
+- Broke on purpose: showed the Stamina bar even at weight 0 (the defaults check on bar count failed). Restored.
+- **Learnings for future iterations:**
+  - Bars use a fixed order (MP5, Intellect, Spirit, Healing, Spell Power, Stamina), not sorted; the verdict line is the sorted one. Bars carry `data-stat` for smoke checks.
+  - `Calculator` calls `compute(state)` once and passes `r` to output panels; add the next panels inside `<div className="out">`.
+  - The verdict has literal spaces around each operator so its text reads "MP5 > Intellect > ..."; the `.op` padding adds the visual gap.
+  - Mana for the fight at Dungeon boss defaults reads "3,750" with "19.0 casts" (18.96 rounds to 19.0).
+---
