@@ -36,3 +36,13 @@ Started: Sun Oct 18 17:53:51 UTC 2026
   - The working line is a `.hint.field.full` paragraph with aria-live; the Use calculated button reuses the `chip` class.
   - 400px overflow checks in smoke still pass with the new controls.
 ---
+
+## 2026-10-18 - US-004
+- Copy: Footer "Unconfirmed" paragraph and About unconfirmed list name Classic's documented base mana (estimated between documented levels); About sources names the Wowpedia and Vanilla WoW Archive "Base mana" pages as plain text; /bis intro names level, Intellect and max mana from DEFAULTS and effectivePool; stat-weights guide gets a paragraph on the mana pool.
+- Files: src/calculator/Footer.tsx, src/pages/About.tsx, src/pages/Bis.tsx, src/pages/Guides.tsx, test/smoke.mjs, scripts/ralph/prd.json.
+- Checks: typecheck ok, 2618 tests, build ok, smoke 50 passed, reference 26 of 26.
+- Broke on purpose: changed "plus" to "and" in the guide paragraph; the new smoke check failed; restored.
+- **Learnings for future iterations:**
+  - Smoke text checks should normalize whitespace: JSX line breaks collapse in rendered text, so a source grep for a sentence can miss while the page matches.
+  - `fmt(x, 0)` already adds thousands separators.
+---

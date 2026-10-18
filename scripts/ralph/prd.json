@@ -70,7 +70,7 @@
         "`npm run typecheck`, `npm test`, `npm run build`, `npm run smoke` and `npm run reference` pass"
       ],
       "priority": 4,
-      "passes": false,
+      "passes": true,
       "notes": ""
     }
   ]
