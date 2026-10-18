@@ -1,0 +1,260 @@
+import { SPELLS } from "../data";
+import type { Faction, Profession, Spell } from "./types";
+
+export type SpiritModel = "line" | "curve";
+
+export interface SpellEdit {
+  base?: number;
+  cost?: number;
+  cast?: number;
+}
+
+export interface State {
+  level: number;
+  pool: number;
+  heal: number;
+  spi: number;
+  g: number;
+  buff: number;
+  talent: boolean;
+  pct: number;
+  icon: boolean;
+  imphw: boolean;
+  smodel: SpiritModel;
+  sA: number;
+  sB: number;
+  sbase: number;
+  sper: number;
+  t: number;
+  f: number;
+  w: number;
+  stw: number;
+  spell: string;
+  edits: Record<string, SpellEdit>;
+  faction: Exclude<Faction, "Both">;
+  maxlvl: number;
+  profs: Partial<Record<Profession, boolean>>;
+  showAll: boolean;
+  ws: boolean;
+  crit: number;
+}
+
+export const DEFAULTS: State = {
+  level: 30,
+  pool: 2223,
+  heal: 200,
+  spi: 107,
+  g: 10,
+  buff: 0,
+  talent: true,
+  pct: 50,
+  icon: false,
+  imphw: true,
+  smodel: "line",
+  sA: 114.0,
+  sB: 2666,
+  sbase: 30.5,
+  sper: 0.626,
+  t: 120,
+  f: 90,
+  w: 70,
+  stw: 0,
+  spell: "hw5",
+  edits: {},
+  faction: "Horde",
+  maxlvl: 0,
+  profs: {},
+  showAll: false,
+  ws: true,
+  crit: 5,
+};
+
+export type PresetId = "trash" | "boss" | "raid";
+
+export const PRESETS: Record<PresetId, { label: string; t: number; f: number }> = {
+  trash: { label: "Trash pull", t: 90, f: 70 },
+  boss: { label: "Dungeon boss", t: 120, f: 90 },
+  raid: { label: "Raid boss", t: 300, f: 100 },
+};
+
+export function activePreset(state: Pick<State, "t" | "f">): PresetId | null {
+  for (const id of Object.keys(PRESETS) as PresetId[]) {
+    if (PRESETS[id].t === state.t && PRESETS[id].f === state.f) return id;
+  }
+  return null;
+}
+
+function clamp(x: number, a: number, b: number): number {
+  return Math.max(a, Math.min(b, x));
+}
+
+function num(v: unknown, d: number): number {
+  const n = typeof v === "number" ? v : parseFloat(String(v));
+  return isFinite(n) ? n : d;
+}
+
+export interface EditedSpell extends Spell {
+  edited: boolean;
+}
+
+export function spellOf(state: Pick<State, "edits">, id: string): EditedSpell {
+  const base = SPELLS.find((s) => s.id === id) ?? SPELLS[4];
+  const ed = state.edits[base.id] ?? {};
+  return {
+    ...base,
+    base: num(ed.base, base.base),
+    cost: num(ed.cost, base.cost),
+    cast: num(ed.cast, base.cast),
+    edited: !!state.edits[base.id],
+  };
+}
+
+export function spiritRegen(state: State, spi: number): number {
+  const s = Math.max(spi, 1);
+  return state.smodel === "line"
+    ? Math.max(0, state.sbase + state.sper * s)
+    : Math.max(0, state.sA - state.sB / s);
+}
+
+export function spiritMarginal(state: State, spi: number): number {
+  const s = Math.max(spi, 1);
+  return state.smodel === "line" ? state.sper : state.sB / (s * s);
+}
+
+export function shareKept(L: number, T: number): number {
+  return clamp(1 - (L - 17 - T) * 0.05, 0, 1);
+}
+
+export function knownSpells(level: number): Spell[] {
+  return SPELLS.filter((s) => s.lvl <= level);
+}
+
+/** The spell id actually used: the chosen rank, or the best Healing Wave known at this level. */
+export function effectiveSpell(state: Pick<State, "level" | "spell">): string {
+  const known = knownSpells(state.level);
+  if (known.some((s) => s.id === state.spell)) return state.spell;
+  const hw = known.filter((s) => s.id.indexOf("hw") === 0);
+  return (hw[hw.length - 1] ?? SPELLS[0]).id;
+}
+
+export interface SpellCalc {
+  coef: number;
+  share: number;
+  ce: number;
+  heal: number;
+  hpm: number;
+  hps: number;
+}
+
+export function spellCalc(state: State, spell: Spell): SpellCalc {
+  const coef = Math.min(spell.cast, 3.5) / 3.5;
+  const share = shareKept(state.level, spell.lvl);
+  const ce = coef * share;
+  const heal = spell.base + ce * state.heal;
+  const ct = spell.cast - (state.imphw && spell.id.indexOf("hw") === 0 ? 0.5 : 0);
+  const eff = Math.max(ct, 1.5);
+  return { coef, share, ce, heal, hpm: heal / spell.cost, hps: heal / eff };
+}
+
+export type StatKey = "heal" | "sp" | "mp5" | "int" | "spi" | "sta";
+export type Weights = Record<StatKey, number>;
+
+export interface Computed {
+  m: number;
+  k: number;
+  sFull: number;
+  fullMP5: number;
+  castMP5: number;
+  avgMP5: number;
+  E: number;
+  sp: EditedSpell;
+  c: SpellCalc;
+  X: number;
+  wf: number;
+  spiInMP5: number;
+  intInMP5: number;
+  weights: Weights;
+  raw: { mp5: number; int: number; spi: number };
+  wsBack: number;
+  intWS: number;
+  casts: number;
+}
+
+export function compute(state: State): Computed {
+  let m = state.talent ? clamp(state.pct, 0, 100) / 100 : 0;
+  if (state.icon) m += 0.08;
+  m = Math.min(m, 1);
+  const f = state.f / 100;
+  const k = 1 - f * (1 - m);
+  const sFull = spiritRegen(state, state.spi);
+  const flat = state.g + state.buff;
+  const fullMP5 = flat + sFull;
+  const castMP5 = flat + sFull * m;
+  const avgMP5 = flat + sFull * k;
+  const T = Math.max(1, state.t);
+  const E = state.pool + (avgMP5 / 5) * T;
+  const sp = spellOf(state, effectiveSpell(state));
+  const c = spellCalc(state, sp);
+  const X = c.ce > 0 ? ((T / 5) * c.heal) / (E * c.ce) : NaN;
+  const wf = state.w / 100;
+  const spiInMP5 = spiritMarginal(state, state.spi) * k;
+  const intInMP5 = 75 / T;
+  const pc = clamp(state.crit, 0, 100) / 100;
+  const wsBack = state.ws ? pc * 0.02 * state.pool : 0;
+  const cEff = Math.max(1, sp.cost - wsBack);
+  const intWS = state.ws && c.ce > 0 ? (c.heal * pc * 0.3) / (c.ce * cEff) : 0;
+  const intRaw = intInMP5 * X + intWS;
+  return {
+    m,
+    k,
+    sFull,
+    fullMP5,
+    castMP5,
+    avgMP5,
+    E,
+    sp,
+    c,
+    X,
+    wf,
+    spiInMP5,
+    intInMP5,
+    weights: { heal: 1, sp: 1, mp5: wf * X, int: wf * intRaw, spi: wf * spiInMP5 * X, sta: state.stw },
+    raw: { mp5: X, int: intRaw, spi: spiInMP5 * X },
+    wsBack,
+    intWS,
+    casts: E / cEff,
+  };
+}
+
+export const STAT_LABELS: Record<StatKey, string> = {
+  mp5: "MP5",
+  int: "Intellect",
+  spi: "Spirit",
+  heal: "Healing",
+  sp: "Spell Power",
+  sta: "Stamina",
+};
+
+export interface PriorityLine {
+  /** Stats from most to least valuable (Stamina only when its weight is above 0). */
+  keys: StatKey[];
+  /** ops[i] sits between keys[i] and keys[i + 1]. */
+  ops: ("=" | ">")[];
+  /** False when a weight is not a number (a rank with no healing power bonus). */
+  ok: boolean;
+}
+
+export function priorityLine(W: Weights): PriorityLine {
+  const order = (["mp5", "int", "spi", "heal", "sp", "sta"] as StatKey[]).filter(
+    (k) => k !== "sta" || W.sta > 0,
+  );
+  const ok = order.every((k) => isFinite(W[k]));
+  const val = (k: StatKey) => (isFinite(W[k]) ? W[k] : 0);
+  const keys = order.slice().sort((a, b) => val(b) - val(a));
+  const ops: ("=" | ">")[] = [];
+  for (let i = 1; i < keys.length; i++) {
+    const prev = val(keys[i - 1]);
+    ops.push(Math.abs(prev - val(keys[i])) <= Math.max(0.03, prev * 0.03) ? "=" : ">");
+  }
+  return { keys, ops, ok };
+}

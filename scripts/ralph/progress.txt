@@ -3,6 +3,7 @@ Started: Sun Oct 18 07:32:52 UTC 2026
 ---
 ## Codebase Patterns
 - Styles: the reference CSS is ported verbatim to `src/styles/app.css` (extracted from spec section 13's `<style>` block); fonts come from `@fontsource/*` imports in `src/entry-client.tsx`.
+- All math is pure functions in `src/lib/model.ts` taking `state` as the first argument (`spellOf(state, id)`, `spiritRegen(state, spi)`, `compute(state)`); `effectiveSpell(state)` returns the spell id after the level fallback and `compute` already uses it.
 - Vitest only picks up `src/**/*.test.ts(x)` (see `vite.config.ts`).
 
 
@@ -24,4 +25,15 @@ Started: Sun Oct 18 07:32:52 UTC 2026
   - Data lives in `src/data/index.ts`: `ITEMS` (ids db0..db154, slugs), `SPELLS`, `SLOTS`, `PROFESSIONS`, `itemBySlug`. `slotFromSlug` and `SLOT_SLUGS` are in `src/lib/slug.ts`.
   - `src/data/*.json` is generated: edit the spec and re-run `node scripts/extract-spec-data.mjs`, never hand-edit.
   - Tests may import the `.mjs` extractor; its types come from `scripts/extract-spec-data.d.mts`.
+---
+
+## 2026-10-18 - US-003
+- Added the model (regen, spells, stat weights, priority line, presets) and `fmt`.
+- Files: src/lib/model.ts, src/lib/format.ts, src/lib/model.test.ts
+- Checks: typecheck ok, npm test 28 passed, npm run build ok. No smoke (no browser change).
+- Broke on purpose: changed the downrank step 0.05 to 0.06 (shareKept test failed); matched `hw` anywhere in the id instead of as a prefix (imphw test failed). Both restored.
+- **Learnings for future iterations:**
+  - `priorityLine(weights)` returns `{keys, ops, ok}`: `ops[i]` sits between `keys[i]` and `keys[i+1]`, `ok` is false when X is NaN (UI shows "No healing power bonus on this rank"). Labels are in `STAT_LABELS`.
+  - Lesser Healing Wave ranks cast in 1.5 s, so the 1.5 s floor hides `imphw` for them; the imphw test edits lhw2's cast to 3 to make the rule visible. Any check of "imphw skips lhw" needs that edit or it is vacuous.
+  - `State.faction` is `"Horde" | "Alliance"` (the filter), `Item.faction` also allows `"Both"`.
 ---
