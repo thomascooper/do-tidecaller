@@ -81,7 +81,7 @@ export function About() {
       <h2>Privacy</h2>
       <p>
         There are no accounts. Your settings and any items you add stay in your own browser and are never sent
-        anywhere.
+        anywhere. The site counts anonymous page views, without cookies, to see how many people use it.
       </p>
 
       <h2>Trademark</h2>

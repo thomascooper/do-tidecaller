@@ -12,7 +12,10 @@ export type { Route };
 
 /** Fill the Vite template for one route: head tags and rendered HTML. Pages that do not
  *  hydrate lose the app script and its preloads, so they ship plain HTML and CSS. */
-export function renderDocument(route: Route, template: string): string {
+export const ANALYTICS_SCRIPT = '<script defer src="/_vercel/insights/script.js"></script>';
+
+/** `analytics` adds Vercel Web Analytics (cookieless); the prerender sets it on production builds only. */
+export function renderDocument(route: Route, template: string, options: { analytics?: boolean } = {}): string {
   const head = headTags({
     path: route.path,
     title: route.title,
@@ -33,5 +36,6 @@ export function renderDocument(route: Route, template: string): string {
       .replace(/<script type="module"[^>]*><\/script>\s*/g, "")
       .replace(/<link rel="modulepreload"[^>]*>\s*/g, "");
   }
+  if (options.analytics) html = html.replace("</body>", () => `${ANALYTICS_SCRIPT}</body>`);
   return html;
 }

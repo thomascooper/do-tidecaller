@@ -246,3 +246,11 @@ Started: Sun Oct 18 07:32:52 UTC 2026
   - Smoke grants `clipboard-read`/`clipboard-write` to a context to read the copied link; the no-clipboard check defines `navigator.clipboard` as undefined via an init script.
   - The canonical stays `/` because the `?s=` is read only after hydration and never appears in the prerendered head.
 ---
+## 2026-10-18 - US-022
+- Vercel Web Analytics script added by the prerender on production builds only (`renderDocument(route, template, {analytics})`, set from `process.env.VERCEL_ENV === "production"` in `scripts/prerender.mjs`); About privacy note says anonymous page views are counted without cookies; `.github/workflows/ci.yml` (Node 22, npm ci, typecheck, test, build) on push and pull request.
+- Files: src/entry-server.tsx, scripts/prerender.mjs, src/pages/About.tsx, test/seo.test.ts, .github/workflows/ci.yml
+- Checks: typecheck ok, npm test 2602 passed, npm run build ok (no insights script locally; `VERCEL_ENV=production node scripts/prerender.mjs` after a build adds it to every page). No smoke (About text only), no reference.
+- Broke on purpose: made the script unconditional (the "absent by default" test failed). Restored.
+- **Learnings for future iterations:**
+  - The script is inserted before `</body>`; run `npm run build` again to get a clean local dist after trying the production prerender.
+---

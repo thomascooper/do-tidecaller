@@ -333,3 +333,17 @@ describe("sitemap, robots, icons and social images", () => {
     for (const f of ["favicon.svg", "apple-touch-icon.png"]) expect(existsSync(join(__dirname, "..", "public", f))).toBe(true);
   });
 });
+
+describe("analytics script", () => {
+  const script = '<script defer src="/_vercel/insights/script.js"></script>';
+  it("is added to every page when asked (production builds)", () => {
+    for (const route of routes) expect(renderDocument(route, STUB, { analytics: true })).toContain(script);
+  });
+  it("is absent by default (local and preview builds)", () => {
+    for (const route of routes) expect(renderDocument(route, STUB)).not.toContain("/_vercel/insights");
+  });
+  it("is described on the About page", () => {
+    const about = routes.find((r) => r.path === "/about")!;
+    expect(renderDocument(about, STUB)).toContain("without cookies");
+  });
+});
