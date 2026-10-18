@@ -1,6 +1,7 @@
 import { activePreset, compute, PRESETS } from "../lib/model";
 import type { PresetId } from "../lib/model";
 import { NumField } from "./NumField";
+import { RankTable } from "./RankTable";
 import { RegenPanel } from "./RegenPanel";
 import { StatWeights } from "./StatWeights";
 import { useCalculator } from "./useCalculator";
@@ -95,6 +96,7 @@ export function Calculator() {
 
         <div className="out">
           <StatWeights state={state} r={r} />
+          <RankTable state={state} set={set} />
         </div>
       </div>
     </div>

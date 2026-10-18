@@ -146,6 +146,38 @@ try {
     eq(await page.locator("#talent").isChecked(), true, "talent on");
     eq(await page.locator("#icon").isChecked(), false, "icon off");
   });
+  await check("ranks: seven rows, selection moves the MP5 weight, level 20 falls back", async () => {
+    const mp5 = async () => (await page.locator('[data-stat="mp5"]').textContent()) ?? "";
+    eq(await page.locator("#ranks tbody tr").count(), 7, "rows at level 30");
+    const before = await mp5();
+    await page.locator('#ranks tr[data-spell="lhw2"]').click();
+    eq(await page.locator('#ranks tr[data-spell="lhw2"]').getAttribute("aria-selected"), "true", "lhw2 selected");
+    eq(await page.locator('#ranks tr[data-spell="hw5"]').getAttribute("aria-selected"), "false", "hw5 deselected");
+    if ((await mp5()) === before) throw new Error("MP5 weight did not change");
+    await page.locator('#ranks tr[data-spell="hw5"]').focus();
+    await page.keyboard.press("Enter");
+    eq(await page.locator('#ranks tr[data-spell="hw5"]').getAttribute("aria-selected"), "true", "Enter selects");
+    eq(await page.evaluate(() => document.activeElement?.getAttribute("data-spell")), "hw5", "focus kept");
+    await page.locator("#level").fill("20");
+    eq(await page.locator('#ranks tr[data-spell="hw4"]').getAttribute("aria-selected"), "true", "falls back to hw4");
+    await page.locator("#level").fill("30");
+  });
+  await check("ranks: editing a rank swaps Check for Edited, restore brings it back", async () => {
+    await page.locator('#ranks tr[data-spell="hw4"]').click();
+    const row = page.locator('#ranks tr[data-spell="hw4"]');
+    eq(await row.locator(".tag.warn").count(), 1, "Check tag before");
+    await page.locator("#editbox summary").click();
+    await page.locator("#eb").fill("300");
+    eq(await row.locator(".tag.warn").count(), 0, "Check tag gone");
+    eq(await row.locator(".tag.mana").textContent(), "Edited", "Edited tag");
+    await page.locator("#eb").fill("-5");
+    eq(await row.locator(".tag.mana").count(), 1, "non-positive value ignored");
+    eq(await page.locator("#esrc").textContent(), "Healing Wave 4: Read from a ForeverChanges chart, unconfirmed", "source text");
+    await page.locator("#eReset").click();
+    eq(await row.locator(".tag.warn").count(), 1, "Check tag back");
+    eq(await row.locator(".tag.mana").count(), 0, "Edited gone");
+    await page.locator('#ranks tr[data-spell="hw5"]').click();
+  });
   await check("no console errors", async () => eq(errors.join(" | "), "", "console errors"));
   await ctx.close();
 
