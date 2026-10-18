@@ -16,6 +16,8 @@ Tom, 18 Oct 2026, after merging run 002 with the domain live:
   or crafted, or world drop, etc)"*
 - *"why does watershield have a text box next to it? right now it is 5?"* (it is the heal crit
   chance, but nothing on screen says so)
+- *"you should also be able to get item art for icons for the tables both on the home page and on
+  the items page from wowhead as well"* (added after the first five stories ran)
 
 **What a player can do after this that they cannot now:** hover (or tab to) any item name anywhere
 on the site and read its stats, level, effect and source in a WoW-style popup without leaving the
@@ -87,7 +89,14 @@ banner behind a branded header, and a totem icon in the browser tab and on phone
   numbers, which can differ from the spec (section 12's values reflect the 8 Oct beta changes and
   Tom's client), it covers only the items with a known ID, and it is a third-party script on every
   page. Our popup shows section 12's facts for all 155 items. Wowhead gets a "View on Wowhead" link
-  on item pages, from spec **section 14.5** (111 IDs; 44 items have none yet and get no link).
+  on item pages, from spec **section 14.5** (141 IDs, every one checked against Wowhead's Forever
+  tooltip data; 14 items have none yet and get no link).
+- **Item icons (US-009).** Section 14.5 also names each item's Wowhead icon. The delivering session
+  wrote `scripts/wowhead-icons.mjs` and ran it: `public/icons/<icon>.jpg` holds 115 icons (56 x 56
+  JPEG, 206 KB in all), including `inv_misc_questionmark.jpg` for the 14 items with no entry. The
+  site serves these copies; it never loads anything from Wowhead at run time. The script needs
+  network access Ralph's iterations do not have: never run it in an iteration, and never delete or
+  rename a file in `public/icons/`.
 - **JavaScript on content pages.** Content pages ship no *app* JavaScript today and the SEO test
   enforces it (`script[type="module"]` count is 1 on `/`, 0 elsewhere). The popup needs a small
   script on every page. That is allowed for this one script: no framework, no third-party request,
@@ -168,11 +177,11 @@ banner behind a branded header, and a totem icon in the browser tab and on phone
 **Description:** As a player, I want a link from an item's page to the same item on Wowhead, so I can see its model, icon and comments there.
 
 **Acceptance Criteria:**
-- [ ] Read `docs/spec.md` section 14.5 first. `scripts/extract-spec-data.mjs` also extracts its JSON block to `src/data/wowhead.json`; the existing test that the data files equal the spec covers it
-- [ ] Tests: every key in `wowhead.json` is an item name in `items.json`; every value is a positive integer; no two items share an ID; Holy Shroud is 2721 and Tidebringer's Claw is 280605; Invoker's Mantle has none
-- [ ] Item page, in "Where it comes from": when the item has an ID, a link **"View <item name> on Wowhead"** to `https://www.wowhead.com/forever/item=<ID>` (opens in a new tab, `rel="noopener noreferrer"`), followed by one sentence: Wowhead's numbers can differ from Tidecaller's, which come from the Forever beta client, build 1.60.1. No link when there is no ID. The internal-link checks still pass (external `https://` links are allowed)
-- [ ] About page sources list: Wowhead's Forever database, used only for the "View on Wowhead" links; its stats are not used
-- [ ] Smoke: `/items/holy-shroud` links to `https://www.wowhead.com/forever/item=2721`; `/items/invokers-mantle` has no Wowhead link
+- [ ] Read `docs/spec.md` section 14.5 first. `scripts/extract-spec-data.mjs` also extracts its JSON block (heading "### 14.5 Wowhead item IDs and icons (links and art only)") to `src/data/wowhead.json`, an object of item name to `{ "id", "icon" }`; the existing test that the data files equal the spec covers it
+- [ ] Tests: every key in `wowhead.json` is an item name in `items.json`; every `id` is a positive integer; no two items share an ID; Holy Shroud is `{ id: 2721, icon: "inv_helmet_16" }`, Tidebringer's Claw's id is 280605, Battle Healer's Cloak's is 19529; Red Wool Cloak has no entry; there are 141 entries
+- [ ] Item page, in "Where it comes from": when the item has an entry, a link **"View <item name> on Wowhead"** to `https://www.wowhead.com/forever/item=<id>` (opens in a new tab, `rel="noopener noreferrer"`), followed by one sentence: Wowhead's numbers can differ from Tidecaller's, which come from the Forever beta client, build 1.60.1. No link when there is no entry. The internal-link checks still pass (external `https://` links are allowed)
+- [ ] About page sources list: Wowhead's Forever database, used only for the "View on Wowhead" links and the item icons; its stats are not used
+- [ ] Smoke: `/items/holy-shroud` links to `https://www.wowhead.com/forever/item=2721`; `/items/red-wool-cloak` has no Wowhead link
 - [ ] `npm run typecheck`, `npm test`, `npm run build` and `npm run smoke` pass
 
 ### US-008: Say what the boxes beside Water Shield and the talent are
@@ -185,18 +194,32 @@ banner behind a branded header, and a totem icon in the browser tab and on phone
 - [ ] Smoke (beside the regen panel checks): the visible text "Crit %" sits within 60 px of `#crit`; "Kept %" within 60 px of `#pct`
 - [ ] `npm run typecheck`, `npm test`, `npm run build`, `npm run smoke` and `npm run reference` (26 of 26) pass
 
+### US-009: Item icons beside item names
+**Description:** As a player, I want each item's in-game icon beside its name in the tables and popups, so I can recognise gear at a glance the way I do in game.
+
+**Acceptance Criteria:**
+- [ ] Read the "Item icons" research finding first. Use the files already in `public/icons/`; do not download, add, rename or delete any
+- [ ] A helper (for example `itemIconSrc(item)` beside the Wowhead data) returns `/icons/<icon>.jpg` from `wowhead.json`, or `/icons/inv_misc_questionmark.jpg` when the item has no entry. Test: for all 155 items the file it names exists in `public/icons/`
+- [ ] One small component renders the icon: `<img>` with `width` and `height` set (20 px in tables), `alt=""` (the name beside it is the label), `loading="lazy"`, `decoding="async"`, a 1 px dark border and slightly rounded corners, vertically centred with the text, a small gap before the name, never wrapping apart from the name
+- [ ] The icon shows before the item name in: the calculator's best set table and its candidate (other items) table on `/`; every table on `/items`; the `/bis` table; the slot pages' tables; and at 40 px in the popup (left of the name, the way WoW tooltips show it). The item page shows a 56 px icon beside its `h1` (the `h1` text is unchanged). An item the visitor added themself on `/` (a custom item) shows no icon
+- [ ] Layout holds at 400 px (no page-level sideways scroll; the sticky Item column on `/items` keeps icon and name together) and in both themes
+- [ ] Smoke (beside each page's existing checks): on `/items` the Holy Shroud row's icon has `src` ending `/icons/inv_helmet_16.jpg` and loads (`naturalWidth` 56 after scrolling it into view); Red Wool Cloak's row shows the question-mark icon; on `/` the best set's Head row shows an icon that loads; `/items/holy-shroud` shows the 56 px icon beside the `h1`; the Holy Shroud popup shows its icon
+- [ ] `npm run typecheck`, `npm test`, `npm run build`, `npm run smoke` and `npm run reference` (26 of 26) pass
+
 ## Non-Goals
 
 - No item level or armor value columns (not in the spec; Open Questions).
-- No Wowhead tooltip script and no Wowhead data on the site beyond the link.
+- No Wowhead tooltip script, nothing loaded from Wowhead at run time, and no Wowhead data on the
+  site beyond the link and the icon.
 - No sorting or filtering on the items page (it stays a content page).
 - No animation in the header art.
 - No change to any game number, to the model, or to the item list.
 
 ## Open Questions
 
-- **Item level and armor (AC):** Tom asked for both columns. The spec has neither. He can send the
-  values from his client, or rule that Wowhead's Forever pages may be the source for these two
-  fields; either way they go into the spec first, then a small follow-up adds the columns.
-- **The 44 items with no Wowhead ID:** the lookup hit the session's search limit. A later turn can
-  fill most of them into spec section 14.5; the link then appears with no code change.
+- **Item level and armor (AC):** Tom asked for both columns. The spec has neither. Wowhead's Forever
+  tooltip data has both (Holy Shroud: item level 32, 40 armor). If Tom rules that Wowhead may be the
+  source for these two fields, they go into the spec first, then a small follow-up adds the columns.
+- **The 14 items with no Wowhead ID:** Wowhead lists them but its search could not be reached. Adding
+  an ID and icon to spec section 14.5 (and running `scripts/wowhead-icons.mjs`) gives the item its
+  link and icon with no code change.

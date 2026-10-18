@@ -181,8 +181,8 @@ export function ItemsIndex() {
                   <th><abbr title="Spell Power">SP</abbr></th>
                   <th><abbr title="Healing">Heal</abbr></th>
                   <th><abbr title="Mana per 5 seconds">MP5</abbr></th>
-                  <th>Equip</th>
-                  <th>Where</th>
+                  <th className="src">Equip</th>
+                  <th className="src">Where</th>
                   <th><abbr title="Dungeon boss score in points of Healing">Score</abbr></th>
                 </tr>
               </thead>

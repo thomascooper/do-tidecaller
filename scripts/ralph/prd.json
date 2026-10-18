@@ -1,7 +1,7 @@
 {
   "project": "Tidecaller",
   "branchName": "claude/sweet-hypatia-53cceb",
-  "description": "Run 003: a universal header with original storm-and-totems art, an original totem icon set, social cards with the art, item facts (equip, note, short source), the items page with stat columns, Tidecaller's own WoW-style item popups on every item link, View on Wowhead links from spec section 14.5, and visible labels on the Water Shield and talent boxes. FULL PRD: tasks/ralph-runs/003-header-icon-item-popups/prd.md (read its Design inputs and Research findings; the design files are in tasks/ralph-runs/003-header-icon-item-popups/design/). The run 001 PRD (tasks/ralph-runs/001-tidecaller-v1/prd.md) still describes the architecture; spec section 14 holds the owner's rulings. Item level and armor value are NOT in the spec: do not add them.",
+  "description": "Run 003: a universal header with original storm-and-totems art, an original totem icon set, social cards with the art, item facts (equip, note, short source), the items page with stat columns, Tidecaller's own WoW-style item popups on every item link, View on Wowhead links from spec section 14.5, visible labels on the Water Shield and talent boxes, and Wowhead item icons beside item names (US-009, added after the first five stories; the icon files are already in public/icons/, never download or change them). FULL PRD: tasks/ralph-runs/003-header-icon-item-popups/prd.md (read its Design inputs and Research findings; the design files are in tasks/ralph-runs/003-header-icon-item-popups/design/). The run 001 PRD (tasks/ralph-runs/001-tidecaller-v1/prd.md) still describes the architecture; spec section 14 holds the owner's rulings. Item level and armor value are NOT in the spec: do not add them.",
   "userStories": [
     {
       "id": "US-001",
@@ -104,11 +104,11 @@
       "title": "View on Wowhead from each item page",
       "description": "As a player, I want a link from an item's page to the same item on Wowhead, so I can see its model, icon and comments there.",
       "acceptanceCriteria": [
-        "Read `docs/spec.md` section 14.5 first. `scripts/extract-spec-data.mjs` also extracts its JSON block to `src/data/wowhead.json`; the existing test that the data files equal the spec covers it",
-        "Tests: every key in `wowhead.json` is an item name in `items.json`; every value is a positive integer; no two items share an ID; Holy Shroud is 2721 and Tidebringer's Claw is 280605; Invoker's Mantle has none",
-        "Item page, in \"Where it comes from\": when the item has an ID, a link **\"View <item name> on Wowhead\"** to `https://www.wowhead.com/forever/item=<ID>` (opens in a new tab, `rel=\"noopener noreferrer\"`), followed by one sentence: Wowhead's numbers can differ from Tidecaller's, which come from the Forever beta client, build 1.60.1. No link when there is no ID. The internal-link checks still pass (external `https://` links are allowed)",
-        "About page sources list: Wowhead's Forever database, used only for the \"View on Wowhead\" links; its stats are not used",
-        "Smoke: `/items/holy-shroud` links to `https://www.wowhead.com/forever/item=2721`; `/items/invokers-mantle` has no Wowhead link",
+        "Read `docs/spec.md` section 14.5 first. `scripts/extract-spec-data.mjs` also extracts its JSON block (heading \"### 14.5 Wowhead item IDs and icons (links and art only)\") to `src/data/wowhead.json`, an object of item name to `{ \"id\", \"icon\" }`; the existing test that the data files equal the spec covers it",
+        "Tests: every key in `wowhead.json` is an item name in `items.json`; every `id` is a positive integer; no two items share an ID; Holy Shroud is `{ id: 2721, icon: \"inv_helmet_16\" }`, Tidebringer's Claw's id is 280605, Battle Healer's Cloak's is 19529; Red Wool Cloak has no entry; there are 141 entries",
+        "Item page, in \"Where it comes from\": when the item has an entry, a link **\"View <item name> on Wowhead\"** to `https://www.wowhead.com/forever/item=<id>` (opens in a new tab, `rel=\"noopener noreferrer\"`), followed by one sentence: Wowhead's numbers can differ from Tidecaller's, which come from the Forever beta client, build 1.60.1. No link when there is no entry. The internal-link checks still pass (external `https://` links are allowed)",
+        "About page sources list: Wowhead's Forever database, used only for the \"View on Wowhead\" links and the item icons; its stats are not used",
+        "Smoke: `/items/holy-shroud` links to `https://www.wowhead.com/forever/item=2721`; `/items/red-wool-cloak` has no Wowhead link",
         "`npm run typecheck`, `npm test`, `npm run build` and `npm run smoke` pass"
       ],
       "priority": 7,
@@ -127,6 +127,23 @@
         "`npm run typecheck`, `npm test`, `npm run build`, `npm run smoke` and `npm run reference` (26 of 26) pass"
       ],
       "priority": 8,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-009",
+      "title": "Item icons beside item names",
+      "description": "As a player, I want each item's in-game icon beside its name in the tables and popups, so I can recognise gear at a glance the way I do in game.",
+      "acceptanceCriteria": [
+        "Read the \"Item icons\" research finding first. Use the files already in `public/icons/`; do not download, add, rename or delete any",
+        "A helper (for example `itemIconSrc(item)` beside the Wowhead data) returns `/icons/<icon>.jpg` from `wowhead.json`, or `/icons/inv_misc_questionmark.jpg` when the item has no entry. Test: for all 155 items the file it names exists in `public/icons/`",
+        "One small component renders the icon: `<img>` with `width` and `height` set (20 px in tables), `alt=\"\"` (the name beside it is the label), `loading=\"lazy\"`, `decoding=\"async\"`, a 1 px dark border and slightly rounded corners, vertically centred with the text, a small gap before the name, never wrapping apart from the name",
+        "The icon shows before the item name in: the calculator's best set table and its candidate (other items) table on `/`; every table on `/items`; the `/bis` table; the slot pages' tables; and at 40 px in the popup (left of the name, the way WoW tooltips show it). The item page shows a 56 px icon beside its `h1` (the `h1` text is unchanged). An item the visitor added themself on `/` (a custom item) shows no icon",
+        "Layout holds at 400 px (no page-level sideways scroll; the sticky Item column on `/items` keeps icon and name together) and in both themes",
+        "Smoke (beside each page's existing checks): on `/items` the Holy Shroud row's icon has `src` ending `/icons/inv_helmet_16.jpg` and loads (`naturalWidth` 56 after scrolling it into view); Red Wool Cloak's row shows the question-mark icon; on `/` the best set's Head row shows an icon that loads; `/items/holy-shroud` shows the 56 px icon beside the `h1`; the Holy Shroud popup shows its icon",
+        "`npm run typecheck`, `npm test`, `npm run build`, `npm run smoke` and `npm run reference` (26 of 26) pass"
+      ],
+      "priority": 9,
       "passes": false,
       "notes": ""
     }
