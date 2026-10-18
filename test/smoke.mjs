@@ -111,6 +111,41 @@ try {
     await page.locator("#w").fill("40");
     eq(await page.locator("#wOut").innerText(), "40%", "run-out label");
   });
+  await check("regen: turning the talent off disables the percent input and changes the Spirit weight", async () => {
+    const before = await page.locator('.bar[data-stat="spi"] .v').innerText();
+    eq(await page.locator("#pct").isDisabled(), false, "pct enabled");
+    await page.locator("#talent").setChecked(false, { force: true });
+    eq(await page.locator("#pct").isDisabled(), true, "pct disabled");
+    const after = await page.locator('.bar[data-stat="spi"] .v').innerText();
+    if (before === after) throw new Error(`Spirit weight stayed ${before}`);
+    await page.locator("#talent").setChecked(true, { force: true });
+    eq(await page.locator("#pct").isDisabled(), false, "pct enabled again");
+    await page.locator("#ws").setChecked(false, { force: true });
+    eq(await page.locator("#crit").isDisabled(), true, "crit disabled");
+    await page.locator("#ws").setChecked(true, { force: true });
+  });
+  await check("calibration: levels-off fit, restore defaults, casting share", async () => {
+    await page.locator("#spiritbox summary").click();
+    eq(await page.locator("#sA").isDisabled(), true, "cap disabled on the line shape");
+    await page.locator("#calCurve").click();
+    eq(await page.locator("#smodel").inputValue(), "curve", "shape");
+    eq(await page.locator("#sA").inputValue(), "115.1", "cap");
+    eq(await page.locator("#sB").inputValue(), "2750", "B");
+    eq(await page.locator("#sbase").isDisabled(), true, "line base disabled on the curve shape");
+    await page.locator("#calReset").click();
+    eq(await page.locator("#smodel").inputValue(), "line", "shape after restore");
+    eq(await page.locator("#sbase").inputValue(), "30.5", "base");
+    eq(await page.locator("#sper").inputValue(), "0.626", "rate");
+    eq(await page.locator("#calShare").isDisabled(), true, "share button off without sheet figures");
+    await page.locator("#c3n").fill("87");
+    await page.locator("#c3c").fill("53.5");
+    eq(await page.locator("#calShare").isDisabled(), false, "share button on");
+    await page.locator("#talent").setChecked(false, { force: true });
+    await page.locator("#calShare").click();
+    eq(await page.locator("#pct").inputValue(), "56", "percent");
+    eq(await page.locator("#talent").isChecked(), true, "talent on");
+    eq(await page.locator("#icon").isChecked(), false, "icon off");
+  });
   await check("no console errors", async () => eq(errors.join(" | "), "", "console errors"));
   await ctx.close();
 

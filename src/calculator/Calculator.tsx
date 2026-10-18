@@ -1,6 +1,7 @@
 import { activePreset, compute, PRESETS } from "../lib/model";
 import type { PresetId } from "../lib/model";
 import { NumField } from "./NumField";
+import { RegenPanel } from "./RegenPanel";
 import { StatWeights } from "./StatWeights";
 import { useCalculator } from "./useCalculator";
 
@@ -64,6 +65,8 @@ export function Calculator() {
               </p>
             </div>
           </section>
+
+          <RegenPanel state={state} set={set} />
 
           <section className="box" aria-labelledby="h-fight">
             <h2 id="h-fight">Fight</h2>
