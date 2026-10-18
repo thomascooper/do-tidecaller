@@ -81,6 +81,32 @@ try {
     await page.waitForFunction(() => document.querySelector("#t").value === "300");
     eq(await pressed("Raid boss"), "true", "Raid boss");
   });
+  await check("stat weights: verdict, bars and readouts at defaults", async () => {
+    await page.getByRole("button", { name: "Dungeon boss" }).click();
+    eq((await page.locator("#verdict").innerText()).replace(/\s+/g, " "), "MP5 > Intellect > Healing = Spell Power > Spirit", "verdict");
+    eq(await page.locator('.bar[data-stat="mp5"] .v').innerText(), "2.75", "MP5 bar");
+    eq(await page.locator(".bar").count(), 5, "bars without Stamina");
+    eq(await page.locator("#wnote").innerText(), "1 Healing = 1.00", "note");
+    eq(await page.locator(".kv").count(), 7, "readouts");
+    eq(await page.locator(".kv", { hasText: "Mana for the fight" }).locator(".v").innerText(), "3,750 19.0 casts", "mana for the fight");
+  });
+  await check("stat weights: Raid boss MP5 reads 4.49", async () => {
+    await page.getByRole("button", { name: "Raid boss" }).click();
+    eq(await page.locator('.bar[data-stat="mp5"] .v').innerText(), "4.49", "MP5 bar");
+    await page.getByRole("button", { name: "Dungeon boss" }).click();
+  });
+  await check("stat weights: Stamina bar appears only with a Stamina weight", async () => {
+    await page.locator("#stw").fill("5");
+    eq(await page.locator('.bar[data-stat="sta"]').count(), 1, "stamina bar");
+    eq((await page.locator("#verdict").innerText()).startsWith("Stamina"), true, "Stamina first");
+    await page.locator("#stw").fill("0");
+  });
+  await check("stat weights: with the run-out slider at 0 every mana stat is 0.00", async () => {
+    await page.locator("#w").fill("0");
+    for (const k of ["mp5", "int", "spi"]) eq(await page.locator(`.bar[data-stat="${k}"] .v`).innerText(), "0.00", k);
+    eq(await page.locator("#regime").innerText(), "You set mana as never running out, so only Healing and Spell Power count.", "regime");
+    await page.locator("#w").fill("100");
+  });
   await check("sliders show live percentages", async () => {
     await page.locator("#w").fill("40");
     eq(await page.locator("#wOut").innerText(), "40%", "run-out label");

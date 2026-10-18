@@ -1,6 +1,7 @@
-import { activePreset, PRESETS } from "../lib/model";
+import { activePreset, compute, PRESETS } from "../lib/model";
 import type { PresetId } from "../lib/model";
 import { NumField } from "./NumField";
+import { StatWeights } from "./StatWeights";
 import { useCalculator } from "./useCalculator";
 
 const PRESET_IDS = Object.keys(PRESETS) as PresetId[];
@@ -9,6 +10,7 @@ export function Calculator() {
   const { state, dispatch } = useCalculator();
   const set = (patch: Partial<typeof state>) => dispatch({ type: "set", patch });
   const active = activePreset(state);
+  const r = compute(state);
 
   return (
     <div className="wrap">
@@ -88,7 +90,9 @@ export function Calculator() {
           </section>
         </div>
 
-        <div className="out"></div>
+        <div className="out">
+          <StatWeights state={state} r={r} />
+        </div>
       </div>
     </div>
   );
