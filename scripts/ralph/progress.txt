@@ -120,3 +120,14 @@ Started: Sun Oct 18 07:32:52 UTC 2026
   - The dbnote count is `ITEMS.length` (155, the built-in list), as the reference's `DB.length`; user items do not change it.
   - US-011 adds the candidate table inside the same `.box.items` section: extend `BestSet.tsx` or render beside it in `Calculator`.
 ---
+
+## 2026-10-18 - US-011
+- Every-candidate table (grouped by slot, Top and Yours tags, muted dots for zero stats, dimmed unusable rows with their reason, empty message) and the "Add your own item" form with Remove.
+- Files: src/calculator/{Candidates.tsx,BestSet.tsx,Calculator.tsx}, test/smoke.mjs
+- Checks: typecheck ok, npm test 67 passed, npm run build ok, npm run smoke 22 passed.
+- Broke on purpose: made Remove a no-op (the add/persist/remove smoke check failed). Restored.
+- **Learnings for future iterations:**
+  - `Candidates` renders inside `BestSet` as `children`, so both tables share one `.box.items` section as in the reference. It takes `items` (all), `userItems` and `setUserItems` (dispatches `{type: "items"}`).
+  - New user items get id `"u" + Date.now()`, slug from `slugify(name)`, armor "-", and are saved by the existing save effect; no extra storage code was needed.
+  - Candidate item names are plain text for now; US-017 links database items to their item pages (user items stay plain).
+---
