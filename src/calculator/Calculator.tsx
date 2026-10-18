@@ -1,6 +1,7 @@
 import { ITEMS } from "../data";
-import { activePreset, compute, effectivePool, PRESETS } from "../lib/model";
+import { activePreset, calcPool, compute, effectivePool, PRESETS } from "../lib/model";
 import type { PresetId } from "../lib/model";
+import { fmt } from "../lib/format";
 import { BestSet } from "./BestSet";
 import { Candidates } from "./Candidates";
 import { Footer } from "./Footer";
@@ -20,6 +21,7 @@ export function Calculator() {
   const active = activePreset(state);
   const allItems = [...ITEMS, ...items];
   const r = compute(state);
+  const pool = calcPool(state);
 
   return (
     <div className="wrap">
@@ -63,14 +65,33 @@ export function Calculator() {
                 value={state.level}
                 onCommit={(v) => set({ level: Math.max(1, Math.min(60, Math.round(v))) })}
               />
+              <NumField id="int" label="Intellect, total from your character sheet" min={0} step={1} value={state.int} onCommit={(v) => set({ int: Math.max(0, Math.round(v)) })} />
               <NumField id="pool" label="Max mana" min={0} step={1} value={effectivePool(state)} onCommit={(v) => set({ pool: v, manaAuto: false })} />
+              <p className="hint field full" id="poolWork" aria-live="polite">
+                {state.manaAuto ? (
+                  <>
+                    Base {fmt(pool.base, 0)} at level {state.level}
+                    {pool.estimated && <span className="tag warn">Check</span>}
+                    {pool.estimated && " (estimated)"} + {fmt(pool.fromInt, 0)} from {fmt(state.int, 0)} Intellect = {fmt(pool.total, 0)}.
+                  </>
+                ) : (
+                  <>
+                    Using your number.{" "}
+                    <button type="button" className="chip" onClick={() => set({ manaAuto: true })}>
+                      Use calculated ({fmt(pool.total, 0)})
+                    </button>
+                  </>
+                )}
+              </p>
               <NumField id="heal" label="Healing power" min={0} step={1} value={state.heal} onCommit={(v) => set({ heal: v })} />
               <NumField id="spi" label="Spirit" min={0} step={1} value={state.spi} onCommit={(v) => set({ spi: v })} />
               <NumField id="g" label="Gear MP5" min={0} step={1} value={state.g} onCommit={(v) => set({ g: v })} />
               <NumField id="buff" label="Buff MP5" min={0} step={1} value={state.buff} onCommit={(v) => set({ buff: v })} />
               <p className="hint field full">
                 Healing power is Healing plus Spell Power. Spell Damage on healing items does not heal. Buff MP5
-                covers Mana Spring, Blessing of Wisdom and similar.
+                covers Mana Spring, Blessing of Wisdom and similar. Max mana is base mana for your level (Classic's
+                documented Shaman values, not yet confirmed in Forever) plus Intellect: the first 20 points give 1 mana
+                each, then 15.
               </p>
             </div>
           </section>
