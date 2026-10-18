@@ -3,7 +3,7 @@ import { itemPath } from "../lib/slug";
 import { fmt } from "../lib/format";
 import { PRESETS, sourceNote } from "../lib/model";
 import type { BestSet } from "../lib/model";
-import { gainText, PROFESSION_LIST, setDiff, siteSet } from "../lib/bis";
+import { gainText, PROFESSION_LIST, setDiff, siteSet, siteWeights } from "../lib/bis";
 import { SLOTS } from "../data";
 import { slotPath } from "../lib/slotPage";
 import type { Slot } from "../lib/types";
@@ -26,7 +26,7 @@ export function topPicks(): string[] {
 function SetTable({ id, set }: { id: string; set: BestSet }) {
   return (
     <div className="scroll">
-      <table id={id}>
+      <table id={id} className="bestset">
         <thead>
           <tr>
             <th>Slot</th>
@@ -65,7 +65,7 @@ export function Bis() {
   const alliance = siteSet({ faction: "Alliance" });
   const fights = (["trash", "raid"] as const).map((id) => ({
     label: PRESETS[id].label,
-    changes: setDiff(horde, siteSet({ fight: id })),
+    changes: setDiff(horde, siteSet({ fight: id }), siteWeights(id)),
   }));
   const crafters = PROFESSION_LIST.map((prof) => ({ prof, changes: setDiff(horde, siteSet({ prof })) }));
 

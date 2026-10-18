@@ -1,7 +1,7 @@
 import { ITEMS } from "../data";
 import { fmt } from "./format";
-import { bestSet, compute, DEFAULTS, PRESETS } from "./model";
-import type { BestSet, PresetId, State } from "./model";
+import { bestSet, compute, DEFAULTS, PRESETS, score } from "./model";
+import type { BestSet, PresetId, State, Weights } from "./model";
 import type { Profession } from "./types";
 
 /** The settings every build-time page uses: the calculator defaults, level 30, the Dungeon boss fight. */
@@ -10,6 +10,11 @@ export const SITE_STATE: State = { ...DEFAULTS, t: PRESETS.boss.t, f: PRESETS.bo
 export const PROFESSION_LIST: Profession[] = ["Tailoring", "Leatherworking", "Enchanting", "Engineering"];
 
 /** The best set from the built-in items for the site's default character under a fight and faction. */
+/** The stat weights for the site's default character under a fight. */
+export function siteWeights(fight: PresetId = "boss"): Weights {
+  return compute({ ...SITE_STATE, t: PRESETS[fight].t, f: PRESETS[fight].f }).weights;
+}
+
 export function siteSet(opts: { fight?: PresetId; faction?: State["faction"]; prof?: Profession } = {}): BestSet {
   const fight = PRESETS[opts.fight ?? "boss"];
   const state: State = {
@@ -29,14 +34,19 @@ export interface PickChange {
   gain: number;
 }
 
-/** The slots whose picks differ between two sets, with the score change. Ring and trinket pairs compare as sets. */
-export function setDiff(base: BestSet, other: BestSet): PickChange[] {
+/**
+ * The slots whose picks differ between two sets, with the score change. Ring and trinket pairs compare as sets.
+ * Pass `weights` when the two sets were picked under different weights (another fight): both sides are then
+ * scored with those weights, so the change is what the swap gains in that fight. Without it the two sets'
+ * own scores are compared, which is right when the weights are the same (a profession ticked).
+ */
+export function setDiff(base: BestSet, other: BestSet, weights?: Weights): PickChange[] {
   const bySlot = (set: BestSet) => {
     const m = new Map<string, { names: string[]; score: number }>();
     for (const r of set.rows) {
       const g = m.get(r.slot) ?? { names: [], score: 0 };
       if (r.item) g.names.push(r.item.name);
-      g.score += r.score;
+      g.score += weights && r.item ? score(r.item, weights) : r.score;
       m.set(r.slot, g);
     }
     return m;

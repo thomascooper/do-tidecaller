@@ -354,6 +354,8 @@ function SpiritChart() {
 export function SpiritRegenGuide() {
   const worstLine = Math.max(...READINGS.filter(([s]) => s !== EXCLUDED_SPIRIT).map(([s, m]) => Math.abs(DEFAULTS.sbase + DEFAULTS.sper * s - m)));
   const worstCurve = Math.max(...READINGS.map(([s, m]) => Math.abs(DEFAULTS.sA - DEFAULTS.sB / s - m)));
+  // "Within X" is an upper bound, so round up: 0.55 reads 0.6 and 2.62 reads 2.7, the spec's own figures.
+  const upTo1 = (x: number) => fmt(Math.ceil(x * 10 - 1e-9) / 10, 1);
   return (
     <div className="wrap page wide">
       <Breadcrumbs trail={SPIRIT_REGEN_TRAIL} />
@@ -406,7 +408,7 @@ export function SpiritRegenGuide() {
                 <td className="score">{m}</td>
                 <td className="score">{fmt(DEFAULTS.sbase + DEFAULTS.sper * s, 1)}</td>
                 <td className="score">{fmt(DEFAULTS.sA - DEFAULTS.sB / s, 1)}</td>
-                <td>{s === EXCLUDED_SPIRIT ? "Excluded: no bonus Spirit, sits off the line" : ""}</td>
+                <td className="src">{s === EXCLUDED_SPIRIT ? "Excluded: no bonus Spirit, sits off the line" : ""}</td>
               </tr>
             ))}
           </tbody>
@@ -416,7 +418,7 @@ export function SpiritRegenGuide() {
       <h2>The fitted line</h2>
       <p>
         From 48 to 90 Spirit the readings are a straight line: <strong>30.5 + 0.626 × Spirit</strong> MP5, within{" "}
-        {fmt(worstLine, 1)} MP5 of every reading. A worst miss under 1 fits, because the tooltip rounds.
+        {upTo1(worstLine)} MP5 of every reading. A worst miss under 1 fits, because the tooltip rounds.
       </p>
       <p>
         The 43 reading has no bonus Spirit and sits off the line, so it is left out of the default fit.
@@ -425,7 +427,7 @@ export function SpiritRegenGuide() {
       <h2>The levels-off alternative</h2>
       <p>
         Tidecaller also offers a curve that levels off, <strong>114.0 − 2666 ÷ Spirit</strong>, fitted to all twelve
-        readings. It fits worse: its worst miss is {fmt(worstCurve, 1)} MP5. The calibration box in the calculator
+        readings. It fits worse: its worst miss is {upTo1(worstCurve)} MP5. The calibration box in the calculator
         fits both shapes to readings you type in, so you can check them against your own character.
       </p>
 

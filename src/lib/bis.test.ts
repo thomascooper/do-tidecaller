@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { setDiff, siteSet } from "./bis";
+import { setDiff, siteSet, siteWeights } from "./bis";
 
 describe("site best sets", () => {
   it("Horde at the Dungeon boss matches spec section 7", () => {
@@ -26,6 +26,14 @@ describe("site best sets", () => {
     const d = setDiff(siteSet(), siteSet({ fight: "raid" }));
     expect(d.map((c) => c.slot)).not.toContain("Trinket");
     expect(d.map((c) => c.slot)).toContain("Finger");
+  });
+
+  it("a swap for another fight gains in that fight, scored with that fight's weights", () => {
+    for (const fight of ["trash", "raid"] as const) {
+      const d = setDiff(siteSet(), siteSet({ fight }), siteWeights(fight));
+      expect(d.length).toBeGreaterThan(0);
+      for (const c of d) expect(c.gain, `${fight} ${c.slot}`).toBeGreaterThan(0);
+    }
   });
 
   it("an unchanged set has no diff", () => {

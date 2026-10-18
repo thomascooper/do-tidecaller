@@ -262,3 +262,23 @@ Started: Sun Oct 18 07:32:52 UTC 2026
 - **Learnings for future iterations:**
   - The URL-prefix HTML tag verification needs a head change, which is a code change; the guide tells the owner to ask a session, or use the DNS route.
 ---
+
+## 2026-10-18 - Delivering session, after the last iteration
+- Verified on the final commit: typecheck, 2,603 unit tests, 46 smoke checks, and a new
+  differential check (`npm run reference`, test/reference-diff.mjs) that loads the spec's own
+  reference implementation beside the built calculator in 27 scenarios and compares every number on
+  screen: 27 of 27 identical. It was seen failing on a broken Intellect formula.
+- Fixed in this session, outside the PRD, after a visual review of the built pages:
+  - `body{margin:0}`: the browser's 8px default left a frame around every page.
+  - The `/bis` set tables now share the calculator's best-set styling (`table.bestset`): item
+    names were right-aligned in the number font, because those rules were tied to `#bestTable`.
+  - The Spirit guide said the line fits "within 0.5 MP5" (worst miss 0.55) and the curve's worst
+    miss was "2.6" (2.62). "Within" is an upper bound, so both now round up, giving the spec's own
+    0.6 and 2.7.
+  - "Does it change for other fights?" showed negative gains (Bloodmage Mantle -5.9) because it
+    compared a Dungeon boss score with a Raid boss score. `setDiff` now takes the fight's weights
+    and scores both sides with them, so a swap shows what it gains in that fight (+0.7). A test
+    asserts every fight swap gains, and fails on the old diff.
+- Also: ralph.sh no longer trusts a bare mention of the completion tag (run 1 stopped after two
+  stories because an iteration wrote it while saying it did not apply); it checks prd.json.
+---
