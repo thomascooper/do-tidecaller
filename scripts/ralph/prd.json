@@ -1,0 +1,360 @@
+{
+  "project": "Tidecaller",
+  "branchName": "claude/sweet-hypatia-53cceb",
+  "description": "Tidecaller v1: the Resto Shaman stat-weight calculator from docs/spec.md, and a prerendered, search-friendly site around it (best in slot, slot pages, item pages, guides, sitemap) for https://tidecaller.drunkenoath.com. FULL PRD: tasks/ralph-runs/001-tidecaller-v1/prd.md. Before your story, read its 'Research findings', 'Architecture' and 'Pages, titles and descriptions' sections; they are binding. Build spec and ALL game data: docs/spec.md (THE ONE RULE: no game facts from anywhere else). The reference implementation in docs/spec.md section 13 is the behaviour to match.",
+  "userStories": [
+    {
+      "id": "US-001",
+      "title": "Scaffold the Vite + React + TypeScript project",
+      "description": "As the builder, I need a working project skeleton so every later story has the same",
+      "acceptanceCriteria": [
+        "`package.json` (name `tidecaller`, private, `\"type\": \"module\"`, `engines.node` \">=22\") with React 19, Vite, `@vitejs/plugin-react`, TypeScript, Vitest; scripts `dev`, `build` (for now `vite build`), `preview`, `typecheck` (`tsc --noEmit`), `test` (`vitest run`). A committed `package-lock.json`",
+        "`tsconfig.json` strict, `jsx: react-jsx`, `resolveJsonModule`, Vite client types; `vite.config.ts` with the React plugin and Vitest config (environment node)",
+        "`index.html` template with `<html lang=\"en\">`, `<!--app-head-->` inside `<head>`, `<div id=\"root\"><!--app-html--></div>`, and the module script `/src/entry-client.tsx`; for now `entry-client.tsx` client-renders an `<h1>Tidecaller Stat Weights</h1>` placeholder",
+        "`src/styles/` holds the reference's CSS ported verbatim in look: the `:root` tokens, the dark tokens under `@media (prefers-color-scheme: dark)` guarded by `:root:not([data-theme=\"light\"])` and again under `:root[data-theme=\"dark\"]`, an explicit `body` background, and the reference's component classes. Imported from `entry-client.tsx`",
+        "Fonts self-hosted with `@fontsource/marcellus-sc`, `@fontsource/ibm-plex-sans` (400, 500, 600) and `@fontsource/ibm-plex-mono` (400, 500); the `--f-display`, `--f-body`, `--f-mono` tokens name them. `grep -r \"fonts.googleapis\" dist` finds nothing after a build",
+        "`.gitignore` covers `node_modules`, `node_modules/`, `dist`, `dist-ssr`, `.vercel`, `*.log`, `coverage`, `test-results`",
+        "One trivial Vitest test exists so `npm test` runs",
+        "`npm run typecheck`, `npm test` and `npm run build` pass"
+      ],
+      "priority": 1,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-002",
+      "title": "Data files and typed data module",
+      "description": "As the builder, I need the spec's spells and items as typed data with stable ids and slugs, so the model and every page read one source.",
+      "acceptanceCriteria": [
+        "`scripts/extract-spec-data.mjs` reads `docs/spec.md`, takes the JSON code block under \"## 11. Data: spells.json\" and the one under \"## 12. Data: items.json (155 items)\", and writes them pretty-printed to `src/data/spells.json` and `src/data/items.json` byte-for-byte equal in content to the spec (same order, same fields). Run it and commit its output; it is kept so a spec update can be re-extracted",
+        "`src/lib/types.ts`: `Slot` (the 15 slot strings exactly as in the data), `Faction` (\"Both\" | \"Horde\" | \"Alliance\"), `Profession` (\"Tailoring\" | \"Leatherworking\" | \"Enchanting\" | \"Engineering\"), `Item` (all data fields, `other`/`prof` optional, plus `id`, `slug`, `custom?`), `Spell` (with optional `warn`)",
+        "`src/lib/slug.ts`: `slugify(name)` per the PRD's slug rule; `SLOT_SLUGS` mapping each slot to its slug and back",
+        "`src/data/index.ts` exports `SPELLS`, `ITEMS` (with `id` \"db0\"..\"db154\" in data order and `slug`), `SLOTS` (the 15 slots in the spec's order: Head, Neck, Shoulder, Back, Chest, Wrist, Hands, Waist, Legs, Feet, Finger, Trinket, Main hand, Off hand, Two-hand), `PROFESSIONS`, `itemBySlug`",
+        "`src/data/data.test.ts`: 12 spells, unique spell ids; 155 items; the per-slot counts, faction counts and profession counts from the PRD's research findings; every slot, faction, profession and armor value is a known one; names unique; slugs unique; `Scorn's Icy Choker` slugifies to `scorns-icy-choker`; the extractor's output equals the spec's JSON (parse both, deep-equal)",
+        "`npm run typecheck`, `npm test` and `npm run build` pass"
+      ],
+      "priority": 2,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-003",
+      "title": "The model: regen, spells and stat weights",
+      "description": "As a player, I want stat weights that follow the spec's model exactly, so the numbers can be trusted.",
+      "acceptanceCriteria": [
+        "`src/lib/model.ts` (pure functions, no DOM, no storage) exports: `State` type with every key from spec section 4; `DEFAULTS` exactly as section 4 / the reference (`smodel` \"line\", `sA` 114.0, `sB` 2666, `sbase` 30.5, `sper` 0.626, `spell` \"hw5\", `edits` {}, `faction` \"Horde\", `maxlvl` 0, `profs` {}, `showAll` false, `ws` true, `crit` 5, and the rest); `PRESETS` (trash 90/70, boss 120/90, raid 300/100, with labels \"Trash pull\", \"Dungeon boss\", \"Raid boss\") and `activePreset(state)`; `spellOf(state, id)` applying edits; `spiritRegen`, `spiritMarginal`, `shareKept(L, T)`, `spellCalc(state, spell)`, `compute(state)` returning the same fields as the reference's `compute()` (m, k, sFull, fullMP5, castMP5, avgMP5, E, sp, c, X, wf, spiInMP5, intInMP5, weights, raw, wsBack, intWS, casts); `knownSpells(level)` and `effectiveSpell(state)` (the fallback rule); `priorityLine(weights)` returning the ordered keys and the operators",
+        "`src/lib/format.ts`: `fmt(x, d)` exactly as the reference (`–` for non-finite, `toLocaleString(\"en-US\")` with fixed decimals)",
+        "`src/lib/model.test.ts` pins spec section 7 at Horde, level 30, no professions, for all three presets, to 3 decimals: k 0.650 / 0.550 / 0.500; E 3543.5 / 3749.8 / 5747.5 (1 decimal); h 526.929; X 3.123 / 3.935 / 6.418; MP5 2.186 / 2.754 / 4.492; Int 1.854 / 1.754 / 1.156; Spirit 0.889 / 0.948 / 1.406. Also Water Shield 2.223 mana per cast and 18.96 casts at Dungeon boss",
+        "Tests: `priorityLine` at Dungeon boss defaults reads \"MP5 > Intellect > Healing = Spell Power > Spirit\"; with `stw` 5 Stamina appears first (5 is above MP5's 2.754); a NaN X (a rank whose share is 0, e.g. hw1 at level 60) is reported so the UI can say \"No healing power bonus on this rank\"; `shareKept(30, 24)` 1, `shareKept(30, 6)` 0.65, `shareKept(30, 1)` 0.4, `shareKept(60, 1)` 0; `imphw` shortens hw5's heal per second but not lhw2's; `effectiveSpell` at level 20 with spell hw5 falls back to hw4; an edit `{base: 400}` on hw5 changes h",
+        "`npm run typecheck`, `npm test` and `npm run build` pass"
+      ],
+      "priority": 3,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-004",
+      "title": "The model: item scores, usability and the best set",
+      "description": "As a player, I want each item scored and the best usable set picked exactly as the spec says, so I know what to wear.",
+      "acceptanceCriteria": [
+        "`model.ts` adds `score(item, W)` (non-finite weights count as 0), `maxLevel(state)`, `whyNot(item, state)` returning \"\" or \"Horde only\" / \"Alliance only\", \"Needs level N\", \"Needs <Profession>\" checked in that order, `sourceNote(item)` (the reference's srcCell text without HTML), `bestSet(items, W, state)` returning rows in the spec's fill order (two Finger rows, two Trinket rows, then Two-hand or Main hand + Off hand), each with slot, item or null, score; plus `total`, `useTwo`, `pair`, `two`, the best two-hander's name and the weapon note text; never the same item name twice; and `candidates(items, W, state)` grouped by slot in `SLOTS` order, usable first sorted by score, each with its reason, with the top usable one flagged",
+        "`model.test.ts` pins the spec section 7 best set at Dungeon boss defaults to 2 places: Holy Shroud 38.69, Scorn's Icy Choker 17.52, Death Speaker Mantle 25.29, Darkspear Raider's Cloak 17.83, Death Speaker Robes 39.29, Spidertank Oilrag 17.26, Truefaith Gloves 20.26, Blightleaf Rope 24.54, Violet Sorcerer's Leggings 39.54, Acidic Walkers 22.83, Philanthropist's Ring 18.77, Sea Giant's Toe Ring 18.00, Roogug's Severed Head 5.69, Worgenbane Talisman 5.51, Tidebringer's Claw 86.00, Forcestone Buckler 25.59; main hand + off hand 111.59 beats Wind Spirit Staff 85.17; total 422.62",
+        "Tests: with faction Alliance no Horde-only item is picked and Forcestone Buckler's reason is \"Horde only\"; with `maxlvl` 25 no item above req 25 is picked; a Tailoring item is unusable (\"Needs Tailoring\") until `profs.Tailoring` is true; a user item named like an existing ring cannot fill both Finger rows",
+        "`npm run typecheck`, `npm test` and `npm run build` pass"
+      ],
+      "priority": 4,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-005",
+      "title": "Calibration fits, storage and share encoding",
+      "description": "As a player, I want my settings and items kept between visits and my Spirit readings fitted, and the code for both must never break the page.",
+      "acceptanceCriteria": [
+        "`model.ts` adds `lsq(xs, ys)` -> {a, b, worst} (as the reference), `parseReadings(text)` (lines starting with `#` ignored, split on whitespace, comma or semicolon, Spirit > 0 and both finite), `fitSpirit(readings)` -> line {base, rate, worst} and curve {cap, B, worst} (curve fitted on x = 1/Spirit, B = minus the slope) or null when fewer than two distinct Spirit values, `castingShare(N, C, g)` -> (C - g) / (N - g) or null when N - g <= 0, and `DEFAULT_READINGS` (the textarea text from the reference, 43 commented out)",
+        "Tests (see research findings): the eleven default readings fit line base 30.5 and rate 0.626 (to 0.001) with worst miss under 0.6, and curve cap 115.1 and B 2750 (rounded as the apply buttons round) with worst miss 2.4 (1 decimal); all twelve readings fit curve cap 113.95 and B 2666; one reading returns null",
+        "`src/lib/storage.ts`: KEY `tidecaller-weights-v1`; `loadSaved(storage)` merges saved `state` over `DEFAULTS`, applies the section 8 migration (sbase 37.5 and sper 0.5, or 32.4 and 0.6, or sA 105.5 and sB 2223, or sA 107.9 and sB 2347 -> reset smodel, sA, sB, sbase, sper to defaults), keeps only items whose id starts with `u` and gives them `faction` Both, `req` 0, `source` \"Added by you\", `custom` true; `save(storage, state, items)`. Every read and write is wrapped in try/catch and works when storage is undefined or throws",
+        "`src/lib/share.ts`: `encodeShare(state, items)` -> base64url of JSON `{v:1, s: keys that differ from DEFAULTS, i: user items}`; `decodeShare(text)` -> `{state, items}` merged over DEFAULTS, or null for anything malformed; drops unknown keys and non-matching types; if the encoded string would exceed 6000 characters, items are left out and a flag says so",
+        "Tests for each migration case, a throwing storage (load returns defaults, save does not throw), garbage JSON in storage, share round trip with edits, profs and an item, and malformed share strings returning null",
+        "`npm run typecheck`, `npm test` and `npm run build` pass"
+      ],
+      "priority": 5,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-006",
+      "title": "Calculator shell, state, Character and Fight panels, and the smoke harness",
+      "description": "As a player, I want to enter my character and fight and have my settings remembered.",
+      "acceptanceCriteria": [
+        "`src/calculator/useCalculator.ts`: one reducer holding `state` and user `items`, actions for every input in the spec; starts from DEFAULTS; after mount loads saved state (`loadSaved(window.localStorage)` in try/catch) and saves on every change after that",
+        "Number inputs keep a draft string while focused and commit only finite numbers (research findings); level rounds and clamps to 1..60",
+        "`Calculator.tsx` renders the reference's top header (h1 \"Tidecaller Stat Weights\", the subtitle text from the reference, the three preset chips with `aria-pressed` true only when t and f match that preset), the two-column `.main` grid (rail and outputs, single column under 900px), the Character panel (Level, Max mana, Healing power, Spirit, Gear MP5, Buff MP5 and the hint) and the Fight panel (Length, Stamina weight, the two sliders 0 to 100 step 5 with live percentages and their hints), with the reference's labels and copy",
+        "`scripts/serve-dist.mjs` and `test/smoke.mjs` as described in Architecture; `playwright-core` as a devDependency; the browser comes from `CHROMIUM_PATH` (default `/opt/pw-browsers/chromium-1194/chrome-linux/chrome`); `npm run smoke` builds and runs it, prints each check and a pass count, exits non-zero on any failure, and kills its server",
+        "Smoke checks on `/`: h1 text; Dungeon boss chip pressed by default; clicking Raid boss sets the Length input to 300 and presses that chip; after reload Raid boss is still pressed (persistence); at 400px wide `document.documentElement.scrollWidth <= innerWidth`; with `colorScheme: 'dark'` the body background is the dark token (rgb(14, 20, 19)); no console errors",
+        "`npm run typecheck`, `npm test`, `npm run build` and `npm run smoke` pass"
+      ],
+      "priority": 6,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-007",
+      "title": "Stat weights panel",
+      "description": "As a player, I want to see the stat priority and every weight at a glance.",
+      "acceptanceCriteria": [
+        "The Stat weights box matches the reference: \"1 Healing = 1.00\" note, the verdict line from `priorityLine` with styled operators (or \"No healing power bonus on this rank\"), the regime text (the three reference sentences), the bars (labels, sub-labels, mana/heal/stam colours, value to 2 places; Stamina row only when its weight is above 0) and the seven readouts (Next 1 Spirit, 1 Intellect, Regen not casting, Regen casting, Average regen, Mana for the fight with casts, Water Shield)",
+        "Smoke: at defaults the verdict reads \"MP5 > Intellect > Healing = Spell Power > Spirit\" and the MP5 bar reads 2.75; after Raid boss MP5 reads 4.49; with the run-out-of-mana slider at 0 every mana stat reads 0.00 and the regime text says mana never runs out; Mana for the fight reads 3,750 at defaults",
+        "`npm run typecheck`, `npm test`, `npm run build` and `npm run smoke` pass"
+      ],
+      "priority": 7,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-008",
+      "title": "Regen panel and Spirit calibration",
+      "description": "As a player, I want to set my regen talents and calibrate the Spirit formula to my own tooltip readings.",
+      "acceptanceCriteria": [
+        "The \"Regen while casting\" box matches the reference: the talent row (switch, percent input with datalist 17/33/50, disabled while the talent is off), Polished Driftwood Icon, Improved Healing Wave 5/5, and Water Shield (switch, crit input disabled while off), with the reference's copy; switches are real checkboxes with accessible names and visible focus",
+        "The \"Spirit formula and calibration\" details: shape select (line or curve; the inactive shape's inputs disabled), cap, B, line base and rate inputs, the hint, the readings textarea prefilled with `DEFAULT_READINGS`, the casting-share inputs, the results line (each fit's parameters and worst miss, the rounding note, the casting share when entered), and the four buttons with the reference's enable rules and rounding (base 0.1, rate 0.001, cap 0.1, B integer, share percent integer; the share button turns the talent on and the icon off); \"Restore defaults\" resets smodel, sA, sB, sbase, sper",
+        "Smoke: turning the talent off disables the percent input and changes the Spirit weight; \"Use levels-off fit\" with the default readings selects the curve shape with cap 115.1 and B 2750; \"Restore defaults\" returns to the line with 30.5 and 0.626; entering 87 and 53.5 as sheet regen (gear MP5 10) enables the share button and applying it sets the percent to 56",
+        "`npm run typecheck`, `npm test`, `npm run build` and `npm run smoke` pass"
+      ],
+      "priority": 8,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-009",
+      "title": "Heal rank table and rank editor",
+      "description": "As a player, I want to compare every heal rank and pick the one I spam, and fix a rank's numbers when the beta changes them.",
+      "acceptanceCriteria": [
+        "\"The heal you spam\" box matches the reference: one row per known rank (\"Healing Wave N\" / \"Lesser HW N\"), columns Rank, Learned, Gear bonus kept, Heals, Mana, Heal per mana, Heal per sec; tags \"Best per mana\", \"Check\" (warn and not edited) and \"Edited\"; the selected row highlighted with `aria-selected`; rows selectable by click and by Enter or Space with focus kept on the row; the table scrolls inside its own container",
+        "The edit details: average base heal, mana cost and base cast time for the selected rank (positive values only), its source text (\"Healing Wave 5: Beta tooltip, 328 to 383\"), and \"Restore this rank\"",
+        "Smoke: seven rows at level 30; selecting Lesser HW 2 changes the selection and the MP5 weight; editing Healing Wave 4's base removes its Check tag and shows Edited, and Restore brings Check back; level 20 makes the selection fall back to Healing Wave 4",
+        "`npm run typecheck`, `npm test`, `npm run build` and `npm run smoke` pass"
+      ],
+      "priority": 9,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-010",
+      "title": "Best set panel and filters",
+      "description": "As a player, I want the best usable set for my faction, level and professions, with its total.",
+      "acceptanceCriteria": [
+        "The \"Best set\" box matches the reference: the database note text, the filters (Faction select, \"Usable up to level\" input showing the effective level, the professions fieldset with four checkboxes, \"Show gear you can't use\"), and the best set table (Slot, Pick, Score to 1 place, Where it comes from) with the Total row and the weapon note; \"Nothing usable listed\" for an empty slot",
+        "Smoke: at defaults the total reads 422.6, Main hand is Tidebringer's Claw and Off hand is Forcestone Buckler, and the weapon note says main hand and off hand beat the best two-hander by 26.4; switching to Alliance replaces Forcestone Buckler; ticking Tailoring changes at least one pick to a Tailoring item or the test records in progress.txt which picks it changes (measure, then pin what you measured)",
+        "`npm run typecheck`, `npm test`, `npm run build` and `npm run smoke` pass"
+      ],
+      "priority": 10,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-011",
+      "title": "Every candidate table and adding your own items",
+      "description": "As a player, I want to see every item per slot with its score, and add items the list does not have.",
+      "acceptanceCriteria": [
+        "\"Every candidate\" matches the reference: grouped by slot, usable items first by score with the top one tagged \"Top\", zero stats shown as a muted dot, columns Item, Req, Healing, Spell Pwr, MP5, Int, Spirit, Stam, Score, Where it comes from, and the remove column; with \"Show gear you can't use\" on, unusable items are dimmed with their reason; \"Nothing usable with these filters.\" when empty",
+        "The \"Add your own item\" form (name required, slot select of the 15 slots, the six stats) adds an item with the PRD's user-item defaults, tagged \"Yours\", with a Remove button; added items are saved and come back after reload",
+        "Smoke: adding \"Smoke Test Mace\", Main hand, Healing 500 makes it the Main hand pick in the best set and it shows \"Yours\"; it survives reload; Remove takes it out of both tables; with Show gear you can't use on, Giantstone Medallion shows \"Alliance only\"",
+        "`npm run typecheck`, `npm test`, `npm run build` and `npm run smoke` pass"
+      ],
+      "priority": 11,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-012",
+      "title": "Calculator footer, accessibility and phone pass",
+      "description": "As a player on a phone or using a keyboard, I want the whole calculator usable, with the method explained.",
+      "acceptanceCriteria": [
+        "The calculator's explanation block from the reference's `.foot` (\"How it works\", \"Downranking\", \"Unconfirmed\"), word for word",
+        "Every input, select and textarea on `/` has an accessible name; focus is visible on every control (`:focus-visible` outline); tables use tabular numbers; motion respects `prefers-reduced-motion`",
+        "At 400px: no horizontal page scroll with every details panel open and \"Show gear you can't use\" on; wide tables scroll inside `.scroll`; the add-item form wraps as the reference's media query does",
+        "Smoke: the accessible-name check over every form control; the 400px check with all panels open; a keyboard check that Tab reaches the preset chips and Enter on a rank row selects it",
+        "`npm run typecheck`, `npm test`, `npm run build` and `npm run smoke` pass"
+      ],
+      "priority": 12,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-013",
+      "title": "Prerender the calculator page with full head tags",
+      "description": "As a search engine, I want the calculator page's content and metadata in the HTML before any script runs.",
+      "acceptanceCriteria": [
+        "`src/site.ts`, `src/seo/` (head tag builder and JSON-LD builders with `<` escaped), `src/routes.tsx` (the route table with `/` only for now), `src/entry-server.tsx` (`routes`, `renderDocument(route, template)`), `scripts/prerender.mjs`, and the three-step `build` script, all as in the Architecture section",
+        "`/` gets the PRD's title, a description of 70 to 160 characters, canonical `https://tidecaller.drunkenoath.com/`, Open Graph and Twitter tags (og:image may point at `/og/home.png`, which US-020 creates; until then the SEO test allows a missing og image file but not a missing tag), theme-color for light and dark, and WebSite + WebApplication JSON-LD (name, url, applicationCategory \"UtilitiesApplication\", operatingSystem \"Any\", isAccessibleForFree true, description)",
+        "Below the calculator and before its explanation block, a short static \"What Tidecaller does\" section (two or three short paragraphs drawn from spec sections 1 and 9, no new game facts) for searchers who land on `/`",
+        "`entry-client.tsx` hydrates `/` with `hydrateRoot` in production and client-renders in dev; saved state still loads after mount",
+        "`test/seo.test.ts` (Vitest) renders every route through `renderDocument` with a stub template and checks, for every route: title present, unique and at most 65 characters; description unique and 70 to 160 characters; exactly one h1; canonical absolute on SITE_URL matching the route; og:url equals canonical; og:title, og:description, og:image (absolute), og:type, twitter:card present; every JSON-LD block parses; `<html lang=\"en\">`. Use a small HTML parser devDependency (for example `node-html-parser`)",
+        "Smoke: the raw HTML of `/` fetched without a browser contains the h1, \"Tidebringer's Claw\" and \"MP5 > Intellect\"; in Chromium the page hydrates with no console errors or hydration warnings and Raid boss still works; the calculator's JavaScript referenced by `dist/index.html` totals under 120 KB gzipped (the smoke measures it with zlib and prints the number)",
+        "`npm run typecheck`, `npm test`, `npm run build` and `npm run smoke` pass"
+      ],
+      "priority": 13,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-014",
+      "title": "Site layout, About page, 404 and vercel.json",
+      "description": "As a visitor, I want consistent navigation on every page and a helpful About page, and the host must serve clean URLs.",
+      "acceptanceCriteria": [
+        "`Layout`, `SiteHeader`, `SiteFooter` and `Breadcrumbs` (with a BreadcrumbList JSON-LD builder) as described in \"Pages, titles and descriptions\"; the calculator page gets the site header and footer too, above and below its own header",
+        "The header nav and footer links are built from the route table and show only sections whose route exists, so they grow as later stories add `/bis`, `/items` and `/guides` (a link to a missing route fails the SEO test)",
+        "Routes declare `hydrate`; the prerender removes the module script and modulepreload links from pages with `hydrate: false`, keeping the stylesheet. The SEO test asserts no `<script type=\"module\"` on any `hydrate: false` page",
+        "`/about`: what Tidecaller is and who it is for, how the numbers are made (one paragraph, link to the calculator), the data version and DATA_UPDATED, the unconfirmed list from spec section 3, every source from spec section 10 as a link, a privacy note (no accounts, settings stay in the visitor's browser), and the trademark disclaimer",
+        "A 404 page rendered to `dist/404.html` with `<meta name=\"robots\" content=\"noindex\">`, h1 \"Page not found\" and links to the main sections; the route table marks it `noindex`",
+        "`vercel.json`: `cleanUrls` true, `trailingSlash` false, `framework` \"vite\", `buildCommand` \"npm run build\", `outputDirectory` \"dist\"; headers: `/assets/(.*)` Cache-Control `public, max-age=31536000, immutable`; every path `X-Content-Type-Options: nosniff`, `Referrer-Policy: strict-origin-when-cross-origin`, `Permissions-Policy: camera=(), microphone=(), geolocation=()`, and `Content-Security-Policy: frame-ancestors 'self' https://drunkenoath.com https://*.drunkenoath.com` (so a future Drunken Oath hub may embed the module)",
+        "The SEO test also checks: every internal `<a href>` on every page resolves to a route path or a file in `public/` (ignoring `#` and `?` parts); every non-home indexable page has a BreadcrumbList whose last item is its canonical URL",
+        "Smoke: `/about` returns 200 with its h1 and no module script; `/about/` redirects 308 to `/about`; `/no-such-page` returns 404 with \"Page not found\"; the header nav is present on `/` and `/about`",
+        "`npm run typecheck`, `npm test`, `npm run build` and `npm run smoke` pass"
+      ],
+      "priority": 14,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-015",
+      "title": "The best-in-slot page",
+      "description": "As a Resto Shaman searching for \"resto shaman bis wow forever\", I want one page with the best set for my faction and why.",
+      "acceptanceCriteria": [
+        "`/bis` with the PRD's title and h1, an intro naming the settings used (level 30, the default character and the Dungeon boss fight, linking to the calculator to change them), the Horde best set and the Alliance best set (Slot, Item linking to its item page once US-017 exists, otherwise plain text; Score; Where it comes from), each with its total and weapon note, computed at build time with `bestSet`",
+        "A \"Does it change for other fights?\" section listing the slots whose pick differs under Trash pull and under Raid boss (Horde), or saying none do",
+        "A \"Crafter upgrades\" section: for each of the four professions, the slots whose Horde pick changes when that profession is ticked, with the new item and the score gained, or \"No change\"",
+        "No links to slot, item or guide pages yet: those pages do not exist until US-016 to US-019, and the SEO test fails on a link to a missing route. Each later story adds its links here",
+        "The calculator's \"What Tidecaller does\" section links to `/bis`",
+        "Article and BreadcrumbList JSON-LD; the description template names the top picks",
+        "Smoke: `/bis` shows Holy Shroud 38.7 and a Horde total of 422.6 and contains no module script",
+        "`npm run typecheck`, `npm test`, `npm run build` and `npm run smoke` pass"
+      ],
+      "priority": 15,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-016",
+      "title": "A page for every slot",
+      "description": "As a player searching for the best item in one slot, I want a page ranking every candidate for it.",
+      "acceptanceCriteria": [
+        "15 routes `/bis/<slot>` generated from `SLOTS`, each with the PRD's title and h1, a one-sentence answer up top (the top Horde pick and the top Alliance pick with their Dungeon boss scores), and a table of every item in the slot sorted by Dungeon boss score: Item, Req, Healing, Spell Pwr, MP5, Int, Spirit, Stam, Trash, Dungeon, Raid, Faction, Where it comes from (with the profession note and the other note)",
+        "Finger and Trinket pages say you wear two; Main hand, Off hand and Two-hand pages state the two-hander against main hand + off hand comparison with its numbers and link to each other",
+        "Previous and next slot links, a link back to `/bis`, Article and BreadcrumbList JSON-LD (Tidecaller, Best in slot, the slot)",
+        "`/bis` gains a \"Best in slot by slot\" section linking all 15 slot pages, and each slot name in its best set tables links to its slot page",
+        "Smoke: `/bis/head` lists Holy Shroud first with Dungeon 38.7; `/bis/main-hand` names Tidebringer's Claw; every slot page returns 200",
+        "`npm run typecheck`, `npm test`, `npm run build` and `npm run smoke` pass"
+      ],
+      "priority": 16,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-017",
+      "title": "Item pages, the item index, and links from the calculator",
+      "description": "As a player who searched an item's name, I want a page saying what it is worth to a Resto Shaman and where it comes from.",
+      "acceptanceCriteria": [
+        "155 routes `/items/<slug>` with the PRD's title and h1; a lead sentence (\"{Name} is a {armor} {slot} item {for level N and up | with no level requirement}. At Tidecaller's default settings it is worth {score} points of Healing to a level 30 Resto Shaman, {rank} of {n} {slot} items.\"; omit the armor word when armor is \"-\"); a stats table of the non-zero stats and the `other` note; a \"By fight\" table (Trash pull, Dungeon boss, Raid boss: score and rank in slot); \"Who can use it\" (faction in words, level, profession rule from spec section 7); \"Where it comes from\" (source); \"In this slot\" (the top item and the gap when this is not it, and up to three items ranked just above and below, as links); a link to `/bis/<slot>` and to the calculator; BreadcrumbList JSON-LD (Tidecaller, Items, the item). No Product markup",
+        "`/items`: every item grouped by slot in `SLOTS` order with its Dungeon boss score, faction and a link; BreadcrumbList JSON-LD",
+        "The best set and every-candidate tables in the calculator, `/bis` and the slot pages link each database item's name to its item page (user items stay plain text)",
+        "The description template names the slot, the score and the rank and stays within 70 to 160 characters for all 155 items (the SEO test proves it)",
+        "Smoke: `/items/holy-shroud` shows 38.7 and \"1 of 11 Head items\"; `/items/forcestone-buckler` says it is Horde only; following the Holy Shroud link from `/bis` lands on its page",
+        "`npm run typecheck`, `npm test`, `npm run build` and `npm run smoke` pass"
+      ],
+      "priority": 17,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-018",
+      "title": "Guides index, stat weights guide and downranking guide",
+      "description": "As a player searching how stat weights or downranking work in Forever, I want a clear explanation with real numbers.",
+      "acceptanceCriteria": [
+        "`/guides` lists the three guides with one-line summaries (the spirit regen guide's link appears in US-019 when its page exists; until then list only the two built here)",
+        "`/guides/stat-weights`: what a weight means (points of Healing), the mana-bound idea and why it is scaled by how often mana runs out (spec section 5's \"Why it works\"), a table of the three presets' weights computed with `compute` (MP5, Intellect, Spirit, with the priority line for each), what moves the weights (fight length, time inside the five-second rule, the regen talent, Water Shield and crit, Stamina as a personal choice), and a link to the calculator. Facts and formulas only from spec sections 3 and 5",
+        "`/guides/downranking`: the rule `clamp(1 - (L - 17 - T) * 0.05, 0, 1)` explained in words with a worked example, coefficient = base cast time / 3.5 and that Improved Healing Wave shortens the cast but not the coefficient, and a table of every rank in `spells.json` (learned level, average base heal, mana, cast, coefficient, gear bonus kept at levels 20, 25 and 30, heal and heal per mana at level 30 with 200 healing for the ranks known by 30), with unconfirmed values tagged \"Check\"",
+        "Article and BreadcrumbList JSON-LD on both guides; the BiS page and the calculator's \"What Tidecaller does\" section link to the guides that exist",
+        "Smoke: both guides return 200 with their h1, contain no module script, and the downranking table shows 65% gear bonus kept for Healing Wave 2 at level 30",
+        "`npm run typecheck`, `npm test`, `npm run build` and `npm run smoke` pass"
+      ],
+      "priority": 18,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-019",
+      "title": "Spirit and mana regen guide with a chart",
+      "description": "As a player searching how Spirit works in Forever, I want the measured data, the formula and what it means for my gear.",
+      "acceptanceCriteria": [
+        "`/guides/spirit-regen`: continuous regen and the five-second rule, gear MP5 working while casting, Mindfulness 17/33/50%, the Polished Driftwood Icon (8%, assumed to add), Intellect not changing Spirit regen and giving 15 mana per point, the twelve measured readings as a table, the fitted line `30.5 + 0.626 x Spirit` and the levels-off alternative with their worst misses, why the 43 reading is excluded, and what is unconfirmed. Facts only from spec sections 3 and 6",
+        "An inline SVG chart, rendered at build time: the readings as points (43 drawn hollow and labelled \"excluded\"), the fitted line and the curve, labelled axes (Spirit, MP5 while not casting), a `<title>` and `<desc>`, readable in light and dark, scaling to 400px wide; the table stays as the accessible version of the data",
+        "`/guides` and the other pages that list guides now link it; Article and BreadcrumbList JSON-LD",
+        "Smoke: the page returns 200, contains the SVG with 12 points, and has no horizontal scroll at 400px",
+        "`npm run typecheck`, `npm test`, `npm run build` and `npm run smoke` pass"
+      ],
+      "priority": 19,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-020",
+      "title": "Sitemap, robots, icons, manifest and social images",
+      "description": "As a search engine or a chat app showing a link preview, I want the files that let me find and present every page.",
+      "acceptanceCriteria": [
+        "The prerender writes `dist/sitemap.xml` (every indexable route, absolute URLs, `<lastmod>` DATA_UPDATED) and `dist/robots.txt` (`User-agent: *`, `Allow: /`, `Sitemap: https://tidecaller.drunkenoath.com/sitemap.xml`)",
+        "`public/favicon.svg` (a simple wave mark in the accent colour that reads at 16px), `public/apple-touch-icon.png` (180), `public/icon-192.png`, `public/icon-512.png`, `public/site.webmanifest` (name, short_name \"Tidecaller\", icons, theme and background colours, start_url \"/\", display \"standalone\"); every page links them",
+        "`scripts/og.mjs` (run by hand, not by the build) renders 1200x630 cards with playwright-core in the site's look (wordmark, page-type line, \"Resto Shaman, WoW Forever\") and writes `public/og/home.png`, `bis.png`, `items.png`, `guides.png`, `about.png`, and also renders the PNG icons above; commit the PNGs; total under 600 KB. Each route's `og:image` points at the matching card",
+        "SEO test: the sitemap lists exactly the indexable routes (the 404 is not in it), robots names the sitemap, and every `og:image` file exists in `public/`",
+        "Smoke: `/sitemap.xml` and `/robots.txt` return 200; `/favicon.svg` returns 200",
+        "`npm run typecheck`, `npm test`, `npm run build` and `npm run smoke` pass"
+      ],
+      "priority": 20,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-021",
+      "title": "Share a link to your settings",
+      "description": "As a player, I want to send my exact setup to a guildmate, so they see the same weights and set.",
+      "acceptanceCriteria": [
+        "A \"Copy link to these settings\" button in the calculator header area copies `SITE_URL/?s=<encodeShare(...)>` (on the current origin when not on production) to the clipboard, with a visible \"Link copied\" confirmation and a fallback text field when the clipboard is unavailable",
+        "On load, a valid `?s=` value is applied after hydration in place of saved state, saved, and then removed from the address bar with `history.replaceState`; an invalid one is ignored. The canonical stays `/`",
+        "Smoke: set Raid boss and tick Tailoring, read the copied link (from the clipboard or the fallback field), open it in a fresh browser context, and see Raid boss pressed, Tailoring ticked, and no `?s=` left in the URL",
+        "`npm run typecheck`, `npm test`, `npm run build` and `npm run smoke` pass"
+      ],
+      "priority": 21,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-022",
+      "title": "Analytics hook and continuous integration",
+      "description": "As the owner, I want to know how many people use the site, and every push checked automatically.",
+      "acceptanceCriteria": [
+        "The prerender adds `<script defer src=\"/_vercel/insights/script.js\"></script>` (Vercel Web Analytics, cookieless) to every page only when `process.env.VERCEL_ENV === \"production\"` at build time; local and preview builds do not have it. A Vitest test covers both cases",
+        "The About page's privacy note says anonymous page views are counted without cookies",
+        "`.github/workflows/ci.yml`: on push and pull request, Node 22, `npm ci`, `npm run typecheck`, `npm test`, `npm run build`",
+        "`npm run typecheck`, `npm test` and `npm run build` pass"
+      ],
+      "priority": 22,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-023",
+      "title": "README and search console guide",
+      "description": "As the owner or a future session, I want the repo to explain itself and the steps to get the site into search engines.",
+      "acceptanceCriteria": [
+        "`README.md`: what Tidecaller is, the live URL, every npm script, the architecture in a few lines (static prerender, route table, which page hydrates), how data is updated (edit `docs/spec.md`, run `scripts/extract-spec-data.mjs`, rerun tests), how to regenerate the social images, and the Ralph workflow pointer",
+        "`docs/search-console.md`: the owner's steps to add the site to Google Search Console (a Domain property verified with a TXT record at GoDaddy, or a URL-prefix property for the subdomain), submit `sitemap.xml`, request indexing of `/` and `/bis`, import into Bing Webmaster Tools, and turn on Vercel Web Analytics for the project, each as exact clicks; plus what to watch in the first month",
+        "No em dashes in either file",
+        "`npm run typecheck`, `npm test` and `npm run build` pass"
+      ],
+      "priority": 23,
+      "passes": false,
+      "notes": ""
+    }
+  ]
+}
