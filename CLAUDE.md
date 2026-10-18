@@ -14,7 +14,9 @@ Read this before touching anything. It is short on purpose; the detail lives in 
   database, no auth. Settings live in the visitor's `localStorage` only. Supabase is available to
   the owner but is NOT used; adding a backend is a decision for Tom, not a story.
 - **Hosting:** Vercel, team **EQL Max** (slug `eqlmax`, id `team_z1kHOzNr7i2HB3jymo2afG9i`), project
-  **`tidecaller`**. Production builds from `main`. Every pushed branch gets its own preview URL,
+  **`tidecaller`** (`prj_8Peg0ACBUH8nKC0SmJVSCF8fuLrH`). Production builds from `main`. The custom
+  domain is attached and verified; it serves once the GoDaddy CNAME `tidecaller` points at the
+  value Vercel recommends (read it with `get_domain_config`, it is project specific). Every pushed branch gets its own preview URL,
   behind Vercel Authentication (Tom sees it signed in to Vercel; a session reads it with
   `mcp__Vercel__web_fetch_vercel_url`, because the agent proxy blocks `*.vercel.app`).
 - **Source of truth:** `docs/spec.md`. Sections 3 to 9 are the behaviour, section 7 holds the test
