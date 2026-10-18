@@ -1,3 +1,16 @@
 # Ralph Progress Log
 Started: Sun Oct 18 07:32:52 UTC 2026
 ---
+## Codebase Patterns
+- Styles: the reference CSS is ported verbatim to `src/styles/app.css` (extracted from spec section 13's `<style>` block); fonts come from `@fontsource/*` imports in `src/entry-client.tsx`.
+- Vitest only picks up `src/**/*.test.ts(x)` (see `vite.config.ts`).
+
+
+## 2026-10-18 - US-001
+- Scaffolded Vite + React 19 + TypeScript + Vitest; index.html template with app-head/app-html markers; placeholder h1 client render; reference CSS and self-hosted fonts.
+- Files: package.json, package-lock.json, tsconfig.json, vite.config.ts, index.html, src/entry-client.tsx, src/styles/app.css, src/lib/scaffold.test.ts
+- Checks: typecheck ok, npm test 1 passed, npm run build ok, `grep -r fonts.googleapis dist` finds nothing. No smoke yet (US-006).
+- **Learnings for future iterations:**
+  - .gitignore already had every required entry.
+  - The spec's CSS has no @font-face; `--f-*` tokens resolve to the fontsource family names.
+---

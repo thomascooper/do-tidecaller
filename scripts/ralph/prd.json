@@ -18,7 +18,7 @@
         "`npm run typecheck`, `npm test` and `npm run build` pass"
       ],
       "priority": 1,
-      "passes": false,
+      "passes": true,
       "notes": ""
     },
     {
@@ -43,7 +43,7 @@
       "description": "As a player, I want stat weights that follow the spec's model exactly, so the numbers can be trusted.",
       "acceptanceCriteria": [
         "`src/lib/model.ts` (pure functions, no DOM, no storage) exports: `State` type with every key from spec section 4; `DEFAULTS` exactly as section 4 / the reference (`smodel` \"line\", `sA` 114.0, `sB` 2666, `sbase` 30.5, `sper` 0.626, `spell` \"hw5\", `edits` {}, `faction` \"Horde\", `maxlvl` 0, `profs` {}, `showAll` false, `ws` true, `crit` 5, and the rest); `PRESETS` (trash 90/70, boss 120/90, raid 300/100, with labels \"Trash pull\", \"Dungeon boss\", \"Raid boss\") and `activePreset(state)`; `spellOf(state, id)` applying edits; `spiritRegen`, `spiritMarginal`, `shareKept(L, T)`, `spellCalc(state, spell)`, `compute(state)` returning the same fields as the reference's `compute()` (m, k, sFull, fullMP5, castMP5, avgMP5, E, sp, c, X, wf, spiInMP5, intInMP5, weights, raw, wsBack, intWS, casts); `knownSpells(level)` and `effectiveSpell(state)` (the fallback rule); `priorityLine(weights)` returning the ordered keys and the operators",
-        "`src/lib/format.ts`: `fmt(x, d)` exactly as the reference (`–` for non-finite, `toLocaleString(\"en-US\")` with fixed decimals)",
+        "`src/lib/format.ts`: `fmt(x, d)` exactly as the reference (`\u2013` for non-finite, `toLocaleString(\"en-US\")` with fixed decimals)",
         "`src/lib/model.test.ts` pins spec section 7 at Horde, level 30, no professions, for all three presets, to 3 decimals: k 0.650 / 0.550 / 0.500; E 3543.5 / 3749.8 / 5747.5 (1 decimal); h 526.929; X 3.123 / 3.935 / 6.418; MP5 2.186 / 2.754 / 4.492; Int 1.854 / 1.754 / 1.156; Spirit 0.889 / 0.948 / 1.406. Also Water Shield 2.223 mana per cast and 18.96 casts at Dungeon boss",
         "Tests: `priorityLine` at Dungeon boss defaults reads \"MP5 > Intellect > Healing = Spell Power > Spirit\"; with `stw` 5 Stamina appears first (5 is above MP5's 2.754); a NaN X (a rank whose share is 0, e.g. hw1 at level 60) is reported so the UI can say \"No healing power bonus on this rank\"; `shareKept(30, 24)` 1, `shareKept(30, 6)` 0.65, `shareKept(30, 1)` 0.4, `shareKept(60, 1)` 0; `imphw` shortens hw5's heal per second but not lhw2's; `effectiveSpell` at level 20 with spell hw5 falls back to hw4; an edit `{base: 400}` on hw5 changes h",
         "`npm run typecheck`, `npm test` and `npm run build` pass"
