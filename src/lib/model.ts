@@ -373,3 +373,89 @@ export function candidates(items: Item[], W: Weights, state: UsableState & Pick<
   }
   return groups;
 }
+
+// Spirit calibration
+
+export interface LsqFit {
+  a: number;
+  b: number;
+  worst: number;
+}
+
+export function lsq(xs: number[], ys: number[]): LsqFit {
+  const n = xs.length;
+  let mx = 0;
+  let my = 0;
+  for (let i = 0; i < n; i++) {
+    mx += xs[i];
+    my += ys[i];
+  }
+  mx /= n;
+  my /= n;
+  let sxx = 0;
+  let sxy = 0;
+  for (let i = 0; i < n; i++) {
+    sxx += (xs[i] - mx) * (xs[i] - mx);
+    sxy += (xs[i] - mx) * (ys[i] - my);
+  }
+  const b = sxy / sxx;
+  const a = my - b * mx;
+  let worst = 0;
+  for (let i = 0; i < n; i++) worst = Math.max(worst, Math.abs(ys[i] - (a + b * xs[i])));
+  return { a, b, worst };
+}
+
+export interface Reading {
+  spirit: number;
+  mp5: number;
+}
+
+export function parseReadings(text: string): Reading[] {
+  const out: Reading[] = [];
+  for (const line of text.split(/\n/)) {
+    const trimmed = line.trim();
+    if (trimmed.startsWith("#")) continue;
+    const p = trimmed.split(/[\s,;]+/);
+    const spirit = parseFloat(p[0]);
+    const mp5 = parseFloat(p[1]);
+    if (Number.isFinite(spirit) && Number.isFinite(mp5) && spirit > 0) out.push({ spirit, mp5 });
+  }
+  return out;
+}
+
+export interface SpiritFit {
+  line: { base: number; rate: number; worst: number };
+  curve: { cap: number; B: number; worst: number };
+}
+
+/** Unrounded fits; the apply buttons round (base 0.1, rate 0.001, cap 0.1, B integer). */
+export function fitSpirit(readings: Reading[]): SpiritFit | null {
+  const S = readings.map((r) => r.spirit);
+  const M = readings.map((r) => r.mp5);
+  if (new Set(S).size < 2) return null;
+  const line = lsq(S, M);
+  const curve = lsq(S.map((s) => 1 / s), M);
+  return {
+    line: { base: line.a, rate: line.b, worst: line.worst },
+    curve: { cap: curve.a, B: -curve.b, worst: curve.worst },
+  };
+}
+
+/** Share of Spirit regen kept while casting, from the sheet's two regen figures. */
+export function castingShare(N: number, C: number, g: number): number | null {
+  if (!Number.isFinite(N) || !Number.isFinite(C) || !(N - g > 0)) return null;
+  return (C - g) / (N - g);
+}
+
+export const DEFAULT_READINGS = `# 43 53 (no bonus Spirit, sits off the line)
+48 60
+53 64
+56 66
+60 68
+61 69
+65 71
+71 75
+76 78
+81 81
+87 85
+90 87`;
