@@ -52,14 +52,49 @@ try {
     await page.screenshot({ path: join(root, "public", "og", `${c[0]}.png`) });
     console.log(`public/og/${c[0]}.png`);
   }
-  for (const [name, size] of [["apple-touch-icon", 180], ["icon-192", 192], ["icon-512", 512]]) {
-    // Pad so the waves sit inside the maskable safe zone.
+  // PNG icons are the badge of public/favicon.svg: `scale` is its share of the square, `bg` the
+  // full-bleed colour behind it (none = transparent).
+  const totem = (await readFile(join(root, "public", "favicon.svg"), "utf8")).replace("<svg ", '<svg width="100%" height="100%" ');
+  const icon = async (size, scale, bg) => {
     const p = await browser.newPage({ viewport: { width: size, height: size } });
-    await p.setContent(`<style>body{margin:0}</style>${mark(size, 14)}`);
-    await p.screenshot({ path: join(root, "public", `${name}.png`) });
+    const box = Math.round(size * scale);
+    await p.setContent(
+      `<style>html,body{margin:0;background:${bg ?? "transparent"}}div{width:${box}px;height:${box}px;position:absolute;left:${(size - box) / 2}px;top:${(size - box) / 2}px}</style><div>${totem}</div>`,
+    );
+    const png = await p.screenshot({ omitBackground: !bg });
     await p.close();
-    console.log(`public/${name}.png`);
+    return png;
+  };
+  const files = [
+    ["apple-touch-icon.png", 180, 0.84, "#03060d"],
+    ["icon-192.png", 192, 1, null],
+    ["icon-512.png", 512, 1, null],
+    ["icon-maskable-512.png", 512, 0.72, "#0a2a36"],
+  ];
+  for (const [name, size, scale, bg] of files) {
+    await writeFile(join(root, "public", name), await icon(size, scale, bg));
+    console.log(`public/${name}`);
   }
+  // favicon.ico: an ICO header, one directory entry per image, then the PNG images themselves.
+  const sizes = [16, 32, 48];
+  const pngs = [];
+  for (const s of sizes) pngs.push(await icon(s, 1, null));
+  const head = Buffer.alloc(6 + 16 * sizes.length);
+  head.writeUInt16LE(1, 2);
+  head.writeUInt16LE(sizes.length, 4);
+  let offset = head.length;
+  sizes.forEach((s, i) => {
+    const at = 6 + 16 * i;
+    head.writeUInt8(s, at);
+    head.writeUInt8(s, at + 1);
+    head.writeUInt16LE(1, at + 4);
+    head.writeUInt16LE(32, at + 6);
+    head.writeUInt32LE(pngs[i].length, at + 8);
+    head.writeUInt32LE(offset, at + 12);
+    offset += pngs[i].length;
+  });
+  await writeFile(join(root, "public", "favicon.ico"), Buffer.concat([head, ...pngs]));
+  console.log("public/favicon.ico");
 } finally {
   await browser.close();
 }
