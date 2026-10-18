@@ -65,9 +65,9 @@ export function Calculator() {
                 value={state.level}
                 onCommit={(v) => set({ level: Math.max(1, Math.min(60, Math.round(v))) })}
               />
-              <NumField id="int" label="Intellect, total from your character sheet" min={0} step={1} value={state.int} onCommit={(v) => set({ int: Math.max(0, Math.round(v)) })} />
+              <NumField id="int" label="Intellect" min={0} step={1} value={state.int} onCommit={(v) => set({ int: Math.max(0, Math.round(v)) })} />
               <NumField id="pool" label="Max mana" min={0} step={1} value={effectivePool(state)} onCommit={(v) => set({ pool: v, manaAuto: false })} />
-              <p className="hint field full" id="poolWork" aria-live="polite">
+              <p className="hint row-full" id="poolWork" aria-live="polite">
                 {state.manaAuto ? (
                   <>
                     Base {fmt(pool.base, 0)} at level {state.level}
@@ -90,8 +90,8 @@ export function Calculator() {
               <p className="hint field full">
                 Healing power is Healing plus Spell Power. Spell Damage on healing items does not heal. Buff MP5
                 covers Mana Spring, Blessing of Wisdom and similar. Max mana is base mana for your level (Classic's
-                documented Shaman values, not yet confirmed in Forever) plus Intellect: the first 20 points give 1 mana
-                each, then 15.
+                documented Shaman values, which a naked level 24 Forever Shaman matches exactly) plus Intellect: the
+                first 20 points give 1 mana each, then 15.
               </p>
             </div>
           </section>

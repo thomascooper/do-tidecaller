@@ -308,6 +308,10 @@ describe("max mana from level and Intellect (spec section 14.2)", () => {
     expect(calcPool(DEFAULTS)).toEqual({ base: 665, fromInt: 1445, total: 2110, estimated: false });
     expect(effectivePool({ ...DEFAULTS, int: 40 })).toBe(985);
     expect(effectivePool({ ...DEFAULTS, level: 22, int: 54 })).toBe(951);
+    // Tom's naked level 24 Orc Shaman, read in the beta (18 Oct, spec 14.4): 796 mana at 40 Intellect.
+    expect(effectivePool({ ...DEFAULTS, level: 24, int: 40 })).toBe(796);
+    // His naked level 22 sheet (Intellect 38) predicts 421 + 20 + 270.
+    expect(effectivePool({ ...DEFAULTS, level: 22, int: 38 })).toBe(711);
   });
 
   it("a typed pool is used only while manaAuto is false", () => {

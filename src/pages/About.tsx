@@ -61,8 +61,9 @@ export function About() {
         <li>Spirit rate above 90 Spirit and at other levels.</li>
         <li>Whether the Polished Driftwood Icon stacks with Mindfulness.</li>
         <li>
-          Base mana uses Classic&apos;s documented Shaman values, not yet confirmed in Forever, and levels between
-          documented values are estimated.
+          Base mana uses Classic&apos;s documented Shaman values. A naked level 24 Shaman in the beta matches them
+          exactly (796 mana at 40 Intellect); other levels are not yet checked, and levels between documented values
+          are estimated.
         </li>
       </ul>
       <p>Each of these stays editable in the calculator.</p>

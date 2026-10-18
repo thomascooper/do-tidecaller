@@ -1131,7 +1131,8 @@ editable.
 
 - A level between documented ones is interpolated linearly between its neighbours and rounded,
   and is shown as estimated (for example level 18 reads 326, estimated).
-- **Unconfirmed:** these are Classic's documented values; Forever has not confirmed them. A player
+- **Checked at level 24** (section 14.4): a naked level 24 Forever Shaman matches exactly. Other
+  levels are Classic's documented values, not yet checked in Forever. A player
   can check their own sheet: max mana minus mana from Intellect is their base mana.
 - New input **Intellect** (the total on the character sheet), default **115**: a fully geared
   level 30 (the default best set carries 75 Intellect, plus the character's own). Owner's choice,
@@ -1166,3 +1167,14 @@ Alliance total 429.74.
 
 Section 7's numbers still hold for the original character (max mana typed in as 2223, so
 `manaAuto` false) and stay pinned as the check of the math.
+
+### 14.4 Owner readings: Tom's Orc Shaman with no gear (18 Oct 2026)
+
+| Level | Health | Mana | Strength | Agility | Stamina | Intellect | Spirit |
+|---|---|---|---|---|---|---|---|
+| 22 | (not shown) | (not shown) | 42 | 26 | 42 | 38 | 43 |
+| 24 | 494 | **796** | 44 | 27 | 44 | 40 | 46 |
+
+**Level 24 confirms the mana model in Forever:** 476 base (the documented Classic value) + 20 + 15 x
+20 = 796, exactly what the client shows. The level 22 Spirit of 43 is the "no bonus Spirit" reading
+in section 3. At level 22 the model predicts a naked max mana of 421 + 20 + 15 x 18 = 711.

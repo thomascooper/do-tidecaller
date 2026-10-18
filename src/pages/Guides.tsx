@@ -143,8 +143,9 @@ export function StatWeightsGuide() {
       </p>
       <p>
         The mana pool is not a fixed number. It is the base mana for your level plus the mana from your Intellect: the
-        first 20 points give 1 mana each and every point after that gives 15. A smaller pool means each point of mana
-        regen is a bigger share of it, so mana stats are worth more.
+        first 20 points give 1 mana each and every point after that gives 15. A naked level 24 Shaman in the beta with
+        40 Intellect has 796 mana: 476 base plus 320 from Intellect. A smaller pool means each point of mana regen is
+        a bigger share of it, so mana stats are worth more.
       </p>
 
       <h2>What moves the weights</h2>

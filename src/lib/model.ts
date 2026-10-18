@@ -100,7 +100,8 @@ function num(v: unknown, d: number): number {
 
 /**
  * Base mana of a Shaman by level, as documented for Classic (Wowpedia and the Vanilla WoW Archive,
- * "Base mana", vanilla table). Forever has not confirmed these values (spec section 14.2).
+ * "Base mana", vanilla table). A naked level 24 Forever Shaman matches level 24 exactly (spec section 14.4); other
+ * levels are not yet checked in Forever.
  */
 export const SHAMAN_BASE_MANA: Record<number, number> = {
   1: 55, 7: 121, 10: 175, 14: 241, 15: 260, 20: 370, 21: 395, 22: 421, 23: 448, 24: 476,

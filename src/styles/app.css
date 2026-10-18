@@ -43,6 +43,7 @@ h2 small{font-family:var(--f-body);font-size:12px;color:var(--muted);letter-spac
 .grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px 12px}
 .field{display:flex;flex-direction:column;gap:4px;min-width:0}
 .field.full{grid-column:1/-1}
+.row-full{grid-column:1/-1;margin:0}
 label,.lab{font-size:12px;color:var(--muted);font-weight:500}
 textarea{resize:vertical;line-height:1.5}
 input[type=number],input[type=text],select,textarea{font:500 14px var(--f-mono);font-variant-numeric:tabular-nums;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:6px;padding:7px 9px;width:100%;min-width:0}

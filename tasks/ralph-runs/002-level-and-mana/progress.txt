@@ -46,3 +46,16 @@ Started: Sun Oct 18 17:53:51 UTC 2026
   - Smoke text checks should normalize whitespace: JSX line breaks collapse in rendered text, so a source grep for a sentence can miss while the page matches.
   - `fmt(x, 0)` already adds thousands separators.
 ---
+
+## 2026-10-18 - Delivering session, after the last iteration
+- Verified on the final commit: typecheck, 2,618 unit tests, 50 smoke checks, reference comparison
+  26 of 26.
+- Visual review of the Character panel, fixed in this session:
+  - the Intellect label is just "Intellect" (the long label wrapped and pushed its field out of line
+    with Level; the panel header already says "from your character sheet");
+  - the working line (#poolWork) no longer uses `.field`, whose column flex stacked the Check tag
+    on its own line; it is `.row-full` now.
+- Tom's in-client readings (spec 14.4): a naked level 24 Orc Shaman shows 796 mana at 40 Intellect,
+  exactly 476 + 20 + 300, so Forever uses Classic's base mana and Intellect rule at level 24. Pinned
+  in model.test.ts; the site copy now says level 24 matches and other levels are not yet checked.
+---
