@@ -12,7 +12,8 @@
     "preview": "node scripts/serve-dist.mjs",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
-    "smoke": "npm run build && node test/smoke.mjs"
+    "smoke": "npm run build && node test/smoke.mjs",
+    "reference": "npm run build && node test/reference-diff.mjs"
   },
   "dependencies": {
     "@fontsource/ibm-plex-mono": "^5.3.0",

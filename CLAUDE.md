@@ -44,6 +44,9 @@ never the expected value.
   `sitemap.xml` and `robots.txt` into `dist/`
 - `npm run smoke`: builds, serves `dist/` the way Vercel does and drives it in Chromium. Here:
   `CHROMIUM_PATH=/opt/pw-browsers/chromium-1194/chrome-linux/chrome npm run smoke`
+- `npm run reference`: the calculator against the spec's reference implementation (section 13),
+  27 scenarios, every number on screen compared. Same `CHROMIUM_PATH`. Run it whenever the
+  calculator or the model changes; anything but 27 of 27 means it no longer matches the spec
 - There is no lint script. Do not invent one mid-task.
 
 (Until the first Ralph run lands these scripts, the repo holds only scaffolding.)
