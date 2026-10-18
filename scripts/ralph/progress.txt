@@ -169,3 +169,15 @@ Started: Sun Oct 18 07:32:52 UTC 2026
   - Spec section 10 lists three sources without URLs (wowvendor, classicwowforever.com, wowclassicforever.info); About names them as text, since no URL may be invented.
   - In smoke, a deliberate 404 navigation logs a console error for the document itself; the site-pages console check filters that URL.
 ---
+
+## 2026-10-18 - US-015
+- `/bis`: Horde and Alliance best sets (build-time `bestSet`), "Does it change for other fights?" (Trash pull, Raid boss vs Dungeon boss), "Crafter upgrades" per profession, Article + BreadcrumbList JSON-LD, description naming the three top-scoring picks. The calculator's "What Tidecaller does" links to `/bis`.
+- Files: src/lib/{bis.ts,bis.test.ts}, src/pages/Bis.tsx, src/routes.tsx, src/seo/jsonld.ts (`article()`), src/calculator/WhatItDoes.tsx, src/styles/app.css, test/{seo.test.ts,smoke.mjs}
+- Checks: typecheck ok, npm test 132 passed, npm run build ok, npm run smoke 37 passed. `npm run reference` not run (calculator and model unchanged apart from a static link).
+- Broke on purpose: made `siteSet` ignore the faction (Alliance test failed); added 1 to the rendered total (the /bis smoke check failed). Both restored.
+- **Learnings for future iterations:**
+  - `src/lib/bis.ts` is the build-time helper: `siteSet({fight, faction, prof})` gives a best set for the default character, `setDiff(a, b)` lists changed slots (rings and trinkets compare as sets), `SITE_STATE` is the Dungeon boss defaults. US-016 and US-017 should reuse it for default-settings scores.
+  - `/bis` tables have ids `hordeSet` and `allianceSet`; item and slot names are plain text. US-016 links slot names, US-017 links item names (`SetTable` in `src/pages/Bis.tsx`).
+  - Measured: Trash pull changes only Wrist; Raid boss changes many slots; Tailoring changes Feet, Leatherworking Waist and Legs, Enchanting and Engineering nothing.
+  - `.page.wide` lifts the 76ch cap for pages with tables.
+---
