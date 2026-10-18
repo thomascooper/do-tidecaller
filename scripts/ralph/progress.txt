@@ -107,3 +107,16 @@ Started: Sun Oct 18 07:32:52 UTC 2026
   - `RankTable` takes `state` and `set`; the selected row comes from `effectiveSpell(state)`, so at level 20 the highlighted row is hw4 while `state.spell` stays hw5 (the saved choice returns when the level goes back up).
   - Edit inputs ignore values <= 0; edits are stored as `edits[id] = {base?, cost?, cast?}` and Restore deletes the id key. The details element has id `editbox`.
 ---
+
+## 2026-10-18 - US-010
+- Best set panel: database note, Faction select, "Usable up to level" (shows the effective level), four profession checkboxes, "Show gear you can't use", best set table with Total row and weapon note.
+- Files: src/calculator/{BestSet.tsx,Calculator.tsx}, test/smoke.mjs
+- Checks: typecheck ok, npm test 67 passed, npm run build ok, npm run smoke 20 passed.
+- Broke on purpose: dropped the first table row (the total/weapons check failed). Restored.
+- Measured: at Dungeon boss defaults, ticking Tailoring changes exactly one pick, Feet: Gilded Slippers. The smoke check pins that.
+- **Learnings for future iterations:**
+  - `BestSet` takes `state`, the combined `[...ITEMS, ...items]` list, `r.weights` and `set`. The `Calculator` now reads `items` from `useCalculator`.
+  - Earlier smoke checks leave settings changed in localStorage, so a check that needs defaults clears storage and reloads first (the best set check does).
+  - The dbnote count is `ITEMS.length` (155, the built-in list), as the reference's `DB.length`; user items do not change it.
+  - US-011 adds the candidate table inside the same `.box.items` section: extend `BestSet.tsx` or render beside it in `Calculator`.
+---
