@@ -178,6 +178,36 @@ try {
     eq(await row.locator(".tag.mana").count(), 0, "Edited gone");
     await page.locator('#ranks tr[data-spell="hw5"]').click();
   });
+  const picks = async () =>
+    page.locator("#bestTable tbody tr").evaluateAll((trs) =>
+      trs.map((tr) => [...tr.querySelectorAll("td")].slice(0, 2).map((td) => td.textContent).join(": ")),
+    );
+  await check("best set: total, weapons and weapon note at defaults", async () => {
+    // Earlier checks changed settings; start the best set from a clean page.
+    await page.evaluate(() => window.localStorage.clear());
+    await page.reload();
+    await page.waitForSelector("#bestTotal");
+    eq(await page.locator("#bestTotal").textContent(), "422.6", "total");
+    const rows = await picks();
+    eq(rows.length, 16, "rows");
+    eq(rows.includes("Main hand: Tidebringer's Claw"), true, "main hand");
+    eq(rows.includes("Off hand: Forcestone Buckler"), true, "off hand");
+    eq(await page.locator("#bestWeapon").textContent(), "Main hand and off hand beat the best two-hander by 26.4", "weapon note");
+    eq(await page.locator("#maxlvl").inputValue(), "30", "effective level shown");
+  });
+  await check("best set: Alliance replaces the Horde-only off hand, Tailoring changes picks", async () => {
+    await page.locator("#faction").selectOption("Alliance");
+    const alliance = await picks();
+    eq(alliance.some((r) => r.includes("Forcestone Buckler")), false, "buckler gone");
+    await page.locator("#faction").selectOption("Horde");
+    const before = await picks();
+    await page.locator('[data-prof="Tailoring"]').check();
+    const after = await picks();
+    const changed = after.filter((r, n) => r !== before[n]);
+    // Measured at Dungeon boss defaults: Tailoring changes exactly one pick.
+    eq(changed.join(" | "), "Feet: Gilded Slippers", "picks Tailoring changes");
+    await page.locator('[data-prof="Tailoring"]').uncheck();
+  });
   await check("no console errors", async () => eq(errors.join(" | "), "", "console errors"));
   await ctx.close();
 

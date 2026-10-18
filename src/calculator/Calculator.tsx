@@ -1,5 +1,7 @@
+import { ITEMS } from "../data";
 import { activePreset, compute, PRESETS } from "../lib/model";
 import type { PresetId } from "../lib/model";
+import { BestSet } from "./BestSet";
 import { NumField } from "./NumField";
 import { RankTable } from "./RankTable";
 import { RegenPanel } from "./RegenPanel";
@@ -9,7 +11,7 @@ import { useCalculator } from "./useCalculator";
 const PRESET_IDS = Object.keys(PRESETS) as PresetId[];
 
 export function Calculator() {
-  const { state, dispatch } = useCalculator();
+  const { state, items, dispatch } = useCalculator();
   const set = (patch: Partial<typeof state>) => dispatch({ type: "set", patch });
   const active = activePreset(state);
   const r = compute(state);
@@ -99,6 +101,8 @@ export function Calculator() {
           <RankTable state={state} set={set} />
         </div>
       </div>
+
+      <BestSet state={state} items={[...ITEMS, ...items]} weights={r.weights} set={set} />
     </div>
   );
 }
