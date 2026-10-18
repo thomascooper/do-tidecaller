@@ -86,3 +86,14 @@ Started: Sun Oct 18 07:32:52 UTC 2026
   - The verdict has literal spaces around each operator so its text reads "MP5 > Intellect > ..."; the `.op` padding adds the visual gap.
   - Mana for the fight at Dungeon boss defaults reads "3,750" with "19.0 casts" (18.96 rounds to 19.0).
 ---
+
+## 2026-10-18 - US-008
+- Regen panel (talent with percent input and datalist, Icon, Improved Healing Wave, Water Shield with crit) and the Spirit formula and calibration details (shape select, cap/B/base/rate inputs, hint, readings textarea, casting-share inputs, results line, four buttons).
+- Files: src/calculator/{RegenPanel.tsx,NumField.tsx,Calculator.tsx}, test/smoke.mjs
+- Checks: typecheck ok, npm test 67 passed, npm run build ok, npm run smoke 16 passed.
+- Broke on purpose: rounded the applied cap to a whole number instead of 0.1 (the calibration smoke check failed on the cap reading). Restored.
+- **Learnings for future iterations:**
+  - `NumField` now takes optional `disabled`, `list`, `className` and `ariaLabel`; with no `label` it renders the bare input (used for the pct and crit inputs inside a toggle row).
+  - The readings text and the two sheet figures are local state in `RegenPanel` (not saved, as in the reference); fits come from `fitSpirit(parseReadings(text))` on every render.
+  - Switches are real checkboxes inside `.sw`; smoke toggles them with `setChecked(..., {force: true})` because the input is visually hidden.
+---
