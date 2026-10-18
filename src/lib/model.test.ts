@@ -3,21 +3,30 @@ import {
   DEFAULTS,
   PRESETS,
   activePreset,
+  baseMana,
+  calcPool,
   compute,
+  effectivePool,
   effectiveSpell,
   knownSpells,
+  manaFromInt,
+  SHAMAN_BASE_MANA,
   priorityLine,
   shareKept,
   spellCalc,
   spellOf,
   type PresetId,
   type State,
+  STAT_LABELS,
 } from "./model";
 import { fmt } from "./format";
 
-function at(preset: PresetId, over: Partial<State> = {}): State {
+/** The spec's original character (section 7): max mana typed in as 2223, so the math is checked on its own. */
+const ORIG: State = { ...DEFAULTS, manaAuto: false, pool: 2223 };
+
+function at(preset: PresetId, over: Partial<State> = {}, base: State = ORIG): State {
   const { t, f } = PRESETS[preset];
-  return { ...DEFAULTS, t, f, ...over };
+  return { ...base, t, f, ...over };
 }
 
 const EXPECTED: Record<PresetId, { k: number; E: number; X: number; mp5: number; int: number; spi: number }> = {
@@ -265,5 +274,106 @@ describe("score, source note and candidates", () => {
     const hidden = candidates(ITEMS, weightsOf(s), { ...s, showAll: false });
     for (const g of hidden) expect(g.list.every((c) => !c.why)).toBe(true);
     expect(groups.flatMap((g) => g.list).length).toBeGreaterThan(hidden.flatMap((g) => g.list).length);
+  });
+});
+
+describe("max mana from level and Intellect (spec section 14.2)", () => {
+  it("baseMana is exact at every documented level", () => {
+    for (const [lv, v] of Object.entries(SHAMAN_BASE_MANA)) {
+      expect(baseMana(Number(lv))).toEqual({ value: v, estimated: false });
+    }
+    expect(baseMana(1).value).toBe(55);
+    expect(baseMana(20).value).toBe(370);
+    expect(baseMana(25).value).toBe(505);
+    expect(baseMana(30).value).toBe(665);
+    expect(baseMana(60).value).toBe(1520);
+  });
+
+  it("baseMana interpolates between documented levels and says so", () => {
+    expect(baseMana(18)).toEqual({ value: 326, estimated: true });
+    expect(baseMana(2)).toEqual({ value: 66, estimated: true });
+    expect(baseMana(0).value).toBe(55);
+    expect(baseMana(99).value).toBe(1520);
+  });
+
+  it("manaFromInt counts the first 20 points at 1 and the rest at 15", () => {
+    expect(manaFromInt(10)).toBe(10);
+    expect(manaFromInt(20)).toBe(20);
+    expect(manaFromInt(40)).toBe(320);
+    expect(manaFromInt(115)).toBe(1445);
+  });
+
+  it("the defaults' pool is 2110, and other characters work out", () => {
+    expect(effectivePool(DEFAULTS)).toBe(2110);
+    expect(calcPool(DEFAULTS)).toEqual({ base: 665, fromInt: 1445, total: 2110, estimated: false });
+    expect(effectivePool({ ...DEFAULTS, int: 40 })).toBe(985);
+    expect(effectivePool({ ...DEFAULTS, level: 22, int: 54 })).toBe(951);
+  });
+
+  it("a typed pool is used only while manaAuto is false", () => {
+    expect(effectivePool({ ...DEFAULTS, pool: 1000 })).toBe(2110);
+    expect(effectivePool({ ...DEFAULTS, pool: 1000, manaAuto: false })).toBe(1000);
+  });
+});
+
+describe("the defaults' numbers (spec section 14.3)", () => {
+  const NEW: Record<PresetId, { E: number; X: number; mp5: number; int: number; spi: number; casts: number; total: number }> = {
+    trash: { E: 3430.5, X: 3.226, mp5: 2.258, int: 1.914, spi: 0.919, casts: 17.34, total: 431.74 },
+    boss: { E: 3636.8, X: 4.057, mp5: 2.84, int: 1.808, spi: 0.978, casts: 18.38, total: 428.41 },
+    raid: { E: 5634.5, X: 6.546, mp5: 4.582, int: 1.178, spi: 1.434, casts: 28.47, total: 439.22 },
+  };
+  for (const id of Object.keys(NEW) as PresetId[]) {
+    it(`matches at ${PRESETS[id].label}`, () => {
+      const st = at(id, {}, DEFAULTS);
+      const r = compute(st);
+      const e = NEW[id];
+      expect(r.E).toBeCloseTo(e.E, 1);
+      expect(r.X).toBeCloseTo(e.X, 3);
+      expect(r.weights.mp5).toBeCloseTo(e.mp5, 3);
+      expect(r.weights.int).toBeCloseTo(e.int, 3);
+      expect(r.weights.spi).toBeCloseTo(e.spi, 3);
+      expect(r.wsBack).toBeCloseTo(2.11, 3);
+      expect(r.casts).toBeCloseTo(e.casts, 2);
+      expect(r.c.heal).toBeCloseTo(526.929, 3);
+      expect(bestSet(ITEMS, r.weights, st).total).toBeCloseTo(e.total, 2);
+    });
+  }
+
+  it("Dungeon boss best set, pick by pick", () => {
+    const s = at("boss", {}, DEFAULTS);
+    const set = bestSet(ITEMS, weightsOf(s), s);
+    const EXPECTED: [string, number][] = [
+      ["Holy Shroud", 38.87],
+      ["Scorn's Icy Choker", 17.85],
+      ["Death Speaker Mantle", 25.88],
+      ["Darkspear Raider's Cloak", 18.37],
+      ["Death Speaker Robes", 39.88],
+      ["Mindthrust Bracers", 17.56],
+      ["Gloves of Old", 20.77],
+      ["Blightleaf Rope", 25.08],
+      ["Violet Sorcerer's Leggings", 40.39],
+      ["Acidic Walkers", 23.37],
+      ["Philanthropist's Ring", 19.04],
+      ["Sea Giant's Toe Ring", 18.0],
+      ["Roogug's Severed Head", 5.87],
+      ["Worgenbane Talisman", 5.68],
+      ["Tidebringer's Claw", 86.0],
+      ["Forcestone Buckler", 25.82],
+    ];
+    expect(set.rows).toHaveLength(EXPECTED.length);
+    EXPECTED.forEach(([name, sc], i) => {
+      expect(set.rows[i].item?.name).toBe(name);
+      expect(set.rows[i].score).toBeCloseTo(sc, 2);
+    });
+    expect(set.pair).toBeCloseTo(111.82, 2);
+    expect(set.two).toBeCloseTo(85.64, 2);
+    expect(set.total).toBeCloseTo(428.41, 2);
+    expect(set.weaponNote).toBe("Main hand and off hand beat the best two-hander by 26.2");
+  });
+
+  it("the Dungeon boss priority line", () => {
+    const p = priorityLine(weightsOf(at("boss", {}, DEFAULTS)));
+    const line = p.keys.map((k, i) => (i ? ` ${p.ops[i - 1]} ` : "") + STAT_LABELS[k]).join("");
+    expect(line).toBe("MP5 > Intellect > Healing = Spell Power = Spirit");
   });
 });

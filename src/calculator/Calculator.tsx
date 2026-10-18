@@ -1,5 +1,5 @@
 import { ITEMS } from "../data";
-import { activePreset, compute, PRESETS } from "../lib/model";
+import { activePreset, compute, effectivePool, PRESETS } from "../lib/model";
 import type { PresetId } from "../lib/model";
 import { BestSet } from "./BestSet";
 import { Candidates } from "./Candidates";
@@ -63,7 +63,7 @@ export function Calculator() {
                 value={state.level}
                 onCommit={(v) => set({ level: Math.max(1, Math.min(60, Math.round(v))) })}
               />
-              <NumField id="pool" label="Max mana" min={0} step={1} value={state.pool} onCommit={(v) => set({ pool: v })} />
+              <NumField id="pool" label="Max mana" min={0} step={1} value={effectivePool(state)} onCommit={(v) => set({ pool: v, manaAuto: false })} />
               <NumField id="heal" label="Healing power" min={0} step={1} value={state.heal} onCommit={(v) => set({ heal: v })} />
               <NumField id="spi" label="Spirit" min={0} step={1} value={state.spi} onCommit={(v) => set({ spi: v })} />
               <NumField id="g" label="Gear MP5" min={0} step={1} value={state.g} onCommit={(v) => set({ g: v })} />

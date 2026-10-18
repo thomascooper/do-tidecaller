@@ -70,8 +70,11 @@ let failed = 0;
 try {
   for (const [name, state, items] of SCENARIOS) {
     const payload = JSON.stringify({ state, items: items ?? [] });
+    // The reference has no manaAuto and always uses its own pool (2223 unless a scenario sets one), so the app
+    // is pinned to a typed pool of the same value instead of calculating max mana from level and Intellect.
+    const appPayload = JSON.stringify({ state: { pool: 2223, ...state, manaAuto: false }, items: items ?? [] });
     const a = await snapshot(REF, payload);
-    const b = await snapshot(base, payload);
+    const b = await snapshot(base, appPayload);
     const diffs = [];
     for (const k of Object.keys(a)) {
       if (JSON.stringify(a[k]) === JSON.stringify(b[k])) continue;

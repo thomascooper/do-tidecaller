@@ -1,6 +1,6 @@
 import { Breadcrumbs } from "../components/Breadcrumbs";
 import { fmt } from "../lib/format";
-import { compute, DEFAULTS, knownSpells, PRESETS, priorityLine, shareKept, spellCalc, STAT_LABELS } from "../lib/model";
+import { compute, DEFAULTS, effectivePool, knownSpells, PRESETS, priorityLine, shareKept, spellCalc, STAT_LABELS } from "../lib/model";
 import type { PresetId, State } from "../lib/model";
 import { SPELLS } from "../data";
 import type { Crumb } from "../seo/jsonld";
@@ -97,7 +97,7 @@ export function StatWeightsGuide() {
       <h2>The weights for three fights</h2>
       <p>
         These use the calculator defaults at level 30 with Healing Wave rank 5 ({DEFAULTS.heal} Healing power,{" "}
-        {DEFAULTS.pool} mana, {DEFAULTS.spi} Spirit). Fights differ in length and in how often mana runs out.
+        {fmt(effectivePool(DEFAULTS), 0)} mana, {DEFAULTS.spi} Spirit). Fights differ in length and in how often mana runs out.
       </p>
       <div className="scroll">
         <table id="presetWeights">

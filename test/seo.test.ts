@@ -204,7 +204,7 @@ describe("site chrome and links", () => {
       expect(doc.querySelector('main a[href="/"]')).not.toBeNull();
     }
     const holy = itemPages.find((p) => p.route.path === "/items/holy-shroud")!;
-    expect(holy.doc.querySelector("main")!.text).toContain("worth 38.7 points of Healing to a level 30 Resto Shaman, 1 of 11 Head items");
+    expect(holy.doc.querySelector("main")!.text).toContain("worth 38.9 points of Healing to a level 30 Resto Shaman, 1 of 11 Head items");
   });
 
   it("/items lists all 155 items with links, grouped by slot", () => {

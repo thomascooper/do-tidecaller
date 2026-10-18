@@ -158,17 +158,31 @@ try {
   });
   await check("stat weights: verdict, bars and readouts at defaults", async () => {
     await page.getByRole("button", { name: "Dungeon boss" }).click();
-    eq((await page.locator("#verdict").innerText()).replace(/\s+/g, " "), "MP5 > Intellect > Healing = Spell Power > Spirit", "verdict");
-    eq(await page.locator('.bar[data-stat="mp5"] .v').innerText(), "2.75", "MP5 bar");
+    eq((await page.locator("#verdict").innerText()).replace(/\s+/g, " "), "MP5 > Intellect > Healing = Spell Power = Spirit", "verdict");
+    eq(await page.locator('.bar[data-stat="mp5"] .v').innerText(), "2.84", "MP5 bar");
     eq(await page.locator(".bar").count(), 5, "bars without Stamina");
     eq(await page.locator("#wnote").innerText(), "1 Healing = 1.00", "note");
     eq(await page.locator(".kv").count(), 7, "readouts");
-    eq(await page.locator(".kv", { hasText: "Mana for the fight" }).locator(".v").innerText(), "3,750 19.0 casts", "mana for the fight");
+    eq(await page.locator(".kv", { hasText: "Mana for the fight" }).locator(".v").innerText(), "3,637 18.4 casts", "mana for the fight");
   });
-  await check("stat weights: Raid boss MP5 reads 4.49", async () => {
+  await check("stat weights: Raid boss MP5 reads 4.58", async () => {
     await page.getByRole("button", { name: "Raid boss" }).click();
-    eq(await page.locator('.bar[data-stat="mp5"] .v').innerText(), "4.49", "MP5 bar");
+    eq(await page.locator('.bar[data-stat="mp5"] .v').innerText(), "4.58", "MP5 bar");
     await page.getByRole("button", { name: "Dungeon boss" }).click();
+  });
+  await check("max mana: defaults read 2110, and a typed number overrides it and survives reload", async () => {
+    await page.getByRole("button", { name: "Dungeon boss" }).click();
+    eq(await page.locator("#pool").inputValue(), "2110", "calculated max mana");
+    await page.locator("#pool").fill("1000");
+    await page.locator("#pool").blur();
+    const mp5 = await page.locator('.bar[data-stat="mp5"] .v').innerText();
+    eq(mp5 !== "2.84", true, "MP5 weight moved");
+    await page.reload();
+    await page.waitForSelector("#pool");
+    eq(await page.locator("#pool").inputValue(), "1000", "typed max mana after reload");
+    await page.evaluate(() => window.localStorage.clear());
+    await page.reload();
+    await page.waitForSelector("#pool");
   });
   await check("stat weights: Stamina bar appears only with a Stamina weight", async () => {
     await page.locator("#stw").fill("5");
@@ -262,12 +276,12 @@ try {
     await page.evaluate(() => window.localStorage.clear());
     await page.reload();
     await page.waitForSelector("#bestTotal");
-    eq(await page.locator("#bestTotal").textContent(), "422.6", "total");
+    eq(await page.locator("#bestTotal").textContent(), "428.4", "total");
     const rows = await picks();
     eq(rows.length, 16, "rows");
     eq(rows.includes("Main hand: Tidebringer's Claw"), true, "main hand");
     eq(rows.includes("Off hand: Forcestone Buckler"), true, "off hand");
-    eq(await page.locator("#bestWeapon").textContent(), "Main hand and off hand beat the best two-hander by 26.4", "weapon note");
+    eq(await page.locator("#bestWeapon").textContent(), "Main hand and off hand beat the best two-hander by 26.2", "weapon note");
     eq(await page.locator("#maxlvl").count(), 0, "no separate gear level input");
   });
   await check("best set: Alliance replaces the Horde-only off hand, Tailoring changes picks", async () => {
@@ -385,18 +399,18 @@ try {
     eq(await sp.locator('script[type="module"]').count(), 0, "module scripts");
     eq(res.headers()["content-type"].startsWith("text/html"), true, "content type");
   });
-  await check("/bis shows Holy Shroud 38.7 and a Horde total of 422.6 and has no module script", async () => {
+  await check("/bis shows Holy Shroud 38.9 and a Horde total of 428.4 and has no module script", async () => {
     const res = await sp.goto(BASE + "/bis");
     eq(res.status(), 200, "status");
     eq(await sp.locator("h1").innerText(), "Resto Shaman best in slot, level 30", "h1");
     eq(await sp.locator('script[type="module"]').count(), 0, "module scripts");
     const head = sp.locator("#hordeSet tbody tr").first();
-    eq((await head.innerText()).replace(/\s+/g, " ").startsWith("Head Holy Shroud 38.7"), true, "head row");
-    eq(await sp.locator("#hordeSet tfoot .score").innerText(), "422.6", "Horde total");
+    eq((await head.innerText()).replace(/\s+/g, " ").startsWith("Head Holy Shroud 38.9"), true, "head row");
+    eq(await sp.locator("#hordeSet tfoot .score").innerText(), "428.4", "Horde total");
     eq(await sp.locator("main h2", { hasText: "Does it change for other fights?" }).count(), 1, "fights section");
     eq(await sp.locator("main h2", { hasText: "Crafter upgrades" }).count(), 1, "crafter section");
   });
-  await check("every slot page returns 200; /bis/head lists Holy Shroud first at 38.7; /bis/main-hand names Tidebringer's Claw", async () => {
+  await check("every slot page returns 200; /bis/head lists Holy Shroud first at 38.9; /bis/main-hand names Tidebringer's Claw", async () => {
     for (const slug of "head neck shoulder back chest wrist hands waist legs feet finger trinket main-hand off-hand two-hand".split(" ")) {
       const res = await sp.goto(BASE + "/bis/" + slug);
       eq(res.status(), 200, "status " + slug);
@@ -405,20 +419,20 @@ try {
     await sp.goto(BASE + "/bis/head");
     const first = (await sp.locator("#slotItems tbody tr").first().innerText()).replace(/\s+/g, " ");
     eq(first.startsWith("Holy Shroud"), true, "Holy Shroud first");
-    eq(first.includes("38.7"), true, "Dungeon 38.7");
+    eq(first.includes("38.9"), true, "Dungeon 38.9");
     await sp.goto(BASE + "/bis/main-hand");
     eq((await sp.locator("main").innerText()).includes("Tidebringer's Claw"), true, "Tidebringer's Claw");
     eq(await sp.locator('main a[href="/bis/two-hand"]').count() > 0, true, "link to two-hand");
     await sp.goto(BASE + "/bis");
     eq(await sp.locator('main a[href^="/bis/"]').count() >= 15, true, "slot links on /bis");
   });
-  await check("/items/holy-shroud shows 38.7 and 1 of 11 Head items; /items/forcestone-buckler says Horde only; /items lists the items", async () => {
+  await check("/items/holy-shroud shows 38.9 and 1 of 11 Head items; /items/forcestone-buckler says Horde only; /items lists the items", async () => {
     const res = await sp.goto(BASE + "/items/holy-shroud");
     eq(res.status(), 200, "status");
     eq(await sp.locator('script[type="module"]').count(), 0, "module scripts");
     eq(await sp.locator("h1").innerText(), "Holy Shroud", "h1");
     const text = await sp.locator("main").innerText();
-    eq(text.includes("38.7"), true, "38.7");
+    eq(text.includes("38.9"), true, "38.9");
     eq(text.includes("1 of 11 Head items"), true, "rank");
     await sp.goto(BASE + "/items/forcestone-buckler");
     eq((await sp.locator("main").innerText()).includes("Horde only"), true, "Horde only");

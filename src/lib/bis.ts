@@ -11,14 +11,15 @@ export const PROFESSION_LIST: Profession[] = ["Tailoring", "Leatherworking", "En
 
 /** The best set from the built-in items for the site's default character under a fight and faction. */
 /** The stat weights for the site's default character under a fight. */
-export function siteWeights(fight: PresetId = "boss"): Weights {
-  return compute({ ...SITE_STATE, t: PRESETS[fight].t, f: PRESETS[fight].f }).weights;
+export function siteWeights(fight: PresetId = "boss", over: Partial<State> = {}): Weights {
+  return compute({ ...SITE_STATE, ...over, t: PRESETS[fight].t, f: PRESETS[fight].f }).weights;
 }
 
-export function siteSet(opts: { fight?: PresetId; faction?: State["faction"]; prof?: Profession } = {}): BestSet {
+export function siteSet(opts: { fight?: PresetId; faction?: State["faction"]; prof?: Profession; over?: Partial<State> } = {}): BestSet {
   const fight = PRESETS[opts.fight ?? "boss"];
   const state: State = {
     ...SITE_STATE,
+    ...opts.over,
     t: fight.t,
     f: fight.f,
     faction: opts.faction ?? "Horde",

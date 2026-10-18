@@ -86,6 +86,10 @@ export function mergeState(raw: unknown): State {
       target[key] = v;
     }
   }
+  // Older saves and links have no manaAuto: a typed pool other than the old default is kept as typed.
+  if (!("manaAuto" in raw) && typeof raw.pool === "number" && Number.isFinite(raw.pool) && raw.pool !== 2223) {
+    state.manaAuto = false;
+  }
   return state;
 }
 

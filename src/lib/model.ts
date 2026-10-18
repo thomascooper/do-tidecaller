@@ -12,6 +12,10 @@ export interface SpellEdit {
 
 export interface State {
   level: number;
+  /** Intellect, total from the character sheet. */
+  int: number;
+  /** True while max mana is worked out from level and Intellect; `pool` is used only when false. */
+  manaAuto: boolean;
   pool: number;
   heal: number;
   spi: number;
@@ -41,6 +45,8 @@ export interface State {
 
 export const DEFAULTS: State = {
   level: 30,
+  int: 115,
+  manaAuto: true,
   pool: 2223,
   heal: 200,
   spi: 107,
@@ -90,6 +96,53 @@ function clamp(x: number, a: number, b: number): number {
 function num(v: unknown, d: number): number {
   const n = typeof v === "number" ? v : parseFloat(String(v));
   return isFinite(n) ? n : d;
+}
+
+/**
+ * Base mana of a Shaman by level, as documented for Classic (Wowpedia and the Vanilla WoW Archive,
+ * "Base mana", vanilla table). Forever has not confirmed these values (spec section 14.2).
+ */
+export const SHAMAN_BASE_MANA: Record<number, number> = {
+  1: 55, 7: 121, 10: 175, 14: 241, 15: 260, 20: 370, 21: 395, 22: 421, 23: 448, 24: 476,
+  25: 505, 26: 535, 27: 566, 28: 598, 29: 631, 30: 665, 60: 1520,
+};
+
+const BASE_MANA_LEVELS = Object.keys(SHAMAN_BASE_MANA).map(Number).sort((a, b) => a - b);
+
+/** Documented base mana, else a linear estimate between the documented neighbours (level clamped to 1..60). */
+export function baseMana(level: number): { value: number; estimated: boolean } {
+  const lv = Math.round(clamp(isFinite(level) ? level : 1, 1, 60));
+  const known = SHAMAN_BASE_MANA[lv];
+  if (known !== undefined) return { value: known, estimated: false };
+  const lo = BASE_MANA_LEVELS.filter((l) => l < lv).pop() as number;
+  const hi = BASE_MANA_LEVELS.find((l) => l > lv) as number;
+  const a = SHAMAN_BASE_MANA[lo];
+  const b = SHAMAN_BASE_MANA[hi];
+  return { value: Math.round(a + ((b - a) * (lv - lo)) / (hi - lo)), estimated: true };
+}
+
+/** The first 20 points of Intellect give 1 mana each, every point after gives 15. */
+export function manaFromInt(int: number): number {
+  const i = Math.max(0, int);
+  return Math.min(20, i) + 15 * Math.max(0, i - 20);
+}
+
+export interface PoolCalc {
+  base: number;
+  fromInt: number;
+  total: number;
+  estimated: boolean;
+}
+
+export function calcPool(state: Pick<State, "level" | "int">): PoolCalc {
+  const b = baseMana(state.level);
+  const fromInt = manaFromInt(state.int);
+  return { base: b.value, fromInt, total: b.value + fromInt, estimated: b.estimated };
+}
+
+/** Max mana the model uses: the calculated value, or the typed one while `manaAuto` is false. */
+export function effectivePool(state: Pick<State, "level" | "int" | "manaAuto" | "pool">): number {
+  return state.manaAuto ? calcPool(state).total : state.pool;
 }
 
 export interface EditedSpell extends Spell {
@@ -191,7 +244,8 @@ export function compute(state: State): Computed {
   const castMP5 = flat + sFull * m;
   const avgMP5 = flat + sFull * k;
   const T = Math.max(1, state.t);
-  const E = state.pool + (avgMP5 / 5) * T;
+  const pool = effectivePool(state);
+  const E = pool + (avgMP5 / 5) * T;
   const sp = spellOf(state, effectiveSpell(state));
   const c = spellCalc(state, sp);
   const X = c.ce > 0 ? ((T / 5) * c.heal) / (E * c.ce) : NaN;
@@ -199,7 +253,7 @@ export function compute(state: State): Computed {
   const spiInMP5 = spiritMarginal(state, state.spi) * k;
   const intInMP5 = 75 / T;
   const pc = clamp(state.crit, 0, 100) / 100;
-  const wsBack = state.ws ? pc * 0.02 * state.pool : 0;
+  const wsBack = state.ws ? pc * 0.02 * pool : 0;
   const cEff = Math.max(1, sp.cost - wsBack);
   const intWS = state.ws && c.ce > 0 ? (c.heal * pc * 0.3) / (c.ce * cEff) : 0;
   const intRaw = intInMP5 * X + intWS;

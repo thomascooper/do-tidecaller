@@ -94,6 +94,16 @@ describe("storage", () => {
     expect(state.t).toBe(77);
   });
 
+  it("a saved typed pool keeps manaAuto false; the old default 2223 or no pool becomes calculated", () => {
+    const load = (st: object) => loadSaved(memory(JSON.stringify({ state: st }))).state;
+    const typed = load({ pool: 1800 });
+    expect(typed.manaAuto).toBe(false);
+    expect(typed.pool).toBe(1800);
+    expect(load({ pool: 2223 }).manaAuto).toBe(true);
+    expect(load({ t: 300 }).manaAuto).toBe(true);
+    expect(load({ pool: 1800, manaAuto: true }).manaAuto).toBe(true);
+  });
+
   it("drops a saved maxlvl", () => {
     const { state } = loadSaved(memory(JSON.stringify({ state: { maxlvl: 25, t: 300 } })));
     expect("maxlvl" in state).toBe(false);
@@ -186,6 +196,17 @@ describe("share encoding", () => {
     const { code } = encodeShare({ ...DEFAULTS, t: 300 }, []);
     const json = JSON.parse(atob(code.replace(/-/g, "+").replace(/_/g, "/")));
     expect(json).toEqual({ v: 1, s: { t: 300 }, i: [] });
+  });
+
+  it("round trips int and manaAuto, and migrates an old link with a typed pool", () => {
+    const text = (o: unknown) => btoa(JSON.stringify(o)).replace(/=+$/, "");
+    const typed = { ...DEFAULTS, int: 40, manaAuto: false, pool: 1000 };
+    expect(decodeShare(encodeShare(typed, []).code)!.state).toEqual(typed);
+    const calc = decodeShare(encodeShare({ ...DEFAULTS, int: 40, pool: 1000 }, []).code)!.state;
+    expect(calc.manaAuto).toBe(true);
+    expect(calc.int).toBe(40);
+    expect(decodeShare(text({ v: 1, s: { pool: 1800 }, i: [] }))!.state.manaAuto).toBe(false);
+    expect(decodeShare(text({ v: 1, s: { t: 300 }, i: [] }))!.state.manaAuto).toBe(true);
   });
 
   it("drops a shared maxlvl", () => {

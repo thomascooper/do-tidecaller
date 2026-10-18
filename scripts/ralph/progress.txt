@@ -13,3 +13,16 @@ Started: Sun Oct 18 17:53:51 UTC 2026
   - New State keys need a DEFAULTS entry: mergeState (storage and share) filters by DEFAULTS keys and type.
   - Smoke can read src/data/items.json via readFileSync for item facts.
 ---
+
+## 2026-10-18 - US-002
+- Model: State gains `int` (115) and `manaAuto` (true); exported SHAMAN_BASE_MANA, baseMana, manaFromInt, calcPool, effectivePool; compute() uses effectivePool for E and Water Shield. The Max mana field writes `pool` and `manaAuto: false`, showing effectivePool.
+- Migration lives in `mergeState` (storage and share links both): no `manaAuto` and a pool other than 2223 means manaAuto false. `encodeShare` drops a stale `pool` while manaAuto is true, so the link cannot read as typed.
+- `siteSet` and `siteWeights` take an `over` state patch so bis.test.ts can run section 7 on the original character.
+- Section 7 tests run on ORIG = {...DEFAULTS, manaAuto:false, pool:2223}, expected values unchanged; new tests pin section 14.3 (three presets, best set pick by pick, priority line, 428.41 and 429.74).
+- Smoke re-pinned to section 14.3 (2.84, 4.58, 3,637 18.4 casts, 428.4, 26.2, 38.9); new check for the Max mana field. Reference diff pins the app to pool 2223 + manaAuto false: 26 of 26.
+- Checks: typecheck ok, 2618 tests, build ok, smoke 48 passed, reference 26 of 26.
+- Broke on purpose: made effectivePool ignore manaAuto false; the new smoke check and model tests failed; restored.
+- **Learnings for future iterations:**
+  - A bare `pool` in a saved state is a typed value only when manaAuto is false; code should read `effectivePool(state)`, never `state.pool`.
+  - Page copy that quotes DEFAULTS numbers (Guides) must use effectivePool(DEFAULTS).
+---
