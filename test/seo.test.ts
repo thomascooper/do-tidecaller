@@ -353,6 +353,10 @@ describe("icon files", () => {
   ])("%s is %i px square", (f, size) => {
     expect(ihdr(f)).toEqual([size, size]);
   });
+  it.each(["home", "bis", "items", "guides", "about"])("og/%s.png is a 1200 x 630 card under 300 KB", (name) => {
+    expect(ihdr(`og/${name}.png`)).toEqual([1200, 630]);
+    expect(pub(`og/${name}.png`).length).toBeLessThan(300 * 1024);
+  });
   it("favicon.ico holds the 16, 32 and 48 px images", () => {
     const b = pub("favicon.ico");
     expect([b.readUInt16LE(0), b.readUInt16LE(2), b.readUInt16LE(4)]).toEqual([0, 1, 3]);
