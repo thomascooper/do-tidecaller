@@ -96,3 +96,12 @@ Started: run 003 (header, icon, item popups, items table), 18 Oct 2026
   - docs/spec.md line 586 holds the old Water Shield wording in its HTML sample; the spec was left untouched (the story only changes the site's copy).
   - `labelled()` in RegenPanel wraps a NumField with a label span; reuse it for any new boxed input in a toggle row.
 ---
+
+## 18 Oct 2026 - US-009
+- Item icons: `itemIconSrc(item)` in `src/lib/itemIcon.ts` (the Wowhead icon from `wowhead.json`, else `/icons/inv_misc_questionmark.jpg`); `src/calculator/ItemIcon.tsx` renders the 20 px lazy `<img alt="">`; `ItemName` now renders icon plus link (custom items stay plain text, no icon) and is used by the best set, candidates, `/items`, `/bis` and slot page tables. The item page `h1` holds a 56 px icon (`.item-h1` flex). The popup shows a 40 px icon left of the name (`.tip-head`).
+- Files: src/lib/itemIcon.ts and test, src/calculator/{ItemIcon,ItemName}.tsx, src/pages/{Bis,SlotPage,ItemPage}.tsx, src/tips/tips.ts, src/styles/app.css, test/smoke.mjs.
+- Checks: typecheck ok, 2660 tests ok, build ok (popup script still under 12 KB gzipped), smoke 57 of 57, reference 26 of 26. Broke the helper (.jpg to .png): the unit tests and three smoke checks failed, restored.
+- **Learnings for future iterations:**
+  - `.iname` (inline-flex) holds icon and name so they never wrap apart; the sticky Item column on `/items` keeps both together.
+  - The tips script imports only `lib/itemIcon.ts` (wowhead.json), not `data/index.ts`, to keep its bundle small.
+---
