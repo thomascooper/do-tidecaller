@@ -439,6 +439,16 @@ try {
     eq(await sp.locator('script[type="module"]').count(), 0, "module scripts");
     eq(res.headers()["content-type"].startsWith("text/html"), true, "content type");
   });
+  await check("/bis, /about and the stat weights guide say where max mana comes from", async () => {
+    await sp.goto(BASE + "/bis");
+    eq((await sp.locator("main p.lead").innerText()).replace(/\s+/g, " ").includes("level 30 with 115 Intellect, 2,110 mana"), true, "bis intro");
+    await sp.goto(BASE + "/about");
+    const about = (await sp.locator("main").innerText()).replace(/\s+/g, " ");
+    eq(about.includes("Classic's documented Shaman values, not yet confirmed in Forever"), true, "about unconfirmed");
+    eq(about.includes("Wowpedia and Vanilla WoW Archive"), true, "about sources");
+    await sp.goto(BASE + "/guides/stat-weights");
+    eq((await sp.locator("main").innerText()).includes("base mana for your level plus the mana from your Intellect"), true, "guide paragraph");
+  });
   await check("/bis shows Holy Shroud 38.9 and a Horde total of 428.4 and has no module script", async () => {
     const res = await sp.goto(BASE + "/bis");
     eq(res.status(), 200, "status");

@@ -141,6 +141,11 @@ export function StatWeightsGuide() {
         the mana weights, left at its default of {DEFAULTS.w}% here. The longer the fight, the more each point of mana
         regen is worth.
       </p>
+      <p>
+        The mana pool is not a fixed number. It is the base mana for your level plus the mana from your Intellect: the
+        first 20 points give 1 mana each and every point after that gives 15. A smaller pool means each point of mana
+        regen is a bigger share of it, so mana stats are worth more.
+      </p>
 
       <h2>What moves the weights</h2>
       <ul>

@@ -19,7 +19,7 @@ export function Footer() {
         <b>Unconfirmed.</b> The Spirit rate above 90 Spirit, why the first few points of bonus Spirit give more, and
         whether level moves it (measured at level 22 from 43 to 90 Spirit; Intellect does not change it), whether the
         Icon stacks with the talent, Healing Wave rank 4's base heal (read from a chart), and the mana costs of Healing
-        Wave rank 10 and Lesser Healing Wave rank 1 (Classic values). Calibrate and edit as the beta answers these.
+        Wave rank 10 and Lesser Healing Wave rank 1 (Classic values). Max mana uses Classic's documented base mana for the Shaman, which Forever has not confirmed, and levels between documented values are estimated. Calibrate and edit as the beta answers these.
       </p>
     </div>
   );

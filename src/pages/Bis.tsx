@@ -1,7 +1,7 @@
 import { Breadcrumbs } from "../components/Breadcrumbs";
 import { itemPath } from "../lib/slug";
 import { fmt } from "../lib/format";
-import { PRESETS, sourceNote } from "../lib/model";
+import { DEFAULTS, effectivePool, PRESETS, sourceNote } from "../lib/model";
 import type { BestSet } from "../lib/model";
 import { gainText, PROFESSION_LIST, setDiff, siteSet, siteWeights } from "../lib/bis";
 import { SLOTS } from "../data";
@@ -75,7 +75,7 @@ export function Bis() {
       <h1>Resto Shaman best in slot, level 30</h1>
       <p className="lead">
         These are the best usable items for a level 30 Restoration Shaman in World of Warcraft: Forever, with the
-        default character and the Dungeon boss fight ({PRESETS.boss.t} seconds, mana empty after {PRESETS.boss.f}%
+        default character (level {DEFAULTS.level} with {DEFAULTS.int} Intellect, {fmt(effectivePool(DEFAULTS), 0)} mana) and the Dungeon boss fight ({PRESETS.boss.t} seconds, mana empty after {PRESETS.boss.f}%
         of it). Every score is in points of Healing. Your character and fights are different:{" "}
         <a href="/">change them in the calculator</a> and the set updates for you.
       </p>

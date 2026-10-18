@@ -60,6 +60,10 @@ export function About() {
         <li>Mana cost of Healing Wave rank 10 and Lesser Healing Wave rank 1 (Classic values).</li>
         <li>Spirit rate above 90 Spirit and at other levels.</li>
         <li>Whether the Polished Driftwood Icon stacks with Mindfulness.</li>
+        <li>
+          Base mana uses Classic&apos;s documented Shaman values, not yet confirmed in Forever, and levels between
+          documented values are estimated.
+        </li>
       </ul>
       <p>Each of these stays editable in the calculator.</p>
 
@@ -74,6 +78,7 @@ export function About() {
           </li>
         ))}
         <li>wowvendor, classicwowforever.com and wowclassicforever.info Resto BiS lists.</li>
+        <li>Base mana by level: the Wowpedia and Vanilla WoW Archive &ldquo;Base mana&rdquo; pages.</li>
         <li>Mindfulness ranks: Wowhead Forever spell 1223033.</li>
         <li>Spirit readings and the Water Shield tooltip: measured in the beta by the site owner.</li>
       </ul>
