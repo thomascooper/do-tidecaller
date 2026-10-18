@@ -145,3 +145,126 @@ describe("fmt", () => {
     expect(fmt(Infinity, 1)).toBe("–");
   });
 });
+
+import { ITEMS } from "../data";
+import type { Item } from "./types";
+import { bestSet, candidates, maxLevel, score, sourceNote, whyNot } from "./model";
+
+const boss = () => at("boss");
+const weightsOf = (s: State) => compute(s).weights;
+
+describe("best set at Dungeon boss defaults (spec section 7)", () => {
+  const s = boss();
+  const set = bestSet(ITEMS, weightsOf(s), s);
+  const EXPECTED_SET: [string, number][] = [
+    ["Holy Shroud", 38.69],
+    ["Scorn's Icy Choker", 17.52],
+    ["Death Speaker Mantle", 25.29],
+    ["Darkspear Raider's Cloak", 17.83],
+    ["Death Speaker Robes", 39.29],
+    ["Spidertank Oilrag", 17.26],
+    ["Truefaith Gloves", 20.26],
+    ["Blightleaf Rope", 24.54],
+    ["Violet Sorcerer's Leggings", 39.54],
+    ["Acidic Walkers", 22.83],
+    ["Philanthropist's Ring", 18.77],
+    ["Sea Giant's Toe Ring", 18.0],
+    ["Roogug's Severed Head", 5.69],
+    ["Worgenbane Talisman", 5.51],
+    ["Tidebringer's Claw", 86.0],
+    ["Forcestone Buckler", 25.59],
+  ];
+
+  it("picks the spec's items in the spec's fill order with their scores", () => {
+    expect(set.rows).toHaveLength(EXPECTED_SET.length);
+    EXPECTED_SET.forEach(([name, sc], i) => {
+      expect(set.rows[i].item?.name).toBe(name);
+      expect(set.rows[i].score).toBeCloseTo(sc, 2);
+    });
+    expect(set.rows.map((r) => r.slot).slice(10, 14)).toEqual(["Finger", "Finger", "Trinket", "Trinket"]);
+  });
+
+  it("takes main hand + off hand over the two-hander and totals 422.62", () => {
+    expect(set.useTwo).toBe(false);
+    expect(set.pair).toBeCloseTo(111.59, 2);
+    expect(set.two).toBeCloseTo(85.17, 2);
+    expect(set.twoName).toBe("Wind Spirit Staff");
+    expect(set.total).toBeCloseTo(422.62, 2);
+    expect(set.weaponNote).toBe("Main hand and off hand beat the best two-hander by 26.4");
+  });
+});
+
+describe("usability", () => {
+  const buckler = ITEMS.find((i) => i.name === "Forcestone Buckler")!;
+
+  it("Alliance never gets a Horde-only item", () => {
+    const s = { ...boss(), faction: "Alliance" as const };
+    expect(whyNot(buckler, s)).toBe("Horde only");
+    const set = bestSet(ITEMS, weightsOf(s), s);
+    for (const r of set.rows) if (r.item) expect(r.item.faction).not.toBe("Horde");
+    expect(set.rows.find((r) => r.slot === "Off hand")?.item?.name).not.toBe("Forcestone Buckler");
+  });
+
+  it("a level cap excludes items that need more", () => {
+    const s = { ...boss(), maxlvl: 25 };
+    expect(maxLevel(s)).toBe(25);
+    for (const r of bestSet(ITEMS, weightsOf(s), s).rows) if (r.item) expect(r.item.req).toBeLessThanOrEqual(25);
+    expect(whyNot({ ...buckler, faction: "Both", req: 26 }, s)).toBe("Needs level 26");
+  });
+
+  it("checks faction, then level, then profession", () => {
+    const it: Item = { ...buckler, faction: "Alliance", req: 99, prof: "Tailoring" };
+    expect(whyNot(it, boss())).toBe("Alliance only");
+    expect(whyNot({ ...it, faction: "Both" }, boss())).toBe("Needs level 99");
+    expect(whyNot({ ...it, faction: "Both", req: 1 }, boss())).toBe("Needs Tailoring");
+  });
+
+  it("a profession item is unusable until its profession is ticked", () => {
+    const tailor = ITEMS.find((i) => i.prof === "Tailoring" && i.req <= 30 && i.faction !== "Alliance")!;
+    expect(whyNot(tailor, boss())).toBe("Needs Tailoring");
+    expect(whyNot(tailor, { ...boss(), profs: { Tailoring: true } })).toBe("");
+  });
+
+  it("a user item named like an existing ring cannot fill both Finger rows", () => {
+    const s = boss();
+    const ring = ITEMS.find((i) => i.name === "Philanthropist's Ring")!;
+    const mine: Item = { ...ring, id: "u1", slug: "mine", custom: true, heal: 500 };
+    const rows = bestSet([...ITEMS, mine], weightsOf(s), s).rows.filter((r) => r.slot === "Finger");
+    expect(rows[0].item?.id).toBe("u1");
+    expect(rows[1].item?.name).not.toBe(ring.name);
+  });
+
+  it("returns a null item for a slot with nothing usable", () => {
+    const s = boss();
+    const rows = bestSet([], weightsOf(s), s).rows;
+    expect(rows.every((r) => r.item === null && r.score === 0)).toBe(true);
+  });
+});
+
+describe("score, source note and candidates", () => {
+  it("counts non-finite weights as 0", () => {
+    const it = ITEMS.find((i) => i.mp5 > 0)!;
+    const W = { ...weightsOf(boss()), mp5: NaN };
+    expect(score(it, W)).toBeCloseTo(score({ ...it, mp5: 0 }, W), 10);
+  });
+
+  it("builds the source note without HTML", () => {
+    const it = { ...ITEMS[0], source: "Boss", prof: "Engineering", other: "Extra", faction: "Horde" } as Item;
+    expect(sourceNote(it)).toBe("Boss · Engineering, maker only to use · Extra · Horde");
+    expect(sourceNote({ ...it, prof: undefined, other: undefined, faction: "Both" })).toBe("Boss");
+  });
+
+  it("groups by slot in SLOTS order, usable first, top flagged once", () => {
+    const s = { ...boss(), showAll: true };
+    const groups = candidates(ITEMS, weightsOf(s), s);
+    expect(groups[0].slot).toBe("Head");
+    for (const g of groups) {
+      expect(g.list.filter((c) => c.top)).toHaveLength(g.list.some((c) => !c.why) ? 1 : 0);
+      const firstBad = g.list.findIndex((c) => c.why);
+      if (firstBad >= 0) expect(g.list.slice(firstBad).every((c) => c.why)).toBe(true);
+    }
+    const hidden = candidates(ITEMS, weightsOf(s), { ...s, showAll: false });
+    for (const g of hidden) expect(g.list.every((c) => !c.why)).toBe(true);
+    expect(groups.flatMap((g) => g.list).length).toBeGreaterThan(hidden.flatMap((g) => g.list).length);
+  });
+});

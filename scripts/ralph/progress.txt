@@ -37,3 +37,14 @@ Started: Sun Oct 18 07:32:52 UTC 2026
   - Lesser Healing Wave ranks cast in 1.5 s, so the 1.5 s floor hides `imphw` for them; the imphw test edits lhw2's cast to 3 to make the rule visible. Any check of "imphw skips lhw" needs that edit or it is vacuous.
   - `State.faction` is `"Horde" | "Alliance"` (the filter), `Item.faction` also allows `"Both"`.
 ---
+
+## 2026-10-18 - US-004
+- Added item scoring, usability, source notes, the best set and the per-slot candidate list to the model.
+- Files: src/lib/model.ts, src/lib/model.test.ts
+- Checks: typecheck ok, npm test 39 passed, npm run build ok. No smoke (no browser change).
+- Broke on purpose: dropped the "same name used twice" filter (best set, total and user-ring tests failed); made the two-hander always win (set and total tests failed). Both restored.
+- **Learnings for future iterations:**
+  - `bestSet(items, W, state)` returns `{rows, total, useTwo, pair, two, twoName, weaponNote}`; a row is `{slot, item | null, score}`. `two` is -1 when no two-hander is usable. `candidates(...)` returns `{slot, list}` groups (empty slots omitted), each entry `{item, score, why, top}`.
+  - Pass the full list (`[...ITEMS, ...userItems]`) as `items`; the functions only need `maxlvl`, `level`, `faction`, `profs` (and `showAll` for candidates) from state.
+  - Dungeon boss best set measured: matches spec section 7 exactly (total 422.62, pair 111.59, Wind Spirit Staff 85.17).
+---

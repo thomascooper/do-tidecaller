@@ -1,5 +1,6 @@
-import { SPELLS } from "../data";
-import type { Faction, Profession, Spell } from "./types";
+import { SLOTS, SPELLS } from "../data";
+import { fmt } from "./format";
+import type { Faction, Item, Profession, Slot, Spell } from "./types";
 
 export type SpiritModel = "line" | "curve";
 
@@ -257,4 +258,118 @@ export function priorityLine(W: Weights): PriorityLine {
     ops.push(Math.abs(prev - val(keys[i])) <= Math.max(0.03, prev * 0.03) ? "=" : ">");
   }
   return { keys, ops, ok };
+}
+
+export function score(item: Item, W: Weights): number {
+  const f = (v: number) => (isFinite(v) ? v : 0);
+  return (
+    (item.heal || 0) * f(W.heal) +
+    (item.sp || 0) * f(W.sp) +
+    (item.mp5 || 0) * f(W.mp5) +
+    (item.int || 0) * f(W.int) +
+    (item.spi || 0) * f(W.spi) +
+    (item.sta || 0) * f(W.sta)
+  );
+}
+
+export function maxLevel(state: Pick<State, "maxlvl" | "level">): number {
+  return state.maxlvl > 0 ? state.maxlvl : state.level;
+}
+
+type UsableState = Pick<State, "maxlvl" | "level" | "faction" | "profs">;
+
+/** Empty when the item is usable, otherwise the first reason it is not. */
+export function whyNot(item: Item, state: UsableState): string {
+  if (item.faction && item.faction !== "Both" && item.faction !== state.faction) return `${item.faction} only`;
+  if ((item.req || 0) > maxLevel(state)) return `Needs level ${item.req}`;
+  if (item.prof && !state.profs[item.prof]) return `Needs ${item.prof}`;
+  return "";
+}
+
+export function sourceNote(item: Item): string {
+  const bits = [item.source || ""];
+  if (item.prof) bits.push(`${item.prof}, maker only${item.prof === "Engineering" ? " to use" : ""}`);
+  if (item.other) bits.push(item.other);
+  if (item.faction && item.faction !== "Both") bits.push(item.faction);
+  return bits.filter(Boolean).join(" · ");
+}
+
+export interface SetRow {
+  slot: Slot;
+  item: Item | null;
+  score: number;
+}
+
+export interface BestSet {
+  rows: SetRow[];
+  total: number;
+  useTwo: boolean;
+  /** Score of the best main hand plus the best off hand. */
+  pair: number;
+  /** Score of the best two-hander, or -1 when none is usable. */
+  two: number;
+  twoName: string;
+  weaponNote: string;
+}
+
+const SET_ORDER: Slot[] = [
+  "Head", "Neck", "Shoulder", "Back", "Chest", "Wrist", "Hands", "Waist", "Legs", "Feet",
+  "Finger", "Finger", "Trinket", "Trinket",
+];
+
+export function bestSet(items: Item[], W: Weights, state: UsableState): BestSet {
+  const ok = items
+    .filter((i) => !whyNot(i, state))
+    .map((item) => ({ item, s: score(item, W) }));
+  const pick = (slot: Slot) => ok.filter((x) => x.item.slot === slot).sort((a, b) => b.s - a.s);
+  const mh = pick("Main hand")[0];
+  const oh = pick("Off hand")[0];
+  const th = pick("Two-hand")[0];
+  const pair = (mh ? mh.s : 0) + (oh ? oh.s : 0);
+  const two = th ? th.s : -1;
+  const useTwo = two > pair;
+  const weaponNote =
+    th && (mh || oh)
+      ? useTwo
+        ? `Two-hander beats the best main hand and off hand by ${fmt(two - pair, 1)}`
+        : `Main hand and off hand beat the best two-hander by ${fmt(pair - two, 1)}`
+      : "";
+  const order = SET_ORDER.concat(useTwo ? ["Two-hand"] : ["Main hand", "Off hand"]);
+  const used = new Set<string>();
+  let total = 0;
+  const rows = order.map((slot): SetRow => {
+    const x = pick(slot).find((c) => !used.has(c.item.name));
+    if (x) {
+      used.add(x.item.name);
+      total += x.s;
+    }
+    return { slot, item: x ? x.item : null, score: x ? x.s : 0 };
+  });
+  return { rows, total, useTwo, pair, two, twoName: th ? th.item.name : "", weaponNote };
+}
+
+export interface Candidate {
+  item: Item;
+  score: number;
+  why: string;
+  top: boolean;
+}
+
+export interface CandidateGroup {
+  slot: Slot;
+  list: Candidate[];
+}
+
+/** Every item by slot: usable first by score, the top usable one flagged. Empty slots are left out. */
+export function candidates(items: Item[], W: Weights, state: UsableState & Pick<State, "showAll">): CandidateGroup[] {
+  const all = items.map((item) => ({ item, score: score(item, W), why: whyNot(item, state) }));
+  const groups: CandidateGroup[] = [];
+  for (const slot of SLOTS) {
+    const list = all
+      .filter((x) => x.item.slot === slot && (state.showAll || !x.why))
+      .sort((a, b) => (a.why ? 1 : 0) - (b.why ? 1 : 0) || b.score - a.score)
+      .map((x, idx) => ({ ...x, top: idx === 0 && !x.why }));
+    if (list.length) groups.push({ slot, list });
+  }
+  return groups;
 }
