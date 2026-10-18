@@ -97,3 +97,13 @@ Started: Sun Oct 18 07:32:52 UTC 2026
   - The readings text and the two sheet figures are local state in `RegenPanel` (not saved, as in the reference); fits come from `fitSpirit(parseReadings(text))` on every render.
   - Switches are real checkboxes inside `.sw`; smoke toggles them with `setChecked(..., {force: true})` because the input is visually hidden.
 ---
+
+## 2026-10-18 - US-009
+- Heal rank table (one row per known rank, tags, selectable by click and Enter/Space, aria-selected) and the rank editor (base, cost, cast, source text, Restore this rank).
+- Files: src/calculator/{RankTable.tsx,Calculator.tsx}, test/smoke.mjs
+- Checks: typecheck ok, npm test 67 passed, npm run build ok, npm run smoke 18 passed.
+- Broke on purpose: kept the Check tag on edited ranks (the edit/restore smoke check failed). Restored.
+- **Learnings for future iterations:**
+  - `RankTable` takes `state` and `set`; the selected row comes from `effectiveSpell(state)`, so at level 20 the highlighted row is hw4 while `state.spell` stays hw5 (the saved choice returns when the level goes back up).
+  - Edit inputs ignore values <= 0; edits are stored as `edits[id] = {base?, cost?, cast?}` and Restore deletes the id key. The details element has id `editbox`.
+---
