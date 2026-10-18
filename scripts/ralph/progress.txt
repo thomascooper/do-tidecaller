@@ -57,3 +57,12 @@ Started: run 003 (header, icon, item popups, items table), 18 Oct 2026
   - All functions take `Pick<Item, ...>`, so the popup script can pass plain data objects.
   - Do not `pkill -f` anything in a command that contains the same pattern: it kills the shell itself.
 ---
+
+## 18 Oct 2026 - US-005
+- `/items` tables now have ten columns (Item, Lvl, Int, Spr, SP, Heal, MP5, Equip, Where, Score) with `abbr` titles; Horde/Alliance tag after the name replaces the Faction column; Where uses `whereShort` with the full source as `title`; Item column sticky inside the `.scroll` box. Lead paragraph explains the columns and blanks.
+- Files: src/pages/ItemPage.tsx, src/styles/app.css (`table.items` rules), test/smoke.mjs.
+- Checks: typecheck ok, 2654 tests ok, build ok, smoke 52 of 52. Reference not run (calculator untouched). Broke the new smoke check by swapping Int and Spr in the expected header: it failed, restored.
+- **Learnings for future iterations:**
+  - The existing item-link smoke check counts `main td.nm a[href^="/items/"]` = 155, so the Item cell must keep `td.nm`.
+  - Sticky first column needs an opaque `var(--bg)` background on both th and td.
+---

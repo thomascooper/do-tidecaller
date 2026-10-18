@@ -489,6 +489,20 @@ try {
     await sp.goto(BASE + "/items");
     eq(await sp.locator('main td.nm a[href^="/items/"]').count(), 155, "item links");
   });
+  await check("/items shows the stat columns: Head header row, Holy Shroud row, Tidebringer's Claw equip, no sideways scroll at 400 px", async () => {
+    await sp.goto(BASE + "/items");
+    const head = (await sp.locator("main table").first().locator("thead th").allInnerTexts()).map((t) => t.trim());
+    eq(head.join("|"), "Item|Lvl|Int|Spr|SP|Heal|MP5|Equip|Where|Score", "header row");
+    const cells = (await sp.locator("main tr", { has: sp.locator('a[href="/items/holy-shroud"]') }).locator("td").allInnerTexts()).map((t) => t.trim());
+    eq([cells[1], cells[2], cells[3], cells[4], cells[5], cells[6], cells[8], cells[9]].join("|"), "27||6||33||World drop|38.9", "Holy Shroud row");
+    const eqp = await sp.locator("main tr", { has: sp.locator('a[href="/items/tidebringers-claw"]') }).locator("td").nth(7).innerText();
+    eq(eqp.trim(), "+2% crit on Healing Wave and Lesser Healing Wave", "Tidebringer's Claw equip");
+    const vp = sp.viewportSize();
+    await sp.setViewportSize({ width: 400, height: 800 });
+    const wide = await sp.evaluate(() => document.documentElement.scrollWidth > document.documentElement.clientWidth);
+    await sp.setViewportSize(vp);
+    eq(wide, false, "page scrolls sideways at 400 px");
+  });
   await check("following the Holy Shroud link from /bis lands on its page", async () => {
     await sp.goto(BASE + "/bis");
     await Promise.all([sp.waitForURL("**/items/holy-shroud"), sp.locator('#hordeSet a[href="/items/holy-shroud"]').click()]);
