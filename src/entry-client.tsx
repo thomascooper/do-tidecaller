@@ -6,5 +6,6 @@ import "@fontsource/ibm-plex-mono/400.css";
 import "@fontsource/ibm-plex-mono/500.css";
 import "./styles/app.css";
 import { createRoot } from "react-dom/client";
+import { Calculator } from "./calculator/Calculator";
 
-createRoot(document.getElementById("root")!).render(<h1>Tidecaller Stat Weights</h1>);
+createRoot(document.getElementById("root")!).render(<Calculator />);

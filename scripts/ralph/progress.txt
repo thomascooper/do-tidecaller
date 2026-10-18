@@ -61,3 +61,16 @@ Started: Sun Oct 18 07:32:52 UTC 2026
   - `userItem(raw)` (storage.ts) sanitises any user item (id must start with `u`, slot must be known); missing faction/req/source take the reference defaults.
   - The 43 Spirit reading: `DEFAULT_READINGS` has it commented out; uncommenting gives the twelve-reading fit (cap 113.95, B 2666, worst 2.67).
 ---
+
+## 2026-10-18 - US-006
+- Calculator shell: header with the three preset chips, `.main` grid, Character and Fight panels, reducer hook with load-after-mount and save-on-change, draft-string number fields. Smoke harness and the Vercel-like static server.
+- Files: src/calculator/{useCalculator.ts,NumField.tsx,Calculator.tsx}, src/entry-client.tsx, scripts/serve-dist.mjs, test/smoke.mjs, package.json (smoke script, playwright-core), package-lock.json
+- Checks: typecheck ok, npm test 67 passed, npm run build ok, npm run smoke 10 passed.
+- Broke on purpose: a `console.error` in the component (the no-console-errors check failed); disabled the save effect (the reload-persistence check failed). Both restored.
+- **Learnings for future iterations:**
+  - State changes go through `dispatch({type: "set", patch})`; `{type: "preset", id}` sets t and f; `{type: "items", items}` is for user items (US-011). The save effect skips the untouched `INITIAL` model so the first render never overwrites saved settings.
+  - `NumField` (src/calculator/NumField.tsx) is the draft-string number input: pass `value` and `onCommit(finite number)`. Reuse it for pct, crit, sA, sB, sbase, sper, maxlvl and the rank edit fields.
+  - `serveDist({port})` in scripts/serve-dist.mjs is importable; test/smoke.mjs starts it on 4173 and closes it in `finally`. Add checks inside the "Calculator page /" section, beside the same page's checks.
+  - The console-error check ignores `/favicon.ico` because no icon exists until US-020: remove that filter when US-020 lands.
+  - The entry client still uses `createRoot` (client render); hydration arrives with the prerender in US-013.
+---
