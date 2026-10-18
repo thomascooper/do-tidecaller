@@ -324,6 +324,13 @@ try {
     eq(await page.locator("#bestWeapon").textContent(), "Main hand and off hand beat the best two-hander by 26.2", "weapon note");
     eq(await page.locator("#maxlvl").count(), 0, "no separate gear level input");
   });
+  await check("best set: hovering an item name shows the item popup", async () => {
+    await page.locator('#bestTable a[href="/items/tidebringers-claw"]').hover();
+    await page.locator('[role="tooltip"]').waitFor({ state: "visible" });
+    eq((await page.locator('[role="tooltip"]').innerText()).includes("+2% crit on Healing Wave and Lesser Healing Wave"), true, "equip text");
+    await page.mouse.move(5, 5);
+    await page.locator('[role="tooltip"]').waitFor({ state: "detached" });
+  });
   await check("best set: Alliance replaces the Horde-only off hand, Tailoring changes picks", async () => {
     await page.locator("#faction").selectOption("Alliance");
     const alliance = await picks();
@@ -436,7 +443,7 @@ try {
     const res = await sp.goto(BASE + "/about");
     eq(res.status(), 200, "status");
     eq(await sp.locator("h1").innerText(), "About Tidecaller", "h1");
-    eq(await sp.locator('script[type="module"]').count(), 0, "module scripts");
+    eq(await sp.locator('script[type="module"]:not([src*="/assets/tips-"])').count(), 0, "module scripts");
     eq(res.headers()["content-type"].startsWith("text/html"), true, "content type");
   });
   await check("/bis, /about and the stat weights guide say where max mana comes from", async () => {
@@ -453,7 +460,7 @@ try {
     const res = await sp.goto(BASE + "/bis");
     eq(res.status(), 200, "status");
     eq(await sp.locator("h1").innerText(), "Resto Shaman best in slot, level 30", "h1");
-    eq(await sp.locator('script[type="module"]').count(), 0, "module scripts");
+    eq(await sp.locator('script[type="module"]:not([src*="/assets/tips-"])').count(), 0, "module scripts");
     const head = sp.locator("#hordeSet tbody tr").first();
     eq((await head.innerText()).replace(/\s+/g, " ").startsWith("Head Holy Shroud 38.9"), true, "head row");
     eq(await sp.locator("#hordeSet tfoot .score").innerText(), "428.4", "Horde total");
@@ -464,7 +471,7 @@ try {
     for (const slug of "head neck shoulder back chest wrist hands waist legs feet finger trinket main-hand off-hand two-hand".split(" ")) {
       const res = await sp.goto(BASE + "/bis/" + slug);
       eq(res.status(), 200, "status " + slug);
-      eq(await sp.locator('script[type="module"]').count(), 0, "module scripts " + slug);
+      eq(await sp.locator('script[type="module"]:not([src*="/assets/tips-"])').count(), 0, "module scripts " + slug);
     }
     await sp.goto(BASE + "/bis/head");
     const first = (await sp.locator("#slotItems tbody tr").first().innerText()).replace(/\s+/g, " ");
@@ -479,7 +486,7 @@ try {
   await check("/items/holy-shroud shows 38.9 and 1 of 11 Head items; /items/forcestone-buckler says Horde only; /items lists the items", async () => {
     const res = await sp.goto(BASE + "/items/holy-shroud");
     eq(res.status(), 200, "status");
-    eq(await sp.locator('script[type="module"]').count(), 0, "module scripts");
+    eq(await sp.locator('script[type="module"]:not([src*="/assets/tips-"])').count(), 0, "module scripts");
     eq(await sp.locator("h1").innerText(), "Holy Shroud", "h1");
     const text = await sp.locator("main").innerText();
     eq(text.includes("38.9"), true, "38.9");
@@ -503,6 +510,42 @@ try {
     await sp.setViewportSize(vp);
     eq(wide, false, "page scrolls sideways at 400 px");
   });
+  await check("item popups on /items: hover shows and hides, keyboard focus shows and Escape hides, a link at the right edge stays inside a 400 px viewport", async () => {
+    await sp.goto(BASE + "/items");
+    const link = sp.locator('main td.nm a[href="/items/holy-shroud"]');
+    const tip = sp.locator('[role="tooltip"]');
+    await link.hover();
+    await tip.waitFor({ state: "visible" });
+    const text = (await tip.innerText()).replace(/\s+/g, " ");
+    for (const want of ["Holy Shroud", "+33 Healing", "+6 Spirit", "Requires level 27", "World drop / auction house"])
+      eq(text.includes(want), true, `popup has ${want}`);
+    eq(await link.getAttribute("aria-describedby"), await tip.getAttribute("id"), "aria-describedby");
+    await sp.mouse.move(5, 5);
+    await tip.waitFor({ state: "detached" });
+    eq(await link.getAttribute("aria-describedby"), null, "aria-describedby removed");
+    await link.focus();
+    await tip.waitFor({ state: "visible" });
+    await sp.keyboard.press("Escape");
+    await tip.waitFor({ state: "detached" });
+    const vp = sp.viewportSize();
+    await sp.setViewportSize({ width: 400, height: 800 });
+    await sp.goto(BASE + "/items/holy-shroud");
+    const box = await sp.locator("main h1").boundingBox();
+    await sp.mouse.move(398, box.y + 4);
+    await sp.evaluate(() => {
+      // Put an item link at the right edge so the popup has to flip left.
+      const a = document.createElement("a");
+      a.href = "/items/holy-shroud";
+      a.textContent = "Holy Shroud";
+      a.style.cssText = "position:fixed;right:0;top:300px;background:#fff";
+      document.body.append(a);
+    });
+    await sp.locator("a[style*='fixed']").hover();
+    await tip.waitFor({ state: "visible" });
+    const r = await tip.boundingBox();
+    await sp.setViewportSize(vp);
+    eq(r.x >= 0 && r.x + r.width <= 400, true, `popup inside the viewport (x ${r.x}, width ${r.width})`);
+  });
   await check("following the Holy Shroud link from /bis lands on its page", async () => {
     await sp.goto(BASE + "/bis");
     await Promise.all([sp.waitForURL("**/items/holy-shroud"), sp.locator('#hordeSet a[href="/items/holy-shroud"]').click()]);
@@ -521,7 +564,7 @@ try {
       const res = await sp.goto(BASE + path);
       eq(res.status(), 200, "status " + path);
       eq(await sp.locator("h1").innerText(), h1, "h1 " + path);
-      eq(await sp.locator('script[type="module"]').count(), 0, "module scripts " + path);
+      eq(await sp.locator('script[type="module"]:not([src*="/assets/tips-"])').count(), 0, "module scripts " + path);
     }
     const rows = sp.locator("#rankTable tbody tr");
     eq(await rows.count(), 12, "rank rows");

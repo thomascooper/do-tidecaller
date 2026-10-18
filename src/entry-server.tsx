@@ -15,7 +15,11 @@ export type { Route };
 export const ANALYTICS_SCRIPT = '<script defer src="/_vercel/insights/script.js"></script>';
 
 /** `analytics` adds Vercel Web Analytics (cookieless); the prerender sets it on production builds only. */
-export function renderDocument(route: Route, template: string, options: { analytics?: boolean } = {}): string {
+export function renderDocument(
+  route: Route,
+  template: string,
+  options: { analytics?: boolean; tipsScript?: string } = {},
+): string {
   const head = headTags({
     path: route.path,
     title: route.title,
@@ -36,6 +40,8 @@ export function renderDocument(route: Route, template: string, options: { analyt
       .replace(/<script type="module"[^>]*><\/script>\s*/g, "")
       .replace(/<link rel="modulepreload"[^>]*>\s*/g, "");
   }
+  // The item popup script goes on every page, after the app script where there is one.
+  if (options.tipsScript) html = html.replace("</body>", () => `<script type="module" src="${options.tipsScript}"></script></body>`);
   if (options.analytics) html = html.replace("</body>", () => `${ANALYTICS_SCRIPT}</body>`);
   return html;
 }
