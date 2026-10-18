@@ -34,3 +34,5 @@ const SLOT_BY_SLUG = Object.fromEntries(
 export function slotFromSlug(slug: string): Slot | undefined {
   return SLOT_BY_SLUG[slug];
 }
+
+export const itemPath = (item: { slug: string }) => `/items/${item.slug}`;

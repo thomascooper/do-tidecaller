@@ -1,3 +1,4 @@
+import { ItemName } from "./ItemName";
 import { useState } from "react";
 import type { FormEvent } from "react";
 import { SLOTS } from "../data";
@@ -134,7 +135,7 @@ export function Candidates({ state, items, userItems, weights, setUserItems }: P
               ...g.list.map(({ item: i, score, why, top }) => (
                 <tr key={i.id} className={(top ? "best" : "") + (why ? " cant" : "")}>
                   <td className="nm">
-                    {i.name}
+                    <ItemName item={i} />
                     {top && <span className="tag">Top</span>}
                     {i.custom && <span className="tag mana">Yours</span>}
                   </td>

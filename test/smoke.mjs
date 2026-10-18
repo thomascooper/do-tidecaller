@@ -355,6 +355,24 @@ try {
     await sp.goto(BASE + "/bis");
     eq(await sp.locator('main a[href^="/bis/"]').count() >= 15, true, "slot links on /bis");
   });
+  await check("/items/holy-shroud shows 38.7 and 1 of 11 Head items; /items/forcestone-buckler says Horde only; /items lists the items", async () => {
+    const res = await sp.goto(BASE + "/items/holy-shroud");
+    eq(res.status(), 200, "status");
+    eq(await sp.locator('script[type="module"]').count(), 0, "module scripts");
+    eq(await sp.locator("h1").innerText(), "Holy Shroud", "h1");
+    const text = await sp.locator("main").innerText();
+    eq(text.includes("38.7"), true, "38.7");
+    eq(text.includes("1 of 11 Head items"), true, "rank");
+    await sp.goto(BASE + "/items/forcestone-buckler");
+    eq((await sp.locator("main").innerText()).includes("Horde only"), true, "Horde only");
+    await sp.goto(BASE + "/items");
+    eq(await sp.locator('main td.nm a[href^="/items/"]').count(), 155, "item links");
+  });
+  await check("following the Holy Shroud link from /bis lands on its page", async () => {
+    await sp.goto(BASE + "/bis");
+    await Promise.all([sp.waitForURL("**/items/holy-shroud"), sp.locator('#hordeSet a[href="/items/holy-shroud"]').click()]);
+    eq(await sp.locator("h1").innerText(), "Holy Shroud", "h1");
+  });
   await check("the calculator page links to /bis", async () => {
     await sp.goto(BASE + "/");
     eq(await sp.locator('#h-what ~ p a[href="/bis"]').count(), 1, "link in What Tidecaller does");

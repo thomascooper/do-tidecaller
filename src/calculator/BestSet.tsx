@@ -1,3 +1,4 @@
+import { ItemName } from "./ItemName";
 import type { ReactNode } from "react";
 import { ITEMS, PROFESSIONS } from "../data";
 import { bestSet, maxLevel, sourceNote } from "../lib/model";
@@ -86,7 +87,7 @@ export function BestSet({ state, items, weights, set, children }: Props) {
             {best.rows.map((row, n) => (
               <tr key={n}>
                 <td className="nm">{row.slot}</td>
-                <td>{row.item ? row.item.name : <span className="dim">Nothing usable listed</span>}</td>
+                <td>{row.item ? <ItemName item={row.item} /> : <span className="dim">Nothing usable listed</span>}</td>
                 <td className="score">{row.item ? fmt(row.score, 1) : ""}</td>
                 <td className="src">{row.item ? sourceNote(row.item) : ""}</td>
               </tr>

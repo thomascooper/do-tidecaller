@@ -160,6 +160,48 @@ describe("site chrome and links", () => {
     expect(links).toContain("/bis/two-hand");
   });
 
+  it("every item has a page with the PRD's title and h1, a 70 to 160 character description naming slot, score and rank, and no Product markup", () => {
+    const itemPages = pages.filter((p) => p.route.path.startsWith("/items/"));
+    expect(itemPages.length).toBe(155);
+    for (const { route, doc } of itemPages) {
+      const name = doc.querySelector("h1")!.text;
+      expect(route.title).toBe(`${name}, Resto Shaman Value | Tidecaller`);
+      expect(route.description.length, route.path).toBeGreaterThanOrEqual(70);
+      expect(route.description.length, route.path).toBeLessThanOrEqual(160);
+      expect(route.description).toMatch(/\d+(\.\d)? points of Healing for a Resto Shaman, \d+ of \d+ [A-Za-z-]+( hand)? items/);
+      const types = doc.querySelectorAll('script[type="application/ld+json"]').map((b) => JSON.parse(b.text)["@type"]);
+      expect(types).toEqual(["BreadcrumbList"]);
+      const crumbs = JSON.parse(doc.querySelector('script[type="application/ld+json"]')!.text).itemListElement;
+      expect(crumbs.map((c: { name: string }) => c.name)).toEqual(["Home", "Items", name]);
+      expect(doc.querySelector('main a[href^="/bis/"]')).not.toBeNull();
+      expect(doc.querySelector('main a[href="/"]')).not.toBeNull();
+    }
+    const holy = itemPages.find((p) => p.route.path === "/items/holy-shroud")!;
+    expect(holy.doc.querySelector("main")!.text).toContain("worth 38.7 points of Healing to a level 30 Resto Shaman, 1 of 11 Head items");
+  });
+
+  it("/items lists all 155 items with links, grouped by slot", () => {
+    const idx = pages.find((p) => p.route.path === "/items")!;
+    expect(idx.doc.querySelector("h1")?.text).toBe("Every Resto Shaman item, level 30");
+    expect(idx.route.title).toBe("Resto Shaman Gear List, Level 30 WoW Forever | Tidecaller");
+    expect(idx.doc.querySelectorAll('main td.nm a[href^="/items/"]').length).toBe(155);
+    expect(idx.doc.querySelectorAll("main h2").length).toBe(15);
+  });
+
+  it("/bis and slot pages link database items to their item pages", () => {
+    const bis = pages.find((p) => p.route.path === "/bis")!;
+    expect(bis.doc.querySelector('#hordeSet a[href="/items/holy-shroud"]')).not.toBeNull();
+    const head = pages.find((p) => p.route.path === "/bis/head")!;
+    expect(head.doc.querySelectorAll('#slotItems tbody a[href^="/items/"]').length).toBe(11);
+  });
+
+  it("the calculator links database items in the best set and candidate tables", () => {
+    const home = pages.find((p) => p.route.path === "/")!;
+    // Unusable items are hidden by default, so not all 155 appear; the best set and usable candidates do.
+    expect(home.doc.querySelector('a[href="/items/holy-shroud"]')).not.toBeNull();
+    expect(home.doc.querySelectorAll('a[href^="/items/"]').length).toBeGreaterThan(100);
+  });
+
   it("the 404 page is noindex, says Page not found and links to the sections", () => {
     const nf = pages.find((p) => p.route.path === "/404")!;
     expect(nf.route.noindex).toBe(true);

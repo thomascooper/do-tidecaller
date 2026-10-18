@@ -2,9 +2,11 @@ import type { ReactElement } from "react";
 import { Calculator } from "./calculator/Calculator";
 import { About, ABOUT_TRAIL } from "./pages/About";
 import { Bis, BIS_TRAIL, topPicks } from "./pages/Bis";
+import { ItemPage, ItemsIndex, ITEMS_DESCRIPTION, ITEMS_TITLE, ITEMS_TRAIL, itemDescription, itemTitle, itemTrail } from "./pages/ItemPage";
 import { NotFound } from "./pages/NotFound";
 import { SlotPage, slotDescription, slotTitle, slotTrail } from "./pages/SlotPage";
-import { SLOTS } from "./data";
+import { ITEMS, SLOTS } from "./data";
+import { itemPath } from "./lib/slug";
 import { slotPath, slotTitleCase } from "./lib/slotPage";
 import type { Crumb, JsonLd } from "./seo/jsonld";
 import { article, websiteAndApp } from "./seo/jsonld";
@@ -77,6 +79,30 @@ export const routes: Route[] = [
         }),
       ],
       render: () => <SlotPage slot={slot} />,
+    }),
+  ),
+  {
+    path: "/items",
+    title: ITEMS_TITLE,
+    description: ITEMS_DESCRIPTION,
+    ogImage: "/og/items.png",
+    ogType: "article",
+    hydrate: false,
+    breadcrumbs: ITEMS_TRAIL,
+    jsonLd: [],
+    render: () => <ItemsIndex />,
+  },
+  ...ITEMS.map(
+    (item): Route => ({
+      path: itemPath(item),
+      title: itemTitle(item),
+      description: itemDescription(item),
+      ogImage: "/og/items.png",
+      ogType: "article",
+      hydrate: false,
+      breadcrumbs: itemTrail(item),
+      jsonLd: [],
+      render: () => <ItemPage item={item} />,
     }),
   ),
   {
