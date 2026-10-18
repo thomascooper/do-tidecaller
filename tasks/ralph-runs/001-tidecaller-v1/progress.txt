@@ -1,0 +1,284 @@
+# Ralph Progress Log
+Started: Sun Oct 18 07:32:52 UTC 2026
+---
+## Codebase Patterns
+- Styles: the reference CSS is ported verbatim to `src/styles/app.css` (extracted from spec section 13's `<style>` block); fonts come from `@fontsource/*` imports in `src/entry-client.tsx`.
+- All math is pure functions in `src/lib/model.ts` taking `state` as the first argument (`spellOf(state, id)`, `spiritRegen(state, spi)`, `compute(state)`); `effectiveSpell(state)` returns the spell id after the level fallback and `compute` already uses it.
+- Vitest only picks up `src/**/*.test.ts(x)` (see `vite.config.ts`).
+
+
+## 2026-10-18 - US-001
+- Scaffolded Vite + React 19 + TypeScript + Vitest; index.html template with app-head/app-html markers; placeholder h1 client render; reference CSS and self-hosted fonts.
+- Files: package.json, package-lock.json, tsconfig.json, vite.config.ts, index.html, src/entry-client.tsx, src/styles/app.css, src/lib/scaffold.test.ts
+- Checks: typecheck ok, npm test 1 passed, npm run build ok, `grep -r fonts.googleapis dist` finds nothing. No smoke yet (US-006).
+- **Learnings for future iterations:**
+  - .gitignore already had every required entry.
+  - The spec's CSS has no @font-face; `--f-*` tokens resolve to the fontsource family names.
+---
+
+## 2026-10-18 - US-002
+- Added the spec extractor, typed data module, slug helpers and data tests.
+- Files: scripts/extract-spec-data.mjs (+ .d.mts typings), src/data/{spells.json,items.json,index.ts,data.test.ts}, src/lib/{types.ts,slug.ts}
+- Checks: typecheck ok, npm test 11 passed, npm run build ok. No smoke (no browser change).
+- Broke on purpose: changed one heal value in items.json (extractor equality test failed), and removed the apostrophe rule in slugify (slug tests failed); both restored.
+- **Learnings for future iterations:**
+  - Data lives in `src/data/index.ts`: `ITEMS` (ids db0..db154, slugs), `SPELLS`, `SLOTS`, `PROFESSIONS`, `itemBySlug`. `slotFromSlug` and `SLOT_SLUGS` are in `src/lib/slug.ts`.
+  - `src/data/*.json` is generated: edit the spec and re-run `node scripts/extract-spec-data.mjs`, never hand-edit.
+  - Tests may import the `.mjs` extractor; its types come from `scripts/extract-spec-data.d.mts`.
+---
+
+## 2026-10-18 - US-003
+- Added the model (regen, spells, stat weights, priority line, presets) and `fmt`.
+- Files: src/lib/model.ts, src/lib/format.ts, src/lib/model.test.ts
+- Checks: typecheck ok, npm test 28 passed, npm run build ok. No smoke (no browser change).
+- Broke on purpose: changed the downrank step 0.05 to 0.06 (shareKept test failed); matched `hw` anywhere in the id instead of as a prefix (imphw test failed). Both restored.
+- **Learnings for future iterations:**
+  - `priorityLine(weights)` returns `{keys, ops, ok}`: `ops[i]` sits between `keys[i]` and `keys[i+1]`, `ok` is false when X is NaN (UI shows "No healing power bonus on this rank"). Labels are in `STAT_LABELS`.
+  - Lesser Healing Wave ranks cast in 1.5 s, so the 1.5 s floor hides `imphw` for them; the imphw test edits lhw2's cast to 3 to make the rule visible. Any check of "imphw skips lhw" needs that edit or it is vacuous.
+  - `State.faction` is `"Horde" | "Alliance"` (the filter), `Item.faction` also allows `"Both"`.
+---
+
+## 2026-10-18 - US-004
+- Added item scoring, usability, source notes, the best set and the per-slot candidate list to the model.
+- Files: src/lib/model.ts, src/lib/model.test.ts
+- Checks: typecheck ok, npm test 39 passed, npm run build ok. No smoke (no browser change).
+- Broke on purpose: dropped the "same name used twice" filter (best set, total and user-ring tests failed); made the two-hander always win (set and total tests failed). Both restored.
+- **Learnings for future iterations:**
+  - `bestSet(items, W, state)` returns `{rows, total, useTwo, pair, two, twoName, weaponNote}`; a row is `{slot, item | null, score}`. `two` is -1 when no two-hander is usable. `candidates(...)` returns `{slot, list}` groups (empty slots omitted), each entry `{item, score, why, top}`.
+  - Pass the full list (`[...ITEMS, ...userItems]`) as `items`; the functions only need `maxlvl`, `level`, `faction`, `profs` (and `showAll` for candidates) from state.
+  - Dungeon boss best set measured: matches spec section 7 exactly (total 422.62, pair 111.59, Wind Spirit Staff 85.17).
+---
+
+## 2026-10-18 - US-005
+- Added the calibration helpers to the model, `src/lib/storage.ts` and `src/lib/share.ts`.
+- Files: src/lib/{model.ts,storage.ts,share.ts,calibration.test.ts}
+- Checks: typecheck ok, npm test 67 passed, npm run build ok. No smoke (no browser change).
+- Broke on purpose: disabled the sA 107.9 / sB 2347 migration case (that migration test failed); flipped the sign of B in `fitSpirit` (both fit tests failed). Both restored.
+- **Learnings for future iterations:**
+  - `fitSpirit` returns UNROUNDED values `{line: {base, rate, worst}, curve: {cap, B, worst}}`; the apply buttons round (base 0.1, rate 0.001, cap 0.1, B integer). `parseReadings` returns `{spirit, mp5}[]`. `castingShare(N, C, g)` returns a fraction or null; the UI turns it into `Math.round(x * 100)`.
+  - `loadSaved(storage)` returns `{state, items}`; `save(storage, state, items)`; both accept `undefined`. `mergeState(raw)` (in storage.ts) keeps a saved key only when its type matches the default's, and is reused by share decoding.
+  - `encodeShare(state, items)` returns `{code, itemsOmitted}`, not a bare string: US-021 should use `.code`. `decodeShare(code)` returns `{state, items}` or null. Limit is `MAX_SHARE_LENGTH` (6000).
+  - `userItem(raw)` (storage.ts) sanitises any user item (id must start with `u`, slot must be known); missing faction/req/source take the reference defaults.
+  - The 43 Spirit reading: `DEFAULT_READINGS` has it commented out; uncommenting gives the twelve-reading fit (cap 113.95, B 2666, worst 2.67).
+---
+
+## 2026-10-18 - US-006
+- Calculator shell: header with the three preset chips, `.main` grid, Character and Fight panels, reducer hook with load-after-mount and save-on-change, draft-string number fields. Smoke harness and the Vercel-like static server.
+- Files: src/calculator/{useCalculator.ts,NumField.tsx,Calculator.tsx}, src/entry-client.tsx, scripts/serve-dist.mjs, test/smoke.mjs, package.json (smoke script, playwright-core), package-lock.json
+- Checks: typecheck ok, npm test 67 passed, npm run build ok, npm run smoke 10 passed.
+- Broke on purpose: a `console.error` in the component (the no-console-errors check failed); disabled the save effect (the reload-persistence check failed). Both restored.
+- **Learnings for future iterations:**
+  - State changes go through `dispatch({type: "set", patch})`; `{type: "preset", id}` sets t and f; `{type: "items", items}` is for user items (US-011). The save effect skips the untouched `INITIAL` model so the first render never overwrites saved settings.
+  - `NumField` (src/calculator/NumField.tsx) is the draft-string number input: pass `value` and `onCommit(finite number)`. Reuse it for pct, crit, sA, sB, sbase, sper, maxlvl and the rank edit fields.
+  - `serveDist({port})` in scripts/serve-dist.mjs is importable; test/smoke.mjs starts it on 4173 and closes it in `finally`. Add checks inside the "Calculator page /" section, beside the same page's checks.
+  - The console-error check ignores `/favicon.ico` because no icon exists until US-020: remove that filter when US-020 lands.
+  - The entry client still uses `createRoot` (client render); hydration arrives with the prerender in US-013.
+---
+
+## 2026-10-18 - US-007
+- Stat weights panel: note, verdict from `priorityLine` with styled operators, regime text, bars, seven readouts.
+- Files: src/calculator/StatWeights.tsx, src/calculator/Calculator.tsx, test/smoke.mjs
+- Checks: typecheck ok, npm test 67 passed, npm run build ok, npm run smoke 14 passed.
+- Broke on purpose: showed the Stamina bar even at weight 0 (the defaults check on bar count failed). Restored.
+- **Learnings for future iterations:**
+  - Bars use a fixed order (MP5, Intellect, Spirit, Healing, Spell Power, Stamina), not sorted; the verdict line is the sorted one. Bars carry `data-stat` for smoke checks.
+  - `Calculator` calls `compute(state)` once and passes `r` to output panels; add the next panels inside `<div className="out">`.
+  - The verdict has literal spaces around each operator so its text reads "MP5 > Intellect > ..."; the `.op` padding adds the visual gap.
+  - Mana for the fight at Dungeon boss defaults reads "3,750" with "19.0 casts" (18.96 rounds to 19.0).
+---
+
+## 2026-10-18 - US-008
+- Regen panel (talent with percent input and datalist, Icon, Improved Healing Wave, Water Shield with crit) and the Spirit formula and calibration details (shape select, cap/B/base/rate inputs, hint, readings textarea, casting-share inputs, results line, four buttons).
+- Files: src/calculator/{RegenPanel.tsx,NumField.tsx,Calculator.tsx}, test/smoke.mjs
+- Checks: typecheck ok, npm test 67 passed, npm run build ok, npm run smoke 16 passed.
+- Broke on purpose: rounded the applied cap to a whole number instead of 0.1 (the calibration smoke check failed on the cap reading). Restored.
+- **Learnings for future iterations:**
+  - `NumField` now takes optional `disabled`, `list`, `className` and `ariaLabel`; with no `label` it renders the bare input (used for the pct and crit inputs inside a toggle row).
+  - The readings text and the two sheet figures are local state in `RegenPanel` (not saved, as in the reference); fits come from `fitSpirit(parseReadings(text))` on every render.
+  - Switches are real checkboxes inside `.sw`; smoke toggles them with `setChecked(..., {force: true})` because the input is visually hidden.
+---
+
+## 2026-10-18 - US-009
+- Heal rank table (one row per known rank, tags, selectable by click and Enter/Space, aria-selected) and the rank editor (base, cost, cast, source text, Restore this rank).
+- Files: src/calculator/{RankTable.tsx,Calculator.tsx}, test/smoke.mjs
+- Checks: typecheck ok, npm test 67 passed, npm run build ok, npm run smoke 18 passed.
+- Broke on purpose: kept the Check tag on edited ranks (the edit/restore smoke check failed). Restored.
+- **Learnings for future iterations:**
+  - `RankTable` takes `state` and `set`; the selected row comes from `effectiveSpell(state)`, so at level 20 the highlighted row is hw4 while `state.spell` stays hw5 (the saved choice returns when the level goes back up).
+  - Edit inputs ignore values <= 0; edits are stored as `edits[id] = {base?, cost?, cast?}` and Restore deletes the id key. The details element has id `editbox`.
+---
+
+## 2026-10-18 - US-010
+- Best set panel: database note, Faction select, "Usable up to level" (shows the effective level), four profession checkboxes, "Show gear you can't use", best set table with Total row and weapon note.
+- Files: src/calculator/{BestSet.tsx,Calculator.tsx}, test/smoke.mjs
+- Checks: typecheck ok, npm test 67 passed, npm run build ok, npm run smoke 20 passed.
+- Broke on purpose: dropped the first table row (the total/weapons check failed). Restored.
+- Measured: at Dungeon boss defaults, ticking Tailoring changes exactly one pick, Feet: Gilded Slippers. The smoke check pins that.
+- **Learnings for future iterations:**
+  - `BestSet` takes `state`, the combined `[...ITEMS, ...items]` list, `r.weights` and `set`. The `Calculator` now reads `items` from `useCalculator`.
+  - Earlier smoke checks leave settings changed in localStorage, so a check that needs defaults clears storage and reloads first (the best set check does).
+  - The dbnote count is `ITEMS.length` (155, the built-in list), as the reference's `DB.length`; user items do not change it.
+  - US-011 adds the candidate table inside the same `.box.items` section: extend `BestSet.tsx` or render beside it in `Calculator`.
+---
+
+## 2026-10-18 - US-011
+- Every-candidate table (grouped by slot, Top and Yours tags, muted dots for zero stats, dimmed unusable rows with their reason, empty message) and the "Add your own item" form with Remove.
+- Files: src/calculator/{Candidates.tsx,BestSet.tsx,Calculator.tsx}, test/smoke.mjs
+- Checks: typecheck ok, npm test 67 passed, npm run build ok, npm run smoke 22 passed.
+- Broke on purpose: made Remove a no-op (the add/persist/remove smoke check failed). Restored.
+- **Learnings for future iterations:**
+  - `Candidates` renders inside `BestSet` as `children`, so both tables share one `.box.items` section as in the reference. It takes `items` (all), `userItems` and `setUserItems` (dispatches `{type: "items"}`).
+  - New user items get id `"u" + Date.now()`, slug from `slugify(name)`, armor "-", and are saved by the existing save effect; no extra storage code was needed.
+  - Candidate item names are plain text for now; US-017 links database items to their item pages (user items stay plain).
+---
+
+## 2026-10-18 - US-012
+- Footer ("How it works", "Downranking", "Unconfirmed", word for word from the reference), focus outline extended to textarea and focusable table rows, smoke checks for accessible names, keyboard and the 400px pass with every panel open.
+- Files: src/calculator/{Footer.tsx,Calculator.tsx}, src/styles/app.css, test/smoke.mjs
+- Checks: typecheck ok, npm test 67 passed, npm run build ok, npm run smoke 26 passed.
+- Broke on purpose: dropped `aria-label` from `NumField` (accessible-name check failed) and set `.scroll` to `overflow-x:visible` (both 400px checks failed). Both restored.
+- **Learnings for future iterations:**
+  - The reference CSS already had tabular numbers, `:focus-visible` outlines and the reduced-motion rule; only textarea and row focus were missing. The `.add` media query was already ported.
+  - The accessible-name check opens every `<details>` and ticks "Show gear you can't use" first, so new controls inside panels are covered automatically.
+---
+
+## 2026-10-18 - US-013
+- Prerender pipeline: `src/site.ts`, `src/seo/{head,jsonld}.ts`, `src/routes.tsx` (`/` only), `src/entry-server.tsx` (`routes`, `renderDocument`), `scripts/prerender.mjs`, three-step `build`, `preview` script. `/` has the PRD title, description, canonical, OG/Twitter, light and dark theme-color, WebSite + WebApplication JSON-LD. Static "What Tidecaller does" section sits between BestSet and Footer. `entry-client.tsx` hydrates in production, client-renders in dev.
+- Files: src/{site.ts,routes.tsx,entry-server.tsx,entry-client.tsx}, src/seo/*, src/calculator/{WhatItDoes.tsx,Calculator.tsx}, scripts/prerender.mjs, test/{seo.test.ts,smoke.mjs}, package.json, package-lock.json (node-html-parser), tsconfig.json (now includes `test`), vite.config.ts (vitest also picks up `test/**/*.test.ts`)
+- Checks: typecheck ok, npm test 83 passed, npm run build ok, npm run smoke 29 passed. Calculator JS: 1 file, 82.7 KB gzipped (limit 120).
+- Broke on purpose: shortened the home description (SEO length test failed); made WhatItDoes render different text on server and client (hydration smoke check and no-console-errors check failed). Both restored.
+- **Learnings for future iterations:**
+  - Add a page by adding an entry to `routes` in `src/routes.tsx` (`path, title, description, ogImage, ogType, hydrate, noindex?, jsonLd[], render()`). The SEO test iterates `routes`, so it covers it automatically. `renderDocument` strips the app `<script type="module">` and modulepreload links when `hydrate` is false.
+  - `headTags` does not yet emit icons or the manifest (US-020). Home's JSON-LD is one `@graph` block; other pages need a BreadcrumbList block (US-014+).
+  - The raw HTML splits the priority line across spans and escapes `'` and `>`, so smoke strips tags, comments and entities before matching text.
+  - The Vite template's `<!--app-head-->` and `<!--app-html-->` survive the client build; prerender reads `dist/index.html` as the template and overwrites it for `/`.
+  - React reports hydration mismatches as console errors even in the production bundle, so the smoke's console-error checks catch them.
+---
+
+## 2026-10-18 - US-014
+- Site chrome (skip link, header with nav, footer, breadcrumbs), `/about`, the 404 page, `vercel.json`, and the SEO/smoke checks for them.
+- Files: index.html, src/components/{nav.ts,SiteHeader.tsx,SiteFooter.tsx,Breadcrumbs.tsx,Layout.tsx}, src/pages/{About.tsx,NotFound.tsx}, src/routes.tsx, src/entry-server.tsx, src/entry-client.tsx, src/seo/{head.ts,jsonld.ts}, src/styles/app.css, scripts/prerender.mjs, vercel.json, test/{seo.test.ts,smoke.mjs}
+- Checks: typecheck ok, npm test 114 passed, npm run build ok, npm run smoke 35 passed. Calculator JS 82.7 KB gzipped.
+- Broke on purpose: an About link to `/nope` (internal-link test failed); dropped About's breadcrumbs (BreadcrumbList test failed); `trailingSlash` true in vercel.json (config test failed). All restored.
+- **Learnings for future iterations:**
+  - The header and footer are NOT part of the hydrated React tree. `index.html` has `<!--app-header-->`, `<main id="main"><div id="root">`, `<!--app-footer-->`; `renderDocument` fills them with `renderToStaticMarkup(<SiteHeader/>)` and `<SiteFooter/>`, so the client bundle never carries them. `Layout` is only used by the dev entry (dev has no prerender).
+  - Nav and footer links come from `SECTIONS` in `src/components/nav.ts`, filtered to the indexable route paths. Adding `/bis`, `/items` or `/guides` to `routes` makes the links appear; the nav test then expects them.
+  - Add a page: a `Route` with `breadcrumbs` (trail from Home ending at itself, e.g. `ABOUT_TRAIL`); `renderDocument` appends the BreadcrumbList JSON-LD and the SEO test checks it. Render `<Breadcrumbs trail=.../>` in the page and wrap content in `<div className="wrap page">` with one h1.
+  - The 404 is route path `/404` with `noindex: true`; the prerender writes it to `dist/404.html`. `headTags` omits canonical and og:url for noindex pages, and the SEO test expects that. US-020's sitemap must skip `noindex` routes.
+  - The About page's og image `/og/about.png` does not exist until US-020 creates it.
+  - Spec section 10 lists three sources without URLs (wowvendor, classicwowforever.com, wowclassicforever.info); About names them as text, since no URL may be invented.
+  - In smoke, a deliberate 404 navigation logs a console error for the document itself; the site-pages console check filters that URL.
+---
+
+## 2026-10-18 - US-015
+- `/bis`: Horde and Alliance best sets (build-time `bestSet`), "Does it change for other fights?" (Trash pull, Raid boss vs Dungeon boss), "Crafter upgrades" per profession, Article + BreadcrumbList JSON-LD, description naming the three top-scoring picks. The calculator's "What Tidecaller does" links to `/bis`.
+- Files: src/lib/{bis.ts,bis.test.ts}, src/pages/Bis.tsx, src/routes.tsx, src/seo/jsonld.ts (`article()`), src/calculator/WhatItDoes.tsx, src/styles/app.css, test/{seo.test.ts,smoke.mjs}
+- Checks: typecheck ok, npm test 132 passed, npm run build ok, npm run smoke 37 passed. `npm run reference` not run (calculator and model unchanged apart from a static link).
+- Broke on purpose: made `siteSet` ignore the faction (Alliance test failed); added 1 to the rendered total (the /bis smoke check failed). Both restored.
+- **Learnings for future iterations:**
+  - `src/lib/bis.ts` is the build-time helper: `siteSet({fight, faction, prof})` gives a best set for the default character, `setDiff(a, b)` lists changed slots (rings and trinkets compare as sets), `SITE_STATE` is the Dungeon boss defaults. US-016 and US-017 should reuse it for default-settings scores.
+  - `/bis` tables have ids `hordeSet` and `allianceSet`; item and slot names are plain text. US-016 links slot names, US-017 links item names (`SetTable` in `src/pages/Bis.tsx`).
+  - Measured: Trash pull changes only Wrist; Raid boss changes many slots; Tailoring changes Feet, Leatherworking Waist and Legs, Enchanting and Engineering nothing.
+  - `.page.wide` lifts the 76ch cap for pages with tables.
+---
+
+## 2026-10-18 - US-016
+- 15 slot pages `/bis/<slot>` from `SLOTS`: lead sentence with the top Horde and Alliance picks, all-items table (Req, stats, Trash/Dungeon/Raid scores, Faction, where from), ring and trinket note, weapon comparison (two-hander vs main hand + off hand, per faction) with links between the three weapon pages, previous/next/back links, Article + BreadcrumbList. `/bis` has "Best in slot by slot" and its set tables link each slot name.
+- Files: src/lib/slotPage.ts, src/pages/{SlotPage.tsx,Bis.tsx}, src/routes.tsx, src/styles/app.css, test/{seo.test.ts,smoke.mjs}
+- Checks: typecheck ok, npm test 313 passed, npm run build ok, npm run smoke 38 passed. `npm run reference` not run (calculator and model unchanged).
+- Broke on purpose: sorted the slot table ascending (slot smoke check failed); removed the slot links from the /bis set tables (SEO test failed; first version of that test passed because the "by slot" list also links, so I added a count of links inside #hordeSet). Both restored.
+- **Learnings for future iterations:**
+  - `src/lib/slotPage.ts` has `slotRows(slot)` (all built-in items with Trash/Boss/Raid scores, best Dungeon first), `topFor(rows, faction)`, `slotPath`, `slotTitleCase`, `weaponCompare(faction)`. US-017 item pages can reuse `slotRows` for "how it ranks in its slot".
+  - The Horde set on /bis has 16 rows (10 armour, 2 rings, 2 trinkets, main hand + off hand); the set is Horde 111.59 pair vs Wind Spirit Staff 85.17.
+  - Routes are spread into the table with `...SLOTS.map(...)`; the SEO test and sitemap pick them up with no further change. Prerender writes `dist/bis/<slot>/index.html`.
+---
+
+## 2026-10-18 - US-017
+- 155 item pages `/items/<slug>` and the `/items` index; database item names now link to their page in the calculator best set and candidate tables, `/bis` set tables and slot page tables (user items stay plain text via `src/calculator/ItemName.tsx`).
+- Files: src/lib/{itemPage.ts,slug.ts}, src/pages/{ItemPage.tsx,Bis.tsx,SlotPage.tsx}, src/calculator/{ItemName.tsx,BestSet.tsx,Candidates.tsx}, src/routes.tsx, test/{seo.test.ts,smoke.mjs}
+- Checks: typecheck ok, npm test 2189 passed, npm run build ok, npm run smoke 40 passed, npm run reference 27 of 27.
+- Broke on purpose: rank counted from 0 (item page test failed); removed the item links from the slot page table (link test failed). Both restored.
+- **Learnings for future iterations:**
+  - `itemPath(item)` lives in `src/lib/slug.ts` (not `itemPage.ts`) so the hydrated calculator bundle does not pull in the build-time ranking code. `src/lib/itemPage.ts` has `itemInfo(item)` (ranks per fight, equal scores share a rank) and `itemsBySlot()`.
+  - Item pages and `/items` use og image `/og/items.png`, which US-020 must create (like `/og/about.png`).
+  - Item pages carry only BreadcrumbList JSON-LD (no Article, no Product). Rank is among all built-in items in the slot, whatever the faction.
+  - The calculator's default candidate list hides unusable gear, so only about 128 item links show on `/` by default.
+---
+
+## 2026-10-18 - US-018
+- `/guides` index, `/guides/stat-weights` (why mana stats scale by how often mana runs out, three-fight weights table with priority lines from `compute`, what moves the weights) and `/guides/downranking` (the rule with a worked example, coefficient, all 12 ranks with gear kept at 20, 25 and 30, heal and heal per mana at level 30 with 200 Healing, Check tags). Article + BreadcrumbList on both guides. The calculator's "What Tidecaller does" and `/bis` link both guides.
+- Files: src/pages/Guides.tsx, src/routes.tsx, src/styles/app.css, src/calculator/WhatItDoes.tsx, src/pages/Bis.tsx, test/{seo.test.ts,smoke.mjs}
+- Checks: typecheck ok, npm test 2226 passed, npm run build ok, npm run smoke 42 passed. `npm run reference` not run (calculator and model unchanged apart from a static link).
+- Broke on purpose: shifted the learned level by one in the downranking table (the 65% smoke check failed). Restored.
+- **Learnings for future iterations:**
+  - `src/pages/Guides.tsx` holds the guides index and both guides; `GUIDE_LIST` is the index list. US-019 adds its page to `GUIDE_LIST` (the SEO test then expects the index to link it, and the smoke "guide links" count of 2 must become 3).
+  - The nav test now sees `/guides` as a section: header and footer link it. Guides use og image `/og/guides.png`, which US-020 must create.
+  - In the model, `f` is the share of the fight inside the five-second rule (the "casting" slider) and `w` is how often mana runs out; the preset chips set t and f only.
+---
+
+## 2026-10-18 - US-019
+- `/guides/spirit-regen`: five-second rule, gear MP5, Mindfulness and the Icon, Intellect, the twelve readings table, the fitted line and levels-off curve with worst misses, the 43 exclusion and the unconfirmed list. Build-time inline SVG chart (12 points, 43 hollow and labelled "excluded", line and dashed curve, axes, title and desc). The guides index, calculator "What Tidecaller does", `/bis` and the stat weights guide link it. Article + BreadcrumbList.
+- Files: src/pages/Guides.tsx, src/routes.tsx, src/styles/app.css, src/calculator/WhatItDoes.tsx, src/pages/Bis.tsx, test/{seo.test.ts,smoke.mjs}
+- Checks: typecheck ok, npm test 2238 passed, npm run build ok, npm run smoke 43 passed. `npm run reference` not run (calculator and model unchanged apart from a static link).
+- Broke on purpose: dropped the `excluded` class from the 43 point (the SEO test failed). Restored.
+- **Learnings for future iterations:**
+  - The page draws the line from `DEFAULTS.sbase/sper` and the curve from `DEFAULTS.sA/sB` (114.0 / 2666, fitted to all twelve); worst misses are computed in the page (0.6 for the eleven on the line, 2.7 for the curve on all twelve), matching spec section 3.
+  - Chart colours use the CSS tokens (`.chart` rules in app.css), so dark mode needs nothing extra. The build is slow in this container (about 2 minutes): run it in the background and wait on the output.
+---
+
+## 2026-10-18 - US-020
+- Sitemap and robots written by the prerender (`src/seo/sitemap.ts`, exported through entry-server); favicon.svg, site.webmanifest, icon links in every head (`headTags`); `scripts/og.mjs` renders five 1200x630 cards and the three PNG icons (268 KB total).
+- Files: src/seo/{head.ts,sitemap.ts}, src/entry-server.tsx, scripts/{prerender.mjs,og.mjs}, public/*, test/{seo.test.ts,smoke.mjs}
+- Checks: typecheck ok, npm test 2599 passed, npm run build ok, npm run smoke 44 passed. `npm run reference` not run (calculator and model unchanged).
+- Broke on purpose: removed public/og/about.png (the og:image existence test failed). Restored.
+- **Learnings for future iterations:**
+  - Regenerate the images by hand: `CHROMIUM_PATH=... node scripts/og.mjs`. Card copy lives in the `cards` array there.
+  - The smoke console-error filters for /favicon.ico are gone: a missing icon now fails the run.
+  - Icon links are in `headTags`, so the 404 page has them too; the sitemap skips `noindex` routes.
+---
+
+## 2026-10-18 - US-021
+- "Copy link to these settings" button (`src/calculator/ShareLink.tsx`) in the header: copies `<origin>/?s=<code>` (SITE_URL on the production host, the current origin elsewhere), shows "Link copied", falls back to a read-only `#shareLink` text field when the clipboard rejects or is missing, and notes when items were left out. On load, `useCalculator` applies a valid `?s=` in place of saved state (the save effect then stores it), ignores an invalid one, and removes `s` from the address bar with `history.replaceState` either way.
+- Files: src/calculator/{ShareLink.tsx,Calculator.tsx,useCalculator.ts}, src/styles/app.css, test/smoke.mjs
+- Checks: typecheck ok, npm test 2599 passed, npm run build ok, npm run smoke 46 passed, npm run reference 27 of 27.
+- Broke on purpose: commented out the `searchParams.delete("s")` line (the share smoke check failed). Restored.
+- **Learnings for future iterations:**
+  - Smoke grants `clipboard-read`/`clipboard-write` to a context to read the copied link; the no-clipboard check defines `navigator.clipboard` as undefined via an init script.
+  - The canonical stays `/` because the `?s=` is read only after hydration and never appears in the prerendered head.
+---
+## 2026-10-18 - US-022
+- Vercel Web Analytics script added by the prerender on production builds only (`renderDocument(route, template, {analytics})`, set from `process.env.VERCEL_ENV === "production"` in `scripts/prerender.mjs`); About privacy note says anonymous page views are counted without cookies; `.github/workflows/ci.yml` (Node 22, npm ci, typecheck, test, build) on push and pull request.
+- Files: src/entry-server.tsx, scripts/prerender.mjs, src/pages/About.tsx, test/seo.test.ts, .github/workflows/ci.yml
+- Checks: typecheck ok, npm test 2602 passed, npm run build ok (no insights script locally; `VERCEL_ENV=production node scripts/prerender.mjs` after a build adds it to every page). No smoke (About text only), no reference.
+- Broke on purpose: made the script unconditional (the "absent by default" test failed). Restored.
+- **Learnings for future iterations:**
+  - The script is inserted before `</body>`; run `npm run build` again to get a clean local dist after trying the production prerender.
+---
+
+## 2026-10-18 - US-023
+- README.md (what it is, URL, every npm script, architecture, data update steps, social image regeneration, Ralph pointer) and docs/search-console.md (Google Domain and URL-prefix properties, sitemap, request indexing of / and /bis, Bing import, Vercel Web Analytics, first-month watch list).
+- Files: README.md, docs/search-console.md
+- Checks: typecheck ok, npm test 2602 passed, npm run build ok. No smoke or reference (docs only). No new checks added, so nothing broken on purpose. No em dashes in either file (grep count 0).
+- **Learnings for future iterations:**
+  - The URL-prefix HTML tag verification needs a head change, which is a code change; the guide tells the owner to ask a session, or use the DNS route.
+---
+
+## 2026-10-18 - Delivering session, after the last iteration
+- Verified on the final commit: typecheck, 2,603 unit tests, 46 smoke checks, and a new
+  differential check (`npm run reference`, test/reference-diff.mjs) that loads the spec's own
+  reference implementation beside the built calculator in 27 scenarios and compares every number on
+  screen: 27 of 27 identical. It was seen failing on a broken Intellect formula.
+- Fixed in this session, outside the PRD, after a visual review of the built pages:
+  - `body{margin:0}`: the browser's 8px default left a frame around every page.
+  - The `/bis` set tables now share the calculator's best-set styling (`table.bestset`): item
+    names were right-aligned in the number font, because those rules were tied to `#bestTable`.
+  - The Spirit guide said the line fits "within 0.5 MP5" (worst miss 0.55) and the curve's worst
+    miss was "2.6" (2.62). "Within" is an upper bound, so both now round up, giving the spec's own
+    0.6 and 2.7.
+  - "Does it change for other fights?" showed negative gains (Bloodmage Mantle -5.9) because it
+    compared a Dungeon boss score with a Raid boss score. `setDiff` now takes the fight's weights
+    and scores both sides with them, so a swap shows what it gains in that fight (+0.7). A test
+    asserts every fight swap gains, and fails on the old diff.
+- Also: ralph.sh no longer trusts a bare mention of the completion tag (run 1 stopped after two
+  stories because an iteration wrote it while saying it did not apply); it checks prd.json.
+---

@@ -1102,3 +1102,79 @@ td.score{font-weight:600}
 })();
 </script>
 ```
+
+## 14. Owner rulings after the first build (18 Oct 2026)
+
+These supersede sections 4, 5 and 7 where they differ. Everything else in this spec stands.
+
+### 14.1 One level for the character and the gear
+
+Tom: *"the level that you put at the top for your character should be the same level for gear."*
+The separate "Usable up to level" filter (`maxlvl`) is removed. An item is usable when its `req`
+is at most the character's Level. A saved `maxlvl` is ignored.
+
+### 14.2 Max mana is worked out from level and Intellect, and stays editable
+
+Tom: *"your mana is way off, I think I only have 900 and some ... looking online they should be
+highly documented for what the naked and gear based mana is."* Ruled 18 Oct: calculated, but
+editable.
+
+- Max mana = base mana for the level + mana from Intellect.
+- Mana from Intellect: the first 20 points give 1 mana each and every point after gives 15, so
+  `min(20, Int) + 15 * max(0, Int - 20)`. Section 3's "15 mana per point" is the rate above 20.
+- Base mana depends on class and level only, never race. The Shaman values documented for
+  Classic (Wowpedia and the Vanilla WoW Archive, "Base mana", vanilla table):
+
+| Level | 1 | 7 | 10 | 14 | 15 | 20 | 21 | 22 | 23 | 24 | 25 | 26 | 27 | 28 | 29 | 30 | 60 |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| Base mana | 55 | 121 | 175 | 241 | 260 | 370 | 395 | 421 | 448 | 476 | 505 | 535 | 566 | 598 | 631 | 665 | 1520 |
+
+- A level between documented ones is interpolated linearly between its neighbours and rounded,
+  and is shown as estimated (for example level 18 reads 326, estimated).
+- **Checked at level 24** (section 14.4): a naked level 24 Forever Shaman matches exactly. Other
+  levels are Classic's documented values, not yet checked in Forever. A player
+  can check their own sheet: max mana minus mana from Intellect is their base mana.
+- New input **Intellect** (the total on the character sheet), default **115**: a fully geared
+  level 30 (the default best set carries 75 Intellect, plus the character's own). Owner's choice,
+  18 Oct.
+- Max mana shows the calculated value with its breakdown. Typing a number overrides it, and "Use
+  calculated" returns to the calculation. New state keys: `int` (default 115) and `manaAuto`
+  (default true); `pool` holds a typed value and is used only while `manaAuto` is false.
+- Migration: a saved state without `manaAuto` keeps a typed pool (`manaAuto` false) unless that
+  pool is the old default 2223, which becomes calculated (`manaAuto` true).
+
+### 14.3 The defaults' numbers
+
+At the defaults (level 30, Intellect 115, so max mana 665 + 20 + 1,425 = **2,110**, everything else
+as section 4), Horde, no professions:
+
+| Preset | E | X (raw MP5) | MP5 | Int | Spirit | Water Shield per cast | Casts | Horde best set total |
+|---|---|---|---|---|---|---|---|---|
+| Trash pull (90 s, 70%) | 3430.5 | 3.226 | 2.258 | 1.914 | 0.919 | 2.110 | 17.34 | 431.74 |
+| Dungeon boss (120 s, 90%) | 3636.8 | 4.057 | 2.840 | 1.808 | 0.978 | 2.110 | 18.38 | 428.41 |
+| Raid boss (300 s, 100%) | 5634.5 | 6.546 | 4.582 | 1.178 | 1.434 | 2.110 | 28.47 | 439.22 |
+
+h is unchanged at 526.929. The Dungeon boss priority line reads "MP5 > Intellect > Healing = Spell
+Power = Spirit" (Spirit 0.978 is within 0.03 of Healing).
+
+Best set at Dungeon boss defaults (scores to 2 places): Holy Shroud 38.87, Scorn's Icy Choker
+17.85, Death Speaker Mantle 25.88, Darkspear Raider's Cloak 18.37, Death Speaker Robes 39.88,
+Mindthrust Bracers 17.56, Gloves of Old 20.77, Blightleaf Rope 25.08, Violet Sorcerer's Leggings
+40.39, Acidic Walkers 23.37, Philanthropist's Ring 19.04, Sea Giant's Toe Ring 18.00, Roogug's
+Severed Head 5.87, Worgenbane Talisman 5.68, Tidebringer's Claw 86.00, Forcestone Buckler 25.82.
+Main hand + off hand 111.82 beats the best two-hander (Wind Spirit Staff) 85.64. Total 428.41.
+Alliance total 429.74.
+
+Section 7's numbers still hold for the original character (max mana typed in as 2223, so
+`manaAuto` false) and stay pinned as the check of the math.
+
+### 14.4 Owner readings: Tom's Orc Shaman with no gear (18 Oct 2026)
+
+| Level | Health | Mana | Strength | Agility | Stamina | Intellect | Spirit |
+|---|---|---|---|---|---|---|---|
+| 22 | (not shown) | (not shown) | 42 | 26 | 42 | 38 | 43 |
+| 24 | 494 | **796** | 44 | 27 | 44 | 40 | 46 |
+
+**Level 24 confirms the mana model in Forever:** 476 base (the documented Classic value) + 20 + 15 x
+20 = 796, exactly what the client shows. The level 22 Spirit of 43 is the "no bonus Spirit" reading
+in section 3. At level 22 the model predicts a naked max mana of 421 + 20 + 15 x 18 = 711.

@@ -1,0 +1,77 @@
+{
+  "project": "Tidecaller",
+  "branchName": "claude/sweet-hypatia-53cceb",
+  "description": "Run 002: one level for character and gear, and max mana worked out from level and Intellect (editable), per Tom's rulings of 18 Oct in docs/spec.md SECTION 14, which supersedes sections 4, 5 and 7 where they differ: read it before any story. FULL PRD: tasks/ralph-runs/002-level-and-mana/prd.md (read its Research findings). The run 001 PRD (tasks/ralph-runs/001-tidecaller-v1/prd.md) still describes the architecture. Section 7's tests stay, run on {...DEFAULTS, manaAuto:false, pool:2223}; section 14.3 holds the new defaults' numbers.",
+  "userStories": [
+    {
+      "id": "US-001",
+      "title": "One level for the character and the gear",
+      "description": "As a player, I want the level I enter for my character to decide what gear I can use, so there is one level to set.",
+      "acceptanceCriteria": [
+        "Read `docs/spec.md` section 14.1 first",
+        "`maxlvl` leaves `State`, `DEFAULTS`, `maxLevel()` and every caller; `whyNot` checks `req` against `state.level` (\"Needs level N\" unchanged)",
+        "The \"Usable up to level\" input is removed from the Best set filters; the filters keep Faction, professions and \"Show gear you can't use\"",
+        "`loadSaved` and `decodeShare` drop a saved `maxlvl` without error; a test covers both",
+        "`test/reference-diff.mjs`: the \"usable up to 25\" scenario is removed (the reference still has that control; the app no longer does); update the scenario count wherever it is written (`CLAUDE.md`, `README.md`, `scripts/ralph/CLAUDE.md`: 26 scenarios) and nothing else in those files",
+        "Smoke: there is no `#maxlvl` input; at level 25 the best set shows no item with a level requirement above 25 and Holy Shroud (req 27) is not the Head pick",
+        "`npm run typecheck`, `npm test`, `npm run build`, `CHROMIUM_PATH=/opt/pw-browsers/chromium-1194/chrome-linux/chrome npm run smoke` and `npm run reference` (26 of 26) pass"
+      ],
+      "priority": 1,
+      "passes": true,
+      "notes": ""
+    },
+    {
+      "id": "US-002",
+      "title": "Max mana worked out from level and Intellect, in the model",
+      "description": "As a player, I want max mana calculated from my level and Intellect, so the weights start from a real mana pool.",
+      "acceptanceCriteria": [
+        "Read `docs/spec.md` sections 14.2 and 14.3 first",
+        "`model.ts`: `State` gains `int` (default 115) and `manaAuto` (default true); `pool` stays and is used only while `manaAuto` is false. Exports `SHAMAN_BASE_MANA` (the documented table from section 14.2, a comment naming its sources and that Forever has not confirmed it), `baseMana(level)` returning `{ value, estimated }` (documented value, else linear interpolation between documented neighbours, rounded; level clamped to 1..60), `manaFromInt(int)`, `calcPool(state)` returning `{ base, fromInt, total, estimated }`, and `effectivePool(state)`. `compute()` uses `effectivePool` everywhere it used `pool` (E and Water Shield)",
+        "Tests: `baseMana` exact at every documented level (1 55, 20 370, 25 505, 30 665, 60 1520 among them, each `estimated: false`); 18 is 326 and 2 is 66, both estimated; `manaFromInt` 10 is 10, 20 is 20, 40 is 320, 115 is 1445; the defaults' pool is 2110; level 30 with 40 Intellect is 985; level 22 with 54 Intellect is 951",
+        "The section 7 tests in `model.test.ts`, `src/lib/bis.test.ts` and anywhere else now run on `{ ...DEFAULTS, manaAuto: false, pool: 2223 }` with their expected values unchanged",
+        "New tests pin spec section 14.3 at the defaults: for all three presets E, X, MP5, Int, Spirit (3 places), Water Shield 2.110, casts and the Horde best set total (2 places); the Dungeon boss best set pick by pick to 2 places, 111.82 against 85.64, total 428.41, Alliance 429.74; the priority line \"MP5 > Intellect > Healing = Spell Power = Spirit\"",
+        "`storage.ts` migration per section 14.2: a saved state without `manaAuto` and a pool other than 2223 loads with `manaAuto: false` and that pool; one with 2223 (or no pool) loads with `manaAuto: true`. Tests for both. `share.ts` encodes and decodes `int` and `manaAuto`",
+        "Until US-003 adds the controls, typing in the existing Max mana field sets `pool` and `manaAuto: false`, so it still works",
+        "`test/reference-diff.mjs`: every scenario's state gets `pool: 2223, manaAuto: false` on the app side, with a comment saying why; still 26 of 26",
+        "Re-measure and re-pin every smoke check and unit test that asserts a default number or default pick (see the research findings' ripple list); each new expectation matches section 14.3",
+        "`npm run typecheck`, `npm test`, `npm run build`, `npm run smoke` and `npm run reference` (26 of 26) pass"
+      ],
+      "priority": 2,
+      "passes": true,
+      "notes": ""
+    },
+    {
+      "id": "US-003",
+      "title": "The Character panel: Intellect, and max mana with its working",
+      "description": "As a player, I want to type my Intellect and see my max mana worked out with its breakdown, and still be able to type my own number.",
+      "acceptanceCriteria": [
+        "An **Intellect** number input in the Character panel, labelled, beside Max mana (\"Intellect, total from your character sheet\" as its hint or label text)",
+        "**Max mana** shows `effectivePool`. Under it one line of working while calculated, for example \"Base 665 at level 30 + 1,445 from 115 Intellect = 2,110.\" When the level's base mana is interpolated the line says the base is estimated (use the existing `Check` tag style)",
+        "Typing a number into Max mana sets `pool` and `manaAuto: false`; the working line then reads \"Using your number.\" with a **Use calculated (2,110)** button (live value) that sets `manaAuto: true`. Changing Level or Intellect while overridden does not move the typed number",
+        "The Character panel hint still says Healing power excludes Spell Damage, and adds one sentence: max mana is base mana for your level (Classic's documented Shaman values, not yet confirmed in Forever) plus Intellect, first 20 points 1 mana each, then 15",
+        "Every new control has an accessible name and works at 400px with no sideways scroll",
+        "Smoke: defaults show Max mana 2110 and the working line; Intellect 40 makes Max mana 985 and changes the MP5 weight; Level 22 with Intellect 54 reads 951; Level 18 shows the estimated tag; typing 1000 into Max mana shows \"Using your number.\" and the weights change; \"Use calculated\" returns to the calculated value; the choice survives reload",
+        "`npm run typecheck`, `npm test`, `npm run build`, `npm run smoke` and `npm run reference` (26 of 26) pass"
+      ],
+      "priority": 3,
+      "passes": true,
+      "notes": ""
+    },
+    {
+      "id": "US-004",
+      "title": "Say where the mana comes from, on every page that explains the numbers",
+      "description": "As a player reading the site, I want to know how max mana is worked out and what is unconfirmed about it.",
+      "acceptanceCriteria": [
+        "The calculator's \"Unconfirmed\" paragraph and the About page's unconfirmed list add: base mana uses Classic's documented Shaman values, not yet confirmed in Forever, and levels between documented values are estimated",
+        "The About page's sources list adds the Wowpedia and Vanilla WoW Archive \"Base mana\" pages as plain text naming them (no link: their URLs were not verified from here)",
+        "`/bis`'s intro names the default character as level 30 with 115 Intellect (2,110 mana) and links to the calculator to change it; item and slot pages' \"default settings\" sentences stay accurate",
+        "`/guides/stat-weights` adds a short paragraph: the mana pool comes from base mana plus Intellect (section 14.2), and a smaller pool makes mana stats worth more",
+        "No em dashes; no game facts beyond `docs/spec.md`",
+        "`npm run typecheck`, `npm test`, `npm run build`, `npm run smoke` and `npm run reference` pass"
+      ],
+      "priority": 4,
+      "passes": true,
+      "notes": ""
+    }
+  ]
+}

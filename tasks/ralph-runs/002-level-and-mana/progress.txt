@@ -1,0 +1,61 @@
+# Ralph Progress Log
+Started: Sun Oct 18 17:53:51 UTC 2026
+---
+
+## 2026-10-18 - US-001
+- Removed `maxlvl` and `maxLevel()`; `whyNot` checks `req` against `state.level`. Removed the "Usable up to level" input from Best set filters. `mergeState` only keeps keys present in DEFAULTS, so a saved or shared `maxlvl` is dropped with no extra code (tests cover both paths).
+- Reference diff: removed the "usable up to 25" scenario, counts now 26 in CLAUDE.md, README.md, scripts/ralph/CLAUDE.md.
+- Smoke: no `#maxlvl`; new check at level 25 (Holy Shroud not Head, no pick with req above 25, reads req from items.json).
+- Files: src/lib/model.ts, src/calculator/BestSet.tsx, src/lib/model.test.ts, src/lib/calibration.test.ts, test/smoke.mjs, test/reference-diff.mjs, docs counts.
+- Checks: typecheck ok, 2605 tests, build ok, smoke 47 passed, reference 26 of 26.
+- Broke on purpose: made whyNot compare against 99 instead of state.level; the new smoke check and two model tests failed; restored.
+- **Learnings for future iterations:**
+  - New State keys need a DEFAULTS entry: mergeState (storage and share) filters by DEFAULTS keys and type.
+  - Smoke can read src/data/items.json via readFileSync for item facts.
+---
+
+## 2026-10-18 - US-002
+- Model: State gains `int` (115) and `manaAuto` (true); exported SHAMAN_BASE_MANA, baseMana, manaFromInt, calcPool, effectivePool; compute() uses effectivePool for E and Water Shield. The Max mana field writes `pool` and `manaAuto: false`, showing effectivePool.
+- Migration lives in `mergeState` (storage and share links both): no `manaAuto` and a pool other than 2223 means manaAuto false. `encodeShare` drops a stale `pool` while manaAuto is true, so the link cannot read as typed.
+- `siteSet` and `siteWeights` take an `over` state patch so bis.test.ts can run section 7 on the original character.
+- Section 7 tests run on ORIG = {...DEFAULTS, manaAuto:false, pool:2223}, expected values unchanged; new tests pin section 14.3 (three presets, best set pick by pick, priority line, 428.41 and 429.74).
+- Smoke re-pinned to section 14.3 (2.84, 4.58, 3,637 18.4 casts, 428.4, 26.2, 38.9); new check for the Max mana field. Reference diff pins the app to pool 2223 + manaAuto false: 26 of 26.
+- Checks: typecheck ok, 2618 tests, build ok, smoke 48 passed, reference 26 of 26.
+- Broke on purpose: made effectivePool ignore manaAuto false; the new smoke check and model tests failed; restored.
+- **Learnings for future iterations:**
+  - A bare `pool` in a saved state is a typed value only when manaAuto is false; code should read `effectivePool(state)`, never `state.pool`.
+  - Page copy that quotes DEFAULTS numbers (Guides) must use effectivePool(DEFAULTS).
+---
+
+## 2026-10-18 - US-003
+- Character panel: Intellect input (#int, "Intellect, total from your character sheet") beside Max mana; a working line (#poolWork) reads "Base 665 at level 30 + 1,445 from 115 Intellect = 2,110." with the Check tag and "(estimated)" when the base is interpolated; while overridden it reads "Using your number." with a "Use calculated (2,110)" button. Hint adds the base mana and Intellect sentence.
+- Files: src/calculator/Calculator.tsx, test/smoke.mjs, scripts/ralph/prd.json.
+- Checks: typecheck ok, 2618 tests, build ok, smoke 49 passed, reference 26 of 26.
+- Broke on purpose: made "Use calculated" set manaAuto false; the new smoke check failed; restored.
+- **Learnings for future iterations:**
+  - The working line is a `.hint.field.full` paragraph with aria-live; the Use calculated button reuses the `chip` class.
+  - 400px overflow checks in smoke still pass with the new controls.
+---
+
+## 2026-10-18 - US-004
+- Copy: Footer "Unconfirmed" paragraph and About unconfirmed list name Classic's documented base mana (estimated between documented levels); About sources names the Wowpedia and Vanilla WoW Archive "Base mana" pages as plain text; /bis intro names level, Intellect and max mana from DEFAULTS and effectivePool; stat-weights guide gets a paragraph on the mana pool.
+- Files: src/calculator/Footer.tsx, src/pages/About.tsx, src/pages/Bis.tsx, src/pages/Guides.tsx, test/smoke.mjs, scripts/ralph/prd.json.
+- Checks: typecheck ok, 2618 tests, build ok, smoke 50 passed, reference 26 of 26.
+- Broke on purpose: changed "plus" to "and" in the guide paragraph; the new smoke check failed; restored.
+- **Learnings for future iterations:**
+  - Smoke text checks should normalize whitespace: JSX line breaks collapse in rendered text, so a source grep for a sentence can miss while the page matches.
+  - `fmt(x, 0)` already adds thousands separators.
+---
+
+## 2026-10-18 - Delivering session, after the last iteration
+- Verified on the final commit: typecheck, 2,618 unit tests, 50 smoke checks, reference comparison
+  26 of 26.
+- Visual review of the Character panel, fixed in this session:
+  - the Intellect label is just "Intellect" (the long label wrapped and pushed its field out of line
+    with Level; the panel header already says "from your character sheet");
+  - the working line (#poolWork) no longer uses `.field`, whose column flex stacked the Check tag
+    on its own line; it is `.row-full` now.
+- Tom's in-client readings (spec 14.4): a naked level 24 Orc Shaman shows 796 mana at 40 Intellect,
+  exactly 476 + 20 + 300, so Forever uses Classic's base mana and Intellect rule at level 24. Pinned
+  in model.test.ts; the site copy now says level 24 matches and other levels are not yet checked.
+---

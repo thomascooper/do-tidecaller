@@ -14,7 +14,9 @@ Read this before touching anything. It is short on purpose; the detail lives in 
   database, no auth. Settings live in the visitor's `localStorage` only. Supabase is available to
   the owner but is NOT used; adding a backend is a decision for Tom, not a story.
 - **Hosting:** Vercel, team **EQL Max** (slug `eqlmax`, id `team_z1kHOzNr7i2HB3jymo2afG9i`), project
-  **`tidecaller`**. Production builds from `main`. Every pushed branch gets its own preview URL,
+  **`tidecaller`** (`prj_8Peg0ACBUH8nKC0SmJVSCF8fuLrH`). Production builds from `main`. The custom
+  domain is attached and verified; it serves once the GoDaddy CNAME `tidecaller` points at the
+  value Vercel recommends (read it with `get_domain_config`, it is project specific). Every pushed branch gets its own preview URL,
   behind Vercel Authentication (Tom sees it signed in to Vercel; a session reads it with
   `mcp__Vercel__web_fetch_vercel_url`, because the agent proxy blocks `*.vercel.app`).
 - **Source of truth:** `docs/spec.md`. Sections 3 to 9 are the behaviour, section 7 holds the test
@@ -42,6 +44,9 @@ never the expected value.
   `sitemap.xml` and `robots.txt` into `dist/`
 - `npm run smoke`: builds, serves `dist/` the way Vercel does and drives it in Chromium. Here:
   `CHROMIUM_PATH=/opt/pw-browsers/chromium-1194/chrome-linux/chrome npm run smoke`
+- `npm run reference`: the calculator against the spec's reference implementation (section 13),
+  26 scenarios, every number on screen compared. Same `CHROMIUM_PATH`. Run it whenever the
+  calculator or the model changes; anything but 26 of 26 means it no longer matches the spec
 - There is no lint script. Do not invent one mid-task.
 
 (Until the first Ralph run lands these scripts, the repo holds only scaffolding.)

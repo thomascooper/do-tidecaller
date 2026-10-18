@@ -1,0 +1,349 @@
+import { existsSync, readFileSync } from "node:fs";
+import { join } from "node:path";
+import { describe, expect, it } from "vitest";
+import { parse } from "node-html-parser";
+import { renderDocument, robotsTxt, routes, sitemapXml } from "../src/entry-server";
+import { canonicalUrl, DATA_UPDATED, SITE_URL } from "../src/site";
+
+const STUB = `<!doctype html><html lang="en"><head><meta charset="utf-8" /><!--app-head--></head><body><!--app-header--><main id="main"><div id="root"><!--app-html--></div></main><!--app-footer--><script type="module" src="/src/entry-client.tsx"></script></body></html>`;
+
+const pages = routes.map((route) => ({ route, doc: parse(renderDocument(route, STUB)) }));
+
+const content = (doc: ReturnType<typeof parse>, selector: string) => doc.querySelector(selector)?.getAttribute("content");
+
+describe("route table", () => {
+  it("has the home page", () => {
+    expect(routes.map((r) => r.path)).toContain("/");
+  });
+  it("has unique paths", () => {
+    expect(new Set(routes.map((r) => r.path)).size).toBe(routes.length);
+  });
+  it("has unique titles", () => {
+    expect(new Set(pages.map((p) => p.doc.querySelector("title")?.text)).size).toBe(pages.length);
+  });
+  it("has unique descriptions", () => {
+    expect(new Set(pages.map((p) => content(p.doc, 'meta[name="description"]'))).size).toBe(pages.length);
+  });
+});
+
+describe.each(pages)("SEO for $route.path", ({ route, doc }) => {
+  const canonical = canonicalUrl(route.path);
+
+  it("has <html lang=en>", () => {
+    expect(doc.querySelector("html")?.getAttribute("lang")).toBe("en");
+  });
+  it("has a title of at most 65 characters", () => {
+    const title = doc.querySelector("title")?.text ?? "";
+    expect(title.length).toBeGreaterThan(0);
+    expect(title.length).toBeLessThanOrEqual(65);
+  });
+  it("has a description of 70 to 160 characters", () => {
+    const d = content(doc, 'meta[name="description"]') ?? "";
+    expect(d.length).toBeGreaterThanOrEqual(70);
+    expect(d.length).toBeLessThanOrEqual(160);
+  });
+  it("has exactly one h1", () => {
+    expect(doc.querySelectorAll("h1").length).toBe(1);
+  });
+  it("has a canonical URL on the site host that matches the route (noindex pages have none)", () => {
+    if (route.noindex) {
+      expect(doc.querySelector('link[rel="canonical"]')).toBeNull();
+      expect(content(doc, 'meta[name="robots"]')).toBe("noindex");
+      return;
+    }
+    expect(content(doc, 'meta[name="robots"]')).toBeUndefined();
+    const href = doc.querySelector('link[rel="canonical"]')?.getAttribute("href");
+    expect(href).toBe(canonical);
+    expect(href!.startsWith(SITE_URL)).toBe(true);
+    if (route.path !== "/") expect(href!.endsWith("/")).toBe(false);
+  });
+  it("has Open Graph and Twitter tags", () => {
+    if (!route.noindex) expect(content(doc, 'meta[property="og:url"]')).toBe(canonical);
+    expect(content(doc, 'meta[property="og:title"]')).toBeTruthy();
+    expect(content(doc, 'meta[property="og:description"]')).toBeTruthy();
+    expect(content(doc, 'meta[property="og:image"]')).toMatch(new RegExp(`^${SITE_URL}/.+`));
+    expect(content(doc, 'meta[property="og:type"]')).toBeTruthy();
+    expect(content(doc, 'meta[name="twitter:card"]')).toBe("summary_large_image");
+  });
+  it("has theme-color for light and dark", () => {
+    expect(doc.querySelectorAll('meta[name="theme-color"]').length).toBe(2);
+  });
+  it("has JSON-LD blocks that parse", () => {
+    const blocks = doc.querySelectorAll('script[type="application/ld+json"]');
+    if (!route.noindex) expect(blocks.length).toBeGreaterThan(0);
+    for (const b of blocks) expect(() => JSON.parse(b.text)).not.toThrow();
+  });
+  it("keeps the app script only on pages that hydrate", () => {
+    expect(doc.querySelectorAll('script[type="module"]').length).toBe(route.hydrate ? 1 : 0);
+  });
+});
+
+describe("site chrome and links", () => {
+  const paths = new Set(routes.map((r) => r.path));
+  const indexable = routes.filter((r) => !r.noindex).map((r) => r.path);
+
+  it.each(pages)("$route.path has a skip link, one main and the site header and footer", ({ doc }) => {
+    expect(doc.querySelector('a.skip[href="#main"]')).not.toBeNull();
+    expect(doc.querySelectorAll("main#main").length).toBe(1);
+    expect(doc.querySelector("header.site .mark")?.getAttribute("href")).toBe("/");
+    expect(doc.querySelector("footer.site-foot")?.text).toContain("Not affiliated with Blizzard Entertainment");
+    expect(doc.querySelector("footer.site-foot")?.text).toContain("Part of Drunken Oath");
+  });
+
+  it.each(pages)("$route.path links only to routes or files in public/", ({ doc, route }) => {
+    for (const a of doc.querySelectorAll("a[href]")) {
+      const href = a.getAttribute("href")!;
+      if (/^(https?:|mailto:)/.test(href)) continue;
+      const path = href.split(/[?#]/)[0];
+      if (path === "") continue; // "#main" and other in-page anchors
+      const ok = paths.has(path) || existsSync(join(__dirname, "..", "public", path));
+      expect(ok, `${route.path} links to ${href}`).toBe(true);
+    }
+  });
+
+  it("nav and footer show exactly the sections whose route exists", () => {
+    const sections = ["/", "/bis", "/items", "/guides", "/about"].filter((p) => indexable.includes(p));
+    for (const { doc } of pages) {
+      const hrefs = (sel: string) => doc.querySelectorAll(sel).map((a) => a.getAttribute("href"));
+      expect(hrefs("header.site nav a")).toEqual(sections);
+      expect(hrefs("footer.site-foot nav a")).toEqual(sections);
+    }
+  });
+
+  it.each(pages.filter((p) => !p.route.noindex && p.route.path !== "/"))(
+    "$route.path has a BreadcrumbList that ends at its canonical URL",
+    ({ doc, route }) => {
+      const lists = doc
+        .querySelectorAll('script[type="application/ld+json"]')
+        .map((b) => JSON.parse(b.text))
+        .filter((d) => d["@type"] === "BreadcrumbList");
+      expect(lists.length).toBe(1);
+      const items = lists[0].itemListElement;
+      expect(items[0].item).toBe(canonicalUrl("/"));
+      expect(items[items.length - 1].item).toBe(canonicalUrl(route.path));
+      expect(doc.querySelector("nav.crumbs li[aria-current='page']")).not.toBeNull();
+    },
+  );
+
+  it("/bis has an Article block and the PRD's title and h1", () => {
+    const bis = pages.find((p) => p.route.path === "/bis")!;
+    expect(bis.route.title).toBe("Resto Shaman BiS, Level 30 WoW Forever | Tidecaller");
+    expect(bis.doc.querySelector("h1")?.text).toBe("Resto Shaman best in slot, level 30");
+    const art = bis.doc
+      .querySelectorAll('script[type="application/ld+json"]')
+      .map((b) => JSON.parse(b.text))
+      .find((d) => d["@type"] === "Article");
+    expect(art.dateModified).toBe(DATA_UPDATED);
+    expect(art.publisher.name).toBe("Tidecaller");
+    expect(bis.route.description).toContain("Tidebringer's Claw");
+  });
+
+  it("the guides have the PRD's titles and h1s, Article blocks on the guides, and the index links all three", () => {
+    const get = (path: string) => pages.find((p) => p.route.path === path)!;
+    expect(get("/guides").route.title).toBe("Resto Shaman Guides for WoW Forever | Tidecaller");
+    expect(get("/guides").doc.querySelector("h1")?.text).toBe("Resto Shaman guides");
+    const expected: [string, string, string][] = [
+      ["/guides/stat-weights", "Resto Shaman Stat Weights Explained, WoW Forever | Tidecaller", "How Resto Shaman stat weights work"],
+      ["/guides/spirit-regen", "Spirit and Mana Regen in WoW Forever | Tidecaller", "Spirit and mana regen in Forever"],
+      ["/guides/downranking", "Healing Wave Downranking in WoW Forever | Tidecaller", "Healing Wave downranking"],
+    ];
+    const indexLinks = get("/guides").doc.querySelectorAll("main a").map((a) => a.getAttribute("href"));
+    for (const [path, title, h1] of expected) {
+      const g = get(path);
+      expect(g.route.title).toBe(title);
+      expect(g.doc.querySelector("h1")?.text).toBe(h1);
+      const types = g.doc.querySelectorAll('script[type="application/ld+json"]').map((b) => JSON.parse(b.text)["@type"]);
+      expect(types).toContain("Article");
+      expect(indexLinks).toContain(path);
+    }
+    expect(get("/guides/downranking").doc.querySelectorAll("#rankTable tbody tr").length).toBe(12);
+    const spirit = get("/guides/spirit-regen").doc;
+    expect(spirit.querySelectorAll("#spiritReadings tbody tr").length).toBe(12);
+    expect(spirit.querySelectorAll("svg#spiritChart circle.pt").length).toBe(12);
+    expect(spirit.querySelectorAll("svg#spiritChart circle.excluded").length).toBe(1);
+    expect(spirit.querySelector("svg#spiritChart title")).not.toBeNull();
+    expect(spirit.querySelector("svg#spiritChart desc")).not.toBeNull();
+  });
+
+  it("every slot page has the PRD's title and h1, a slot link back from /bis and prev/next links", () => {
+    const slotPages = pages.filter((p) => p.route.path.startsWith("/bis/"));
+    expect(slotPages.length).toBe(15);
+    const head = slotPages.find((p) => p.route.path === "/bis/head")!;
+    expect(head.route.title).toBe("Best Resto Shaman Head, Level 30 WoW Forever | Tidecaller");
+    expect(head.doc.querySelector("h1")?.text).toBe("Best Resto Shaman head gear, level 30");
+    const mh = slotPages.find((p) => p.route.path === "/bis/main-hand")!;
+    expect(mh.route.title).toContain("Main Hand");
+    expect(mh.doc.querySelector("h1")?.text).toBe("Best Resto Shaman main hand gear, level 30");
+    const bis = pages.find((p) => p.route.path === "/bis")!;
+    expect(bis.doc.querySelectorAll("#hordeSet tbody td.nm a").length).toBe(16);
+    const hrefs = bis.doc.querySelectorAll("main a").map((a) => a.getAttribute("href"));
+    for (const p of slotPages) {
+      expect(hrefs).toContain(p.route.path);
+      expect(p.doc.querySelectorAll('script[type="application/ld+json"]').map((b) => JSON.parse(b.text)["@type"])).toContain("Article");
+      expect(p.doc.querySelector('a[href="/bis"]')).not.toBeNull();
+    }
+    const links = mh.doc.querySelectorAll("main a").map((a) => a.getAttribute("href"));
+    expect(links).toContain("/bis/off-hand");
+    expect(links).toContain("/bis/two-hand");
+  });
+
+  it("every item has a page with the PRD's title and h1, a 70 to 160 character description naming slot, score and rank, and no Product markup", () => {
+    const itemPages = pages.filter((p) => p.route.path.startsWith("/items/"));
+    expect(itemPages.length).toBe(155);
+    for (const { route, doc } of itemPages) {
+      const name = doc.querySelector("h1")!.text;
+      expect(route.title).toBe(`${name}, Resto Shaman Value | Tidecaller`);
+      expect(route.description.length, route.path).toBeGreaterThanOrEqual(70);
+      expect(route.description.length, route.path).toBeLessThanOrEqual(160);
+      expect(route.description).toMatch(/\d+(\.\d)? points of Healing for a Resto Shaman, \d+ of \d+ [A-Za-z-]+( hand)? items/);
+      const types = doc.querySelectorAll('script[type="application/ld+json"]').map((b) => JSON.parse(b.text)["@type"]);
+      expect(types).toEqual(["BreadcrumbList"]);
+      const crumbs = JSON.parse(doc.querySelector('script[type="application/ld+json"]')!.text).itemListElement;
+      expect(crumbs.map((c: { name: string }) => c.name)).toEqual(["Home", "Items", name]);
+      expect(doc.querySelector('main a[href^="/bis/"]')).not.toBeNull();
+      expect(doc.querySelector('main a[href="/"]')).not.toBeNull();
+    }
+    const holy = itemPages.find((p) => p.route.path === "/items/holy-shroud")!;
+    expect(holy.doc.querySelector("main")!.text).toContain("worth 38.9 points of Healing to a level 30 Resto Shaman, 1 of 11 Head items");
+  });
+
+  it("/items lists all 155 items with links, grouped by slot", () => {
+    const idx = pages.find((p) => p.route.path === "/items")!;
+    expect(idx.doc.querySelector("h1")?.text).toBe("Every Resto Shaman item, level 30");
+    expect(idx.route.title).toBe("Resto Shaman Gear List, Level 30 WoW Forever | Tidecaller");
+    expect(idx.doc.querySelectorAll('main td.nm a[href^="/items/"]').length).toBe(155);
+    expect(idx.doc.querySelectorAll("main h2").length).toBe(15);
+  });
+
+  it("/bis and slot pages link database items to their item pages", () => {
+    const bis = pages.find((p) => p.route.path === "/bis")!;
+    expect(bis.doc.querySelector('#hordeSet a[href="/items/holy-shroud"]')).not.toBeNull();
+    const head = pages.find((p) => p.route.path === "/bis/head")!;
+    expect(head.doc.querySelectorAll('#slotItems tbody a[href^="/items/"]').length).toBe(11);
+  });
+
+  it("the calculator links database items in the best set and candidate tables", () => {
+    const home = pages.find((p) => p.route.path === "/")!;
+    // Unusable items are hidden by default, so not all 155 appear; the best set and usable candidates do.
+    expect(home.doc.querySelector('a[href="/items/holy-shroud"]')).not.toBeNull();
+    expect(home.doc.querySelectorAll('a[href^="/items/"]').length).toBeGreaterThan(100);
+  });
+
+  it("the 404 page is noindex, says Page not found and links to the sections", () => {
+    const nf = pages.find((p) => p.route.path === "/404")!;
+    expect(nf.route.noindex).toBe(true);
+    expect(nf.doc.querySelector("h1")?.text).toBe("Page not found");
+    expect(nf.doc.querySelectorAll("main a").length).toBeGreaterThan(0);
+  });
+});
+
+describe("about page", () => {
+  const { doc } = pages.find((p) => p.route.path === "/about")!;
+  const text = doc.querySelector("main")!.text;
+  it("names the data version, the update date and the trademark notice", () => {
+    expect(text).toContain("World of Warcraft: Forever beta, build 1.60.1");
+    expect(text).toContain("2026-10-18");
+    expect(text).toContain("trademark of Blizzard Entertainment");
+  });
+  it("links every source URL from the spec and the calculator", () => {
+    const hrefs = doc.querySelectorAll("main a").map((a) => a.getAttribute("href"));
+    for (const url of [
+      "https://foreverchanges.pro/bis/shaman/restoration",
+      "https://foreverchanges.pro/downranking",
+      "https://theforeverera.com/en/bis/shaman/restoration/30/",
+      "https://wowtbc.gg/warcraftforever/bis-list/restoration-shaman/",
+      "https://www.wowhead.com/forever/guide/classes/shaman/restoration/level-30-healer-overview",
+      "https://github.com/olav9/ManaMaster/blob/main/CLAUDE.md",
+      "https://statrat.info/mechanics/mana-regeneration/",
+    ])
+      expect(hrefs).toContain(url);
+    expect(hrefs).toContain("/");
+  });
+});
+
+describe("vercel.json", () => {
+  const config = JSON.parse(readFileSync(join(__dirname, "..", "vercel.json"), "utf8"));
+  const headersFor = (source: string) =>
+    Object.fromEntries(config.headers.find((h: { source: string }) => h.source === source).headers.map((h: { key: string; value: string }) => [h.key, h.value]));
+  it("serves clean URLs without trailing slashes", () => {
+    expect(config.cleanUrls).toBe(true);
+    expect(config.trailingSlash).toBe(false);
+    expect(config.framework).toBe("vite");
+    expect(config.buildCommand).toBe("npm run build");
+    expect(config.outputDirectory).toBe("dist");
+  });
+  it("caches assets and sets security headers", () => {
+    expect(headersFor("/assets/(.*)")["Cache-Control"]).toBe("public, max-age=31536000, immutable");
+    const all = headersFor("/(.*)");
+    expect(all["X-Content-Type-Options"]).toBe("nosniff");
+    expect(all["Referrer-Policy"]).toBe("strict-origin-when-cross-origin");
+    expect(all["Permissions-Policy"]).toBe("camera=(), microphone=(), geolocation=()");
+    expect(all["Content-Security-Policy"]).toBe("frame-ancestors 'self' https://drunkenoath.com https://*.drunkenoath.com");
+  });
+});
+
+describe("home page", () => {
+  const { doc } = pages.find((p) => p.route.path === "/")!;
+  it("has WebSite and WebApplication JSON-LD", () => {
+    const data = JSON.parse(doc.querySelector('script[type="application/ld+json"]')!.text);
+    const types = data["@graph"].map((n: { "@type": string }) => n["@type"]);
+    expect(types).toEqual(["WebSite", "WebApplication"]);
+    const app = data["@graph"][1];
+    expect(app.applicationCategory).toBe("UtilitiesApplication");
+    expect(app.operatingSystem).toBe("Any");
+    expect(app.isAccessibleForFree).toBe(true);
+  });
+  it("renders the calculator and the explainer into the HTML", () => {
+    const text = doc.querySelector("#root")!.text;
+    expect(text).toContain("Tidebringer's Claw");
+    expect(text).toContain("What Tidecaller does");
+  });
+  it("escapes < in JSON-LD", () => {
+    expect(renderDocument({ ...routes[0], jsonLd: [{ name: "</script><b>" }] }, STUB)).not.toContain("</script><b>");
+  });
+});
+
+describe("sitemap, robots, icons and social images", () => {
+  const indexablePaths = routes.filter((r) => !r.noindex).map((r) => r.path);
+  const locs = [...sitemapXml(indexablePaths).matchAll(/<loc>([^<]+)<\/loc>/g)].map((m) => m[1]);
+
+  it("lists exactly the indexable routes, absolute, with lastmod, and not the 404", () => {
+    expect(locs).toEqual(indexablePaths.map(canonicalUrl));
+    expect(locs).not.toContain(canonicalUrl("/404"));
+    expect(sitemapXml(indexablePaths).match(/<lastmod>/g)?.length).toBe(locs.length);
+    expect(sitemapXml(indexablePaths)).toContain(`<lastmod>${DATA_UPDATED}</lastmod>`);
+  });
+  it("robots allows everything and names the sitemap", () => {
+    expect(robotsTxt()).toBe(`User-agent: *\nAllow: /\n\nSitemap: ${SITE_URL}/sitemap.xml\n`);
+  });
+  it.each(pages)("$route.path og:image file exists in public/", ({ route }) => {
+    expect(existsSync(join(__dirname, "..", "public", route.ogImage)), route.ogImage).toBe(true);
+  });
+  it.each(pages)("$route.path links the icons and manifest", ({ doc }) => {
+    expect(doc.querySelector('link[rel="icon"]')?.getAttribute("href")).toBe("/favicon.svg");
+    expect(doc.querySelector('link[rel="apple-touch-icon"]')?.getAttribute("href")).toBe("/apple-touch-icon.png");
+    expect(doc.querySelector('link[rel="manifest"]')?.getAttribute("href")).toBe("/site.webmanifest");
+  });
+  it("manifest and icon files exist", () => {
+    const manifest = JSON.parse(readFileSync(join(__dirname, "..", "public", "site.webmanifest"), "utf8"));
+    expect(manifest.short_name).toBe("Tidecaller");
+    expect(manifest.start_url).toBe("/");
+    expect(manifest.display).toBe("standalone");
+    for (const icon of manifest.icons) expect(existsSync(join(__dirname, "..", "public", icon.src))).toBe(true);
+    for (const f of ["favicon.svg", "apple-touch-icon.png"]) expect(existsSync(join(__dirname, "..", "public", f))).toBe(true);
+  });
+});
+
+describe("analytics script", () => {
+  const script = '<script defer src="/_vercel/insights/script.js"></script>';
+  it("is added to every page when asked (production builds)", () => {
+    for (const route of routes) expect(renderDocument(route, STUB, { analytics: true })).toContain(script);
+  });
+  it("is absent by default (local and preview builds)", () => {
+    for (const route of routes) expect(renderDocument(route, STUB)).not.toContain("/_vercel/insights");
+  });
+  it("is described on the About page", () => {
+    const about = routes.find((r) => r.path === "/about")!;
+    expect(renderDocument(about, STUB)).toContain("without cookies");
+  });
+});

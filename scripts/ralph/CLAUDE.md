@@ -95,6 +95,10 @@ Once the scaffold story has created them, these are the checks:
   prerender, `vercel.json`). It builds the site, serves `dist/` the way Vercel does and drives it in
   Chromium. In this container run it as
   `CHROMIUM_PATH=/opt/pw-browsers/chromium-1194/chrome-linux/chrome npm run smoke`.
+- `npm run reference` (same `CHROMIUM_PATH`), when anything in the calculator on `/` or in
+  `src/lib/model.ts` changed. It loads the spec's own reference implementation beside the built
+  calculator with the same saved settings, in 26 scenarios, and compares every number on screen.
+  It must stay at 26 of 26: a difference means the calculator no longer matches the spec.
 - There is no lint script. Do not invent one.
 - ALL commits must pass the checks that apply. Do NOT commit broken code.
 - Keep changes focused and minimal
@@ -119,7 +123,7 @@ After completing a user story, check if ALL stories have `passes: true`.
 If ALL stories are complete and passing, reply with:
 <promise>COMPLETE</promise>
 
-If there are still stories with `passes: false`, end your response normally (another iteration will pick up the next story).
+If there are still stories with `passes: false`, end your response normally (another iteration will pick up the next story). **(Tidecaller)** In that case do not write the tag at all, not even to say it does not apply: call it "the completion signal" instead.
 
 ## Important
 

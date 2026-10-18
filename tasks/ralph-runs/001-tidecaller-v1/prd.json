@@ -18,7 +18,7 @@
         "`npm run typecheck`, `npm test` and `npm run build` pass"
       ],
       "priority": 1,
-      "passes": false,
+      "passes": true,
       "notes": ""
     },
     {
@@ -34,7 +34,7 @@
         "`npm run typecheck`, `npm test` and `npm run build` pass"
       ],
       "priority": 2,
-      "passes": false,
+      "passes": true,
       "notes": ""
     },
     {
@@ -49,7 +49,7 @@
         "`npm run typecheck`, `npm test` and `npm run build` pass"
       ],
       "priority": 3,
-      "passes": false,
+      "passes": true,
       "notes": ""
     },
     {
@@ -63,7 +63,7 @@
         "`npm run typecheck`, `npm test` and `npm run build` pass"
       ],
       "priority": 4,
-      "passes": false,
+      "passes": true,
       "notes": ""
     },
     {
@@ -79,7 +79,7 @@
         "`npm run typecheck`, `npm test` and `npm run build` pass"
       ],
       "priority": 5,
-      "passes": false,
+      "passes": true,
       "notes": ""
     },
     {
@@ -95,7 +95,7 @@
         "`npm run typecheck`, `npm test`, `npm run build` and `npm run smoke` pass"
       ],
       "priority": 6,
-      "passes": false,
+      "passes": true,
       "notes": ""
     },
     {
@@ -108,7 +108,7 @@
         "`npm run typecheck`, `npm test`, `npm run build` and `npm run smoke` pass"
       ],
       "priority": 7,
-      "passes": false,
+      "passes": true,
       "notes": ""
     },
     {
@@ -122,7 +122,7 @@
         "`npm run typecheck`, `npm test`, `npm run build` and `npm run smoke` pass"
       ],
       "priority": 8,
-      "passes": false,
+      "passes": true,
       "notes": ""
     },
     {
@@ -136,7 +136,7 @@
         "`npm run typecheck`, `npm test`, `npm run build` and `npm run smoke` pass"
       ],
       "priority": 9,
-      "passes": false,
+      "passes": true,
       "notes": ""
     },
     {
@@ -149,7 +149,7 @@
         "`npm run typecheck`, `npm test`, `npm run build` and `npm run smoke` pass"
       ],
       "priority": 10,
-      "passes": false,
+      "passes": true,
       "notes": ""
     },
     {
@@ -163,7 +163,7 @@
         "`npm run typecheck`, `npm test`, `npm run build` and `npm run smoke` pass"
       ],
       "priority": 11,
-      "passes": false,
+      "passes": true,
       "notes": ""
     },
     {
@@ -178,7 +178,7 @@
         "`npm run typecheck`, `npm test`, `npm run build` and `npm run smoke` pass"
       ],
       "priority": 12,
-      "passes": false,
+      "passes": true,
       "notes": ""
     },
     {
@@ -195,7 +195,7 @@
         "`npm run typecheck`, `npm test`, `npm run build` and `npm run smoke` pass"
       ],
       "priority": 13,
-      "passes": false,
+      "passes": true,
       "notes": ""
     },
     {
@@ -214,7 +214,7 @@
         "`npm run typecheck`, `npm test`, `npm run build` and `npm run smoke` pass"
       ],
       "priority": 14,
-      "passes": false,
+      "passes": true,
       "notes": ""
     },
     {
@@ -232,7 +232,7 @@
         "`npm run typecheck`, `npm test`, `npm run build` and `npm run smoke` pass"
       ],
       "priority": 15,
-      "passes": false,
+      "passes": true,
       "notes": ""
     },
     {
@@ -248,7 +248,7 @@
         "`npm run typecheck`, `npm test`, `npm run build` and `npm run smoke` pass"
       ],
       "priority": 16,
-      "passes": false,
+      "passes": true,
       "notes": ""
     },
     {
@@ -264,7 +264,7 @@
         "`npm run typecheck`, `npm test`, `npm run build` and `npm run smoke` pass"
       ],
       "priority": 17,
-      "passes": false,
+      "passes": true,
       "notes": ""
     },
     {
@@ -280,7 +280,7 @@
         "`npm run typecheck`, `npm test`, `npm run build` and `npm run smoke` pass"
       ],
       "priority": 18,
-      "passes": false,
+      "passes": true,
       "notes": ""
     },
     {
@@ -295,7 +295,7 @@
         "`npm run typecheck`, `npm test`, `npm run build` and `npm run smoke` pass"
       ],
       "priority": 19,
-      "passes": false,
+      "passes": true,
       "notes": ""
     },
     {
@@ -311,7 +311,7 @@
         "`npm run typecheck`, `npm test`, `npm run build` and `npm run smoke` pass"
       ],
       "priority": 20,
-      "passes": false,
+      "passes": true,
       "notes": ""
     },
     {
@@ -325,7 +325,7 @@
         "`npm run typecheck`, `npm test`, `npm run build` and `npm run smoke` pass"
       ],
       "priority": 21,
-      "passes": false,
+      "passes": true,
       "notes": ""
     },
     {
@@ -339,7 +339,7 @@
         "`npm run typecheck`, `npm test` and `npm run build` pass"
       ],
       "priority": 22,
-      "passes": false,
+      "passes": true,
       "notes": ""
     },
     {
@@ -353,7 +353,7 @@
         "`npm run typecheck`, `npm test` and `npm run build` pass"
       ],
       "priority": 23,
-      "passes": false,
+      "passes": true,
       "notes": ""
     }
   ]

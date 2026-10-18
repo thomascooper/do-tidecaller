@@ -1,0 +1,383 @@
+import { describe, expect, it } from "vitest";
+import {
+  DEFAULTS,
+  PRESETS,
+  activePreset,
+  baseMana,
+  calcPool,
+  compute,
+  effectivePool,
+  effectiveSpell,
+  knownSpells,
+  manaFromInt,
+  SHAMAN_BASE_MANA,
+  priorityLine,
+  shareKept,
+  spellCalc,
+  spellOf,
+  type PresetId,
+  type State,
+  STAT_LABELS,
+} from "./model";
+import { fmt } from "./format";
+
+/** The spec's original character (section 7): max mana typed in as 2223, so the math is checked on its own. */
+const ORIG: State = { ...DEFAULTS, manaAuto: false, pool: 2223 };
+
+function at(preset: PresetId, over: Partial<State> = {}, base: State = ORIG): State {
+  const { t, f } = PRESETS[preset];
+  return { ...base, t, f, ...over };
+}
+
+const EXPECTED: Record<PresetId, { k: number; E: number; X: number; mp5: number; int: number; spi: number }> = {
+  trash: { k: 0.65, E: 3543.5, X: 3.123, mp5: 2.186, int: 1.854, spi: 0.889 },
+  boss: { k: 0.55, E: 3749.8, X: 3.935, mp5: 2.754, int: 1.754, spi: 0.948 },
+  raid: { k: 0.5, E: 5747.5, X: 6.418, mp5: 4.492, int: 1.156, spi: 1.406 },
+};
+
+describe("spec section 7 test values", () => {
+  for (const id of Object.keys(EXPECTED) as PresetId[]) {
+    it(`matches at ${PRESETS[id].label}`, () => {
+      const r = compute(at(id));
+      const e = EXPECTED[id];
+      expect(r.k).toBeCloseTo(e.k, 3);
+      expect(r.E).toBeCloseTo(e.E, 1);
+      expect(r.c.heal).toBeCloseTo(526.929, 3);
+      expect(r.X).toBeCloseTo(e.X, 3);
+      expect(r.weights.mp5).toBeCloseTo(e.mp5, 3);
+      expect(r.weights.int).toBeCloseTo(e.int, 3);
+      expect(r.weights.spi).toBeCloseTo(e.spi, 3);
+      expect(r.weights.heal).toBe(1);
+      expect(r.weights.sp).toBe(1);
+    });
+  }
+
+  it("Water Shield gives 2.223 mana per cast and 18.96 casts at Dungeon boss", () => {
+    const r = compute(at("boss"));
+    expect(r.wsBack).toBeCloseTo(2.223, 3);
+    expect(r.casts).toBeCloseTo(18.96, 2);
+  });
+});
+
+describe("presets", () => {
+  it("labels and active preset", () => {
+    expect(PRESETS.trash.label).toBe("Trash pull");
+    expect(PRESETS.boss.label).toBe("Dungeon boss");
+    expect(PRESETS.raid.label).toBe("Raid boss");
+    expect(activePreset(DEFAULTS)).toBe("boss");
+    expect(activePreset({ t: 300, f: 100 })).toBe("raid");
+    expect(activePreset({ t: 300, f: 95 })).toBeNull();
+  });
+});
+
+describe("priorityLine", () => {
+  const text = (state: State) => {
+    const p = priorityLine(compute(state).weights);
+    return p.keys.map((k, i) => (i ? ` ${p.ops[i - 1]} ` : "") + { mp5: "MP5", int: "Intellect", spi: "Spirit", heal: "Healing", sp: "Spell Power", sta: "Stamina" }[k]).join("");
+  };
+
+  it("reads as the spec at Dungeon boss defaults", () => {
+    expect(text(at("boss"))).toBe("MP5 > Intellect > Healing = Spell Power > Spirit");
+  });
+
+  it("puts Stamina first when its weight is 5", () => {
+    expect(priorityLine(compute(at("boss", { stw: 5 })).weights).keys[0]).toBe("sta");
+  });
+
+  it("leaves Stamina out when its weight is 0", () => {
+    expect(priorityLine(compute(at("boss")).weights).keys).not.toContain("sta");
+  });
+
+  it("reports a NaN X so the UI can say there is no healing power bonus", () => {
+    const r = compute({ ...at("boss"), level: 60, spell: "hw1" });
+    expect(r.X).toBeNaN();
+    expect(priorityLine(r.weights).ok).toBe(false);
+    expect(priorityLine(compute(at("boss")).weights).ok).toBe(true);
+  });
+});
+
+describe("downranking and spells", () => {
+  it("shareKept follows clamp(1 - (L - 17 - T) * 0.05, 0, 1)", () => {
+    expect(shareKept(30, 24)).toBe(1);
+    expect(shareKept(30, 6)).toBeCloseTo(0.65, 10);
+    expect(shareKept(30, 1)).toBeCloseTo(0.4, 10);
+    expect(shareKept(60, 1)).toBe(0);
+  });
+
+  it("imphw shortens Healing Wave heal per second but not Lesser Healing Wave", () => {
+    const on = { ...DEFAULTS, imphw: true };
+    const off = { ...DEFAULTS, imphw: false };
+    const hw5 = spellOf(on, "hw5");
+    // lhw2 casts in 1.5 s, which the global cooldown floor hides, so give it a 3 s cast
+    const lhw2 = spellOf({ edits: { lhw2: { cast: 3 } } }, "lhw2");
+    expect(spellCalc(on, hw5).hps).toBeGreaterThan(spellCalc(off, hw5).hps);
+    expect(spellCalc(on, lhw2).hps).toBe(spellCalc(off, lhw2).hps);
+    expect(spellCalc(on, hw5).heal).toBe(spellCalc(off, hw5).heal);
+  });
+
+  it("known spells at level 30 are hw1 to hw5, lhw1 and lhw2", () => {
+    expect(knownSpells(30).map((s) => s.id)).toEqual(["hw1", "hw2", "hw3", "hw4", "hw5", "lhw1", "lhw2"]);
+  });
+
+  it("falls back to the highest known Healing Wave rank", () => {
+    expect(effectiveSpell({ level: 20, spell: "hw5" })).toBe("hw4");
+    expect(effectiveSpell({ level: 30, spell: "hw5" })).toBe("hw5");
+    expect(effectiveSpell({ level: 30, spell: "lhw2" })).toBe("lhw2");
+    expect(compute({ ...DEFAULTS, level: 20 }).sp.id).toBe("hw4");
+  });
+
+  it("a base edit on hw5 changes h, and non-positive garbage falls back", () => {
+    const base = compute(DEFAULTS).c.heal;
+    const edited = compute({ ...DEFAULTS, edits: { hw5: { base: 400 } } });
+    expect(edited.c.heal).not.toBe(base);
+    expect(edited.sp.edited).toBe(true);
+    expect(spellOf({ edits: { hw5: { base: NaN } } }, "hw5").base).toBe(spellOf({ edits: {} }, "hw5").base);
+  });
+});
+
+describe("regen shapes", () => {
+  it("curve model uses A - B / Spirit", () => {
+    const r = compute({ ...DEFAULTS, smodel: "curve" });
+    expect(r.sFull).toBeCloseTo(114 - 2666 / 107, 6);
+  });
+
+  it("caps the share kept while casting at 100%", () => {
+    expect(compute({ ...DEFAULTS, pct: 100, icon: true }).m).toBe(1);
+  });
+});
+
+describe("fmt", () => {
+  it("formats with fixed decimals and a dash for non-finite", () => {
+    expect(fmt(3749.8, 0)).toBe("3,750");
+    expect(fmt(2.7543, 2)).toBe("2.75");
+    expect(fmt(NaN, 2)).toBe("–");
+    expect(fmt(Infinity, 1)).toBe("–");
+  });
+});
+
+import { ITEMS } from "../data";
+import type { Item } from "./types";
+import { bestSet, candidates, score, sourceNote, whyNot } from "./model";
+
+const boss = () => at("boss");
+const weightsOf = (s: State) => compute(s).weights;
+
+describe("best set at Dungeon boss defaults (spec section 7)", () => {
+  const s = boss();
+  const set = bestSet(ITEMS, weightsOf(s), s);
+  const EXPECTED_SET: [string, number][] = [
+    ["Holy Shroud", 38.69],
+    ["Scorn's Icy Choker", 17.52],
+    ["Death Speaker Mantle", 25.29],
+    ["Darkspear Raider's Cloak", 17.83],
+    ["Death Speaker Robes", 39.29],
+    ["Spidertank Oilrag", 17.26],
+    ["Truefaith Gloves", 20.26],
+    ["Blightleaf Rope", 24.54],
+    ["Violet Sorcerer's Leggings", 39.54],
+    ["Acidic Walkers", 22.83],
+    ["Philanthropist's Ring", 18.77],
+    ["Sea Giant's Toe Ring", 18.0],
+    ["Roogug's Severed Head", 5.69],
+    ["Worgenbane Talisman", 5.51],
+    ["Tidebringer's Claw", 86.0],
+    ["Forcestone Buckler", 25.59],
+  ];
+
+  it("picks the spec's items in the spec's fill order with their scores", () => {
+    expect(set.rows).toHaveLength(EXPECTED_SET.length);
+    EXPECTED_SET.forEach(([name, sc], i) => {
+      expect(set.rows[i].item?.name).toBe(name);
+      expect(set.rows[i].score).toBeCloseTo(sc, 2);
+    });
+    expect(set.rows.map((r) => r.slot).slice(10, 14)).toEqual(["Finger", "Finger", "Trinket", "Trinket"]);
+  });
+
+  it("takes main hand + off hand over the two-hander and totals 422.62", () => {
+    expect(set.useTwo).toBe(false);
+    expect(set.pair).toBeCloseTo(111.59, 2);
+    expect(set.two).toBeCloseTo(85.17, 2);
+    expect(set.twoName).toBe("Wind Spirit Staff");
+    expect(set.total).toBeCloseTo(422.62, 2);
+    expect(set.weaponNote).toBe("Main hand and off hand beat the best two-hander by 26.4");
+  });
+});
+
+describe("usability", () => {
+  const buckler = ITEMS.find((i) => i.name === "Forcestone Buckler")!;
+
+  it("Alliance never gets a Horde-only item", () => {
+    const s = { ...boss(), faction: "Alliance" as const };
+    expect(whyNot(buckler, s)).toBe("Horde only");
+    const set = bestSet(ITEMS, weightsOf(s), s);
+    for (const r of set.rows) if (r.item) expect(r.item.faction).not.toBe("Horde");
+    expect(set.rows.find((r) => r.slot === "Off hand")?.item?.name).not.toBe("Forcestone Buckler");
+  });
+
+  it("the character's level excludes items that need more", () => {
+    const s = { ...boss(), level: 25 };
+    for (const r of bestSet(ITEMS, weightsOf(s), s).rows) if (r.item) expect(r.item.req).toBeLessThanOrEqual(25);
+    expect(whyNot({ ...buckler, faction: "Both", req: 26 }, s)).toBe("Needs level 26");
+  });
+
+  it("checks faction, then level, then profession", () => {
+    const it: Item = { ...buckler, faction: "Alliance", req: 99, prof: "Tailoring" };
+    expect(whyNot(it, boss())).toBe("Alliance only");
+    expect(whyNot({ ...it, faction: "Both" }, boss())).toBe("Needs level 99");
+    expect(whyNot({ ...it, faction: "Both", req: 1 }, boss())).toBe("Needs Tailoring");
+  });
+
+  it("a profession item is unusable until its profession is ticked", () => {
+    const tailor = ITEMS.find((i) => i.prof === "Tailoring" && i.req <= 30 && i.faction !== "Alliance")!;
+    expect(whyNot(tailor, boss())).toBe("Needs Tailoring");
+    expect(whyNot(tailor, { ...boss(), profs: { Tailoring: true } })).toBe("");
+  });
+
+  it("a user item named like an existing ring cannot fill both Finger rows", () => {
+    const s = boss();
+    const ring = ITEMS.find((i) => i.name === "Philanthropist's Ring")!;
+    const mine: Item = { ...ring, id: "u1", slug: "mine", custom: true, heal: 500 };
+    const rows = bestSet([...ITEMS, mine], weightsOf(s), s).rows.filter((r) => r.slot === "Finger");
+    expect(rows[0].item?.id).toBe("u1");
+    expect(rows[1].item?.name).not.toBe(ring.name);
+  });
+
+  it("returns a null item for a slot with nothing usable", () => {
+    const s = boss();
+    const rows = bestSet([], weightsOf(s), s).rows;
+    expect(rows.every((r) => r.item === null && r.score === 0)).toBe(true);
+  });
+});
+
+describe("score, source note and candidates", () => {
+  it("counts non-finite weights as 0", () => {
+    const it = ITEMS.find((i) => i.mp5 > 0)!;
+    const W = { ...weightsOf(boss()), mp5: NaN };
+    expect(score(it, W)).toBeCloseTo(score({ ...it, mp5: 0 }, W), 10);
+  });
+
+  it("builds the source note without HTML", () => {
+    const it = { ...ITEMS[0], source: "Boss", prof: "Engineering", other: "Extra", faction: "Horde" } as Item;
+    expect(sourceNote(it)).toBe("Boss · Engineering, maker only to use · Extra · Horde");
+    expect(sourceNote({ ...it, prof: undefined, other: undefined, faction: "Both" })).toBe("Boss");
+  });
+
+  it("groups by slot in SLOTS order, usable first, top flagged once", () => {
+    const s = { ...boss(), showAll: true };
+    const groups = candidates(ITEMS, weightsOf(s), s);
+    expect(groups[0].slot).toBe("Head");
+    for (const g of groups) {
+      expect(g.list.filter((c) => c.top)).toHaveLength(g.list.some((c) => !c.why) ? 1 : 0);
+      const firstBad = g.list.findIndex((c) => c.why);
+      if (firstBad >= 0) expect(g.list.slice(firstBad).every((c) => c.why)).toBe(true);
+    }
+    const hidden = candidates(ITEMS, weightsOf(s), { ...s, showAll: false });
+    for (const g of hidden) expect(g.list.every((c) => !c.why)).toBe(true);
+    expect(groups.flatMap((g) => g.list).length).toBeGreaterThan(hidden.flatMap((g) => g.list).length);
+  });
+});
+
+describe("max mana from level and Intellect (spec section 14.2)", () => {
+  it("baseMana is exact at every documented level", () => {
+    for (const [lv, v] of Object.entries(SHAMAN_BASE_MANA)) {
+      expect(baseMana(Number(lv))).toEqual({ value: v, estimated: false });
+    }
+    expect(baseMana(1).value).toBe(55);
+    expect(baseMana(20).value).toBe(370);
+    expect(baseMana(25).value).toBe(505);
+    expect(baseMana(30).value).toBe(665);
+    expect(baseMana(60).value).toBe(1520);
+  });
+
+  it("baseMana interpolates between documented levels and says so", () => {
+    expect(baseMana(18)).toEqual({ value: 326, estimated: true });
+    expect(baseMana(2)).toEqual({ value: 66, estimated: true });
+    expect(baseMana(0).value).toBe(55);
+    expect(baseMana(99).value).toBe(1520);
+  });
+
+  it("manaFromInt counts the first 20 points at 1 and the rest at 15", () => {
+    expect(manaFromInt(10)).toBe(10);
+    expect(manaFromInt(20)).toBe(20);
+    expect(manaFromInt(40)).toBe(320);
+    expect(manaFromInt(115)).toBe(1445);
+  });
+
+  it("the defaults' pool is 2110, and other characters work out", () => {
+    expect(effectivePool(DEFAULTS)).toBe(2110);
+    expect(calcPool(DEFAULTS)).toEqual({ base: 665, fromInt: 1445, total: 2110, estimated: false });
+    expect(effectivePool({ ...DEFAULTS, int: 40 })).toBe(985);
+    expect(effectivePool({ ...DEFAULTS, level: 22, int: 54 })).toBe(951);
+    // Tom's naked level 24 Orc Shaman, read in the beta (18 Oct, spec 14.4): 796 mana at 40 Intellect.
+    expect(effectivePool({ ...DEFAULTS, level: 24, int: 40 })).toBe(796);
+    // His naked level 22 sheet (Intellect 38) predicts 421 + 20 + 270.
+    expect(effectivePool({ ...DEFAULTS, level: 22, int: 38 })).toBe(711);
+  });
+
+  it("a typed pool is used only while manaAuto is false", () => {
+    expect(effectivePool({ ...DEFAULTS, pool: 1000 })).toBe(2110);
+    expect(effectivePool({ ...DEFAULTS, pool: 1000, manaAuto: false })).toBe(1000);
+  });
+});
+
+describe("the defaults' numbers (spec section 14.3)", () => {
+  const NEW: Record<PresetId, { E: number; X: number; mp5: number; int: number; spi: number; casts: number; total: number }> = {
+    trash: { E: 3430.5, X: 3.226, mp5: 2.258, int: 1.914, spi: 0.919, casts: 17.34, total: 431.74 },
+    boss: { E: 3636.8, X: 4.057, mp5: 2.84, int: 1.808, spi: 0.978, casts: 18.38, total: 428.41 },
+    raid: { E: 5634.5, X: 6.546, mp5: 4.582, int: 1.178, spi: 1.434, casts: 28.47, total: 439.22 },
+  };
+  for (const id of Object.keys(NEW) as PresetId[]) {
+    it(`matches at ${PRESETS[id].label}`, () => {
+      const st = at(id, {}, DEFAULTS);
+      const r = compute(st);
+      const e = NEW[id];
+      expect(r.E).toBeCloseTo(e.E, 1);
+      expect(r.X).toBeCloseTo(e.X, 3);
+      expect(r.weights.mp5).toBeCloseTo(e.mp5, 3);
+      expect(r.weights.int).toBeCloseTo(e.int, 3);
+      expect(r.weights.spi).toBeCloseTo(e.spi, 3);
+      expect(r.wsBack).toBeCloseTo(2.11, 3);
+      expect(r.casts).toBeCloseTo(e.casts, 2);
+      expect(r.c.heal).toBeCloseTo(526.929, 3);
+      expect(bestSet(ITEMS, r.weights, st).total).toBeCloseTo(e.total, 2);
+    });
+  }
+
+  it("Dungeon boss best set, pick by pick", () => {
+    const s = at("boss", {}, DEFAULTS);
+    const set = bestSet(ITEMS, weightsOf(s), s);
+    const EXPECTED: [string, number][] = [
+      ["Holy Shroud", 38.87],
+      ["Scorn's Icy Choker", 17.85],
+      ["Death Speaker Mantle", 25.88],
+      ["Darkspear Raider's Cloak", 18.37],
+      ["Death Speaker Robes", 39.88],
+      ["Mindthrust Bracers", 17.56],
+      ["Gloves of Old", 20.77],
+      ["Blightleaf Rope", 25.08],
+      ["Violet Sorcerer's Leggings", 40.39],
+      ["Acidic Walkers", 23.37],
+      ["Philanthropist's Ring", 19.04],
+      ["Sea Giant's Toe Ring", 18.0],
+      ["Roogug's Severed Head", 5.87],
+      ["Worgenbane Talisman", 5.68],
+      ["Tidebringer's Claw", 86.0],
+      ["Forcestone Buckler", 25.82],
+    ];
+    expect(set.rows).toHaveLength(EXPECTED.length);
+    EXPECTED.forEach(([name, sc], i) => {
+      expect(set.rows[i].item?.name).toBe(name);
+      expect(set.rows[i].score).toBeCloseTo(sc, 2);
+    });
+    expect(set.pair).toBeCloseTo(111.82, 2);
+    expect(set.two).toBeCloseTo(85.64, 2);
+    expect(set.total).toBeCloseTo(428.41, 2);
+    expect(set.weaponNote).toBe("Main hand and off hand beat the best two-hander by 26.2");
+  });
+
+  it("the Dungeon boss priority line", () => {
+    const p = priorityLine(weightsOf(at("boss", {}, DEFAULTS)));
+    const line = p.keys.map((k, i) => (i ? ` ${p.ops[i - 1]} ` : "") + STAT_LABELS[k]).join("");
+    expect(line).toBe("MP5 > Intellect > Healing = Spell Power = Spirit");
+  });
+});
