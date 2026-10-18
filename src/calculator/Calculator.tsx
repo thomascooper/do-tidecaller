@@ -3,6 +3,7 @@ import { activePreset, compute, PRESETS } from "../lib/model";
 import type { PresetId } from "../lib/model";
 import { BestSet } from "./BestSet";
 import { Candidates } from "./Candidates";
+import { Footer } from "./Footer";
 import { NumField } from "./NumField";
 import { RankTable } from "./RankTable";
 import { RegenPanel } from "./RegenPanel";
@@ -113,6 +114,8 @@ export function Calculator() {
           setUserItems={(next) => dispatch({ type: "items", items: next })}
         />
       </BestSet>
+
+      <Footer />
     </div>
   );
 }

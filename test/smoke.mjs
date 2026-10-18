@@ -236,6 +236,41 @@ try {
     eq(await row.evaluate((tr) => tr.classList.contains("cant")), true, "dimmed");
     await page.locator("#showAll").uncheck();
   });
+  await check("footer: How it works, Downranking and Unconfirmed", async () => {
+    const foot = await page.locator(".foot p b").allTextContents();
+    eq(foot.join(" "), "How it works. Downranking. Unconfirmed.", "footer headings");
+  });
+  await check("every form control has an accessible name", async () => {
+    await page.evaluate(() => window.localStorage.clear());
+    await page.reload();
+    await page.waitForSelector("#itemTable");
+    await page.evaluate(() => document.querySelectorAll("details").forEach((d) => (d.open = true)));
+    await page.locator("#showAll").check();
+    const unnamed = await page.evaluate(() =>
+      [...document.querySelectorAll("input, select, textarea")]
+        .filter((el) => {
+          if (el.getAttribute("aria-label") || el.getAttribute("aria-labelledby")) return false;
+          if (el.labels && el.labels.length) return false;
+          return true;
+        })
+        .map((el) => el.id || el.outerHTML.slice(0, 60)),
+    );
+    eq(unnamed.join(", "), "", "controls without a name");
+  });
+  await check("keyboard: Tab reaches the preset chips, Enter on a rank row selects it", async () => {
+    await page.locator("h1").click();
+    let reached = false;
+    for (let n = 0; n < 5 && !reached; n++) {
+      await page.keyboard.press("Tab");
+      reached = await page.evaluate(() => document.activeElement?.classList.contains("chip") ?? false);
+    }
+    eq(reached, true, "chip focused by Tab");
+    eq(await page.evaluate(() => getComputedStyle(document.activeElement).outlineStyle), "solid", "visible focus outline");
+    await page.locator('#ranks tr[data-spell="lhw2"]').focus();
+    await page.keyboard.press("Enter");
+    eq(await page.locator('#ranks tr[data-spell="lhw2"]').getAttribute("aria-selected"), "true", "Enter selects");
+    await page.locator('#ranks tr[data-spell="hw5"]').click();
+  });
   await check("no console errors", async () => eq(errors.join(" | "), "", "console errors"));
   await ctx.close();
 
@@ -244,6 +279,12 @@ try {
   await phonePage.goto(BASE + "/");
   await phonePage.waitForSelector("h1");
   await check("at 400px wide the page does not scroll sideways", async () => {
+    const [sw, iw] = await phonePage.evaluate(() => [document.documentElement.scrollWidth, window.innerWidth]);
+    if (sw > iw) throw new Error(`scrollWidth ${sw} > innerWidth ${iw}`);
+  });
+  await check("at 400px with every panel open and unusable gear shown there is no sideways scroll", async () => {
+    await phonePage.evaluate(() => document.querySelectorAll("details").forEach((d) => (d.open = true)));
+    await phonePage.locator("#showAll").check();
     const [sw, iw] = await phonePage.evaluate(() => [document.documentElement.scrollWidth, window.innerWidth]);
     if (sw > iw) throw new Error(`scrollWidth ${sw} > innerWidth ${iw}`);
   });
