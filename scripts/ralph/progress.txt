@@ -26,3 +26,13 @@ Started: run 003 (header, icon, item popups, items table), 18 Oct 2026
   - New "icon files" describe block in test/seo.test.ts reads IHDR and ICO headers; it reads the design totem.svg from tasks/ralph-runs/003-*/design/ to check favicon.svg.
   - Screenshot with `omitBackground: true` gives transparent PNGs.
 ---
+
+## 18 Oct 2026 - US-002
+- Universal header: `scripts/header-art.mjs` (from the design generator, writes `public/art/header-tide.svg`, byte-identical to the design file), `SiteHeader.tsx` (totem img, wordmark, kicker, tagline block, `SITE_TAGLINE` in `src/site.ts`), header CSS in `src/styles/app.css` replaced with the mock's (art, overlay, wave edge, 640px rules, print rules, cyan focus outline).
+- Checks: typecheck ok, 2624 tests ok, build ok, smoke 51 of 51, reference 26 of 26. New smoke check ("the header carries the art...") failed once against a real bug (tagline text came back uppercase), fixed.
+- **Learnings for future iterations:**
+  - `.tag` is already the Horde/Alliance/Check badge class (uppercase pill). The header's block is `.tagline`; do not reuse `.tag` for anything new.
+  - There was no print CSS before; the header's `@media print` block is the first.
+  - The header is always dark, so its colours are literals, not theme variables; only the wave edge uses `var(--bg)`.
+  - Smoke's `sp` page is 1280 wide; header checks that need 400 px set the viewport and restore it.
+---
