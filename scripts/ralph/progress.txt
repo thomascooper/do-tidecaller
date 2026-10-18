@@ -236,3 +236,13 @@ Started: Sun Oct 18 07:32:52 UTC 2026
   - The smoke console-error filters for /favicon.ico are gone: a missing icon now fails the run.
   - Icon links are in `headTags`, so the 404 page has them too; the sitemap skips `noindex` routes.
 ---
+
+## 2026-10-18 - US-021
+- "Copy link to these settings" button (`src/calculator/ShareLink.tsx`) in the header: copies `<origin>/?s=<code>` (SITE_URL on the production host, the current origin elsewhere), shows "Link copied", falls back to a read-only `#shareLink` text field when the clipboard rejects or is missing, and notes when items were left out. On load, `useCalculator` applies a valid `?s=` in place of saved state (the save effect then stores it), ignores an invalid one, and removes `s` from the address bar with `history.replaceState` either way.
+- Files: src/calculator/{ShareLink.tsx,Calculator.tsx,useCalculator.ts}, src/styles/app.css, test/smoke.mjs
+- Checks: typecheck ok, npm test 2599 passed, npm run build ok, npm run smoke 46 passed, npm run reference 27 of 27.
+- Broke on purpose: commented out the `searchParams.delete("s")` line (the share smoke check failed). Restored.
+- **Learnings for future iterations:**
+  - Smoke grants `clipboard-read`/`clipboard-write` to a context to read the copied link; the no-clipboard check defines `navigator.clipboard` as undefined via an init script.
+  - The canonical stays `/` because the `?s=` is read only after hydration and never appears in the prerendered head.
+---
