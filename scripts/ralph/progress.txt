@@ -154,3 +154,18 @@ Started: Sun Oct 18 07:32:52 UTC 2026
   - The Vite template's `<!--app-head-->` and `<!--app-html-->` survive the client build; prerender reads `dist/index.html` as the template and overwrites it for `/`.
   - React reports hydration mismatches as console errors even in the production bundle, so the smoke's console-error checks catch them.
 ---
+
+## 2026-10-18 - US-014
+- Site chrome (skip link, header with nav, footer, breadcrumbs), `/about`, the 404 page, `vercel.json`, and the SEO/smoke checks for them.
+- Files: index.html, src/components/{nav.ts,SiteHeader.tsx,SiteFooter.tsx,Breadcrumbs.tsx,Layout.tsx}, src/pages/{About.tsx,NotFound.tsx}, src/routes.tsx, src/entry-server.tsx, src/entry-client.tsx, src/seo/{head.ts,jsonld.ts}, src/styles/app.css, scripts/prerender.mjs, vercel.json, test/{seo.test.ts,smoke.mjs}
+- Checks: typecheck ok, npm test 114 passed, npm run build ok, npm run smoke 35 passed. Calculator JS 82.7 KB gzipped.
+- Broke on purpose: an About link to `/nope` (internal-link test failed); dropped About's breadcrumbs (BreadcrumbList test failed); `trailingSlash` true in vercel.json (config test failed). All restored.
+- **Learnings for future iterations:**
+  - The header and footer are NOT part of the hydrated React tree. `index.html` has `<!--app-header-->`, `<main id="main"><div id="root">`, `<!--app-footer-->`; `renderDocument` fills them with `renderToStaticMarkup(<SiteHeader/>)` and `<SiteFooter/>`, so the client bundle never carries them. `Layout` is only used by the dev entry (dev has no prerender).
+  - Nav and footer links come from `SECTIONS` in `src/components/nav.ts`, filtered to the indexable route paths. Adding `/bis`, `/items` or `/guides` to `routes` makes the links appear; the nav test then expects them.
+  - Add a page: a `Route` with `breadcrumbs` (trail from Home ending at itself, e.g. `ABOUT_TRAIL`); `renderDocument` appends the BreadcrumbList JSON-LD and the SEO test checks it. Render `<Breadcrumbs trail=.../>` in the page and wrap content in `<div className="wrap page">` with one h1.
+  - The 404 is route path `/404` with `noindex: true`; the prerender writes it to `dist/404.html`. `headTags` omits canonical and og:url for noindex pages, and the SEO test expects that. US-020's sitemap must skip `noindex` routes.
+  - The About page's og image `/og/about.png` does not exist until US-020 creates it.
+  - Spec section 10 lists three sources without URLs (wowvendor, classicwowforever.com, wowclassicforever.info); About names them as text, since no URL may be invented.
+  - In smoke, a deliberate 404 navigation logs a console error for the document itself; the site-pages console check filters that URL.
+---
