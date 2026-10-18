@@ -107,12 +107,18 @@ for i in $(seq 1 $MAX_ITERATIONS); do
 
   echo "  Iteration $i ended $(date -u +%H:%M:%SZ)"
 
-  # Check for completion signal
+  # Check for completion signal. The tag alone is not trusted: an iteration
+  # that merely mentions it ("<promise>COMPLETE</promise> does not apply yet")
+  # ended Tidecaller's first run after two of 23 stories. prd.json decides.
   if echo "$OUTPUT" | grep -q "<promise>COMPLETE</promise>"; then
-    echo ""
-    echo "Ralph completed all tasks!"
-    echo "Completed at iteration $i of $MAX_ITERATIONS"
-    exit 0
+    REMAINING=$(jq '[.userStories[] | select(.passes != true)] | length' "$PRD_FILE" 2>/dev/null || echo "?")
+    if [ "$REMAINING" = "0" ]; then
+      echo ""
+      echo "Ralph completed all tasks!"
+      echo "Completed at iteration $i of $MAX_ITERATIONS"
+      exit 0
+    fi
+    echo "Completion tag seen but prd.json still has $REMAINING stories not passing. Continuing."
   fi
 
   echo "Iteration $i complete. Continuing..."

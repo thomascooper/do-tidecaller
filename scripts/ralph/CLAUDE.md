@@ -119,7 +119,7 @@ After completing a user story, check if ALL stories have `passes: true`.
 If ALL stories are complete and passing, reply with:
 <promise>COMPLETE</promise>
 
-If there are still stories with `passes: false`, end your response normally (another iteration will pick up the next story).
+If there are still stories with `passes: false`, end your response normally (another iteration will pick up the next story). **(Tidecaller)** In that case do not write the tag at all, not even to say it does not apply: call it "the completion signal" instead.
 
 ## Important
 
