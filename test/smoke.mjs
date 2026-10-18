@@ -268,7 +268,7 @@ try {
     eq(rows.includes("Main hand: Tidebringer's Claw"), true, "main hand");
     eq(rows.includes("Off hand: Forcestone Buckler"), true, "off hand");
     eq(await page.locator("#bestWeapon").textContent(), "Main hand and off hand beat the best two-hander by 26.4", "weapon note");
-    eq(await page.locator("#maxlvl").inputValue(), "30", "effective level shown");
+    eq(await page.locator("#maxlvl").count(), 0, "no separate gear level input");
   });
   await check("best set: Alliance replaces the Horde-only off hand, Tailoring changes picks", async () => {
     await page.locator("#faction").selectOption("Alliance");
@@ -282,6 +282,18 @@ try {
     // Measured at Dungeon boss defaults: Tailoring changes exactly one pick.
     eq(changed.join(" | "), "Feet: Gilded Slippers", "picks Tailoring changes");
     await page.locator('[data-prof="Tailoring"]').uncheck();
+  });
+  await check("best set: the character's level decides what gear is usable", async () => {
+    const items = JSON.parse(readFileSync(new URL("../src/data/items.json", import.meta.url), "utf8"));
+    const reqOf = (name) => (items.find((i) => i.name === name) || {}).req;
+    await page.locator("#level").fill("25");
+    await page.locator("#level").blur();
+    const rows = await picks();
+    const names = rows.map((r) => r.split(": ").slice(1).join(": "));
+    eq(rows.includes("Head: Holy Shroud"), false, "Holy Shroud (req 27) not the Head pick at level 25");
+    eq(names.filter((n) => reqOf(n) > 25).join(" | "), "", "picks above level 25");
+    await page.locator("#level").fill("30");
+    await page.locator("#level").blur();
   });
   await check("candidates: add, pick, persist and remove your own item", async () => {
     await page.evaluate(() => window.localStorage.clear());

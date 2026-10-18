@@ -94,6 +94,12 @@ describe("storage", () => {
     expect(state.t).toBe(77);
   });
 
+  it("drops a saved maxlvl", () => {
+    const { state } = loadSaved(memory(JSON.stringify({ state: { maxlvl: 25, t: 300 } })));
+    expect("maxlvl" in state).toBe(false);
+    expect(state.t).toBe(300);
+  });
+
   it("keeps a current custom Spirit setting", () => {
     const { state } = loadSaved(memory(JSON.stringify({ state: { smodel: "curve", sA: 115.1, sB: 2750 } })));
     expect(state.smodel).toBe("curve");
@@ -180,6 +186,13 @@ describe("share encoding", () => {
     const { code } = encodeShare({ ...DEFAULTS, t: 300 }, []);
     const json = JSON.parse(atob(code.replace(/-/g, "+").replace(/_/g, "/")));
     expect(json).toEqual({ v: 1, s: { t: 300 }, i: [] });
+  });
+
+  it("drops a shared maxlvl", () => {
+    const code = btoa(JSON.stringify({ v: 1, s: { maxlvl: 25, t: 300 }, i: [] })).replace(/=+$/, "");
+    const got = decodeShare(code)!;
+    expect("maxlvl" in got.state).toBe(false);
+    expect(got.state.t).toBe(300);
   });
 
   it("drops unknown keys and mismatched types", () => {

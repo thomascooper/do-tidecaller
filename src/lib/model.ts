@@ -33,7 +33,6 @@ export interface State {
   spell: string;
   edits: Record<string, SpellEdit>;
   faction: Exclude<Faction, "Both">;
-  maxlvl: number;
   profs: Partial<Record<Profession, boolean>>;
   showAll: boolean;
   ws: boolean;
@@ -63,7 +62,6 @@ export const DEFAULTS: State = {
   spell: "hw5",
   edits: {},
   faction: "Horde",
-  maxlvl: 0,
   profs: {},
   showAll: false,
   ws: true,
@@ -272,16 +270,12 @@ export function score(item: Item, W: Weights): number {
   );
 }
 
-export function maxLevel(state: Pick<State, "maxlvl" | "level">): number {
-  return state.maxlvl > 0 ? state.maxlvl : state.level;
-}
-
-type UsableState = Pick<State, "maxlvl" | "level" | "faction" | "profs">;
+type UsableState = Pick<State, "level" | "faction" | "profs">;
 
 /** Empty when the item is usable, otherwise the first reason it is not. */
 export function whyNot(item: Item, state: UsableState): string {
   if (item.faction && item.faction !== "Both" && item.faction !== state.faction) return `${item.faction} only`;
-  if ((item.req || 0) > maxLevel(state)) return `Needs level ${item.req}`;
+  if ((item.req || 0) > state.level) return `Needs level ${item.req}`;
   if (item.prof && !state.profs[item.prof]) return `Needs ${item.prof}`;
   return "";
 }

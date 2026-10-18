@@ -1,0 +1,15 @@
+# Ralph Progress Log
+Started: Sun Oct 18 17:53:51 UTC 2026
+---
+
+## 2026-10-18 - US-001
+- Removed `maxlvl` and `maxLevel()`; `whyNot` checks `req` against `state.level`. Removed the "Usable up to level" input from Best set filters. `mergeState` only keeps keys present in DEFAULTS, so a saved or shared `maxlvl` is dropped with no extra code (tests cover both paths).
+- Reference diff: removed the "usable up to 25" scenario, counts now 26 in CLAUDE.md, README.md, scripts/ralph/CLAUDE.md.
+- Smoke: no `#maxlvl`; new check at level 25 (Holy Shroud not Head, no pick with req above 25, reads req from items.json).
+- Files: src/lib/model.ts, src/calculator/BestSet.tsx, src/lib/model.test.ts, src/lib/calibration.test.ts, test/smoke.mjs, test/reference-diff.mjs, docs counts.
+- Checks: typecheck ok, 2605 tests, build ok, smoke 47 passed, reference 26 of 26.
+- Broke on purpose: made whyNot compare against 99 instead of state.level; the new smoke check and two model tests failed; restored.
+- **Learnings for future iterations:**
+  - New State keys need a DEFAULTS entry: mergeState (storage and share) filters by DEFAULTS keys and type.
+  - Smoke can read src/data/items.json via readFileSync for item facts.
+---

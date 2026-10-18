@@ -97,8 +97,8 @@ Once the scaffold story has created them, these are the checks:
   `CHROMIUM_PATH=/opt/pw-browsers/chromium-1194/chrome-linux/chrome npm run smoke`.
 - `npm run reference` (same `CHROMIUM_PATH`), when anything in the calculator on `/` or in
   `src/lib/model.ts` changed. It loads the spec's own reference implementation beside the built
-  calculator with the same saved settings, in 27 scenarios, and compares every number on screen.
-  It must stay at 27 of 27: a difference means the calculator no longer matches the spec.
+  calculator with the same saved settings, in 26 scenarios, and compares every number on screen.
+  It must stay at 26 of 26: a difference means the calculator no longer matches the spec.
 - There is no lint script. Do not invent one.
 - ALL commits must pass the checks that apply. Do NOT commit broken code.
 - Keep changes focused and minimal

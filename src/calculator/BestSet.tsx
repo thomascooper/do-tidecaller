@@ -1,11 +1,10 @@
 import { ItemName } from "./ItemName";
 import type { ReactNode } from "react";
 import { ITEMS, PROFESSIONS } from "../data";
-import { bestSet, maxLevel, sourceNote } from "../lib/model";
+import { bestSet, sourceNote } from "../lib/model";
 import type { State, Weights } from "../lib/model";
 import type { Item } from "../lib/types";
 import { fmt } from "../lib/format";
-import { NumField } from "./NumField";
 
 interface Props {
   state: State;
@@ -40,15 +39,6 @@ export function BestSet({ state, items, weights, set, children }: Props) {
             <option>Alliance</option>
           </select>
         </div>
-        <NumField
-          id="maxlvl"
-          label="Usable up to level"
-          min={1}
-          max={60}
-          step={1}
-          value={maxLevel(state)}
-          onCommit={(v) => set({ maxlvl: v > 0 ? Math.max(1, Math.min(60, Math.round(v))) : 0 })}
-        />
         <fieldset className="profs">
           <legend className="lab">Your professions</legend>
           {PROFESSIONS.map((p) => (

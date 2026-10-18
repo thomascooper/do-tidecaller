@@ -18,7 +18,7 @@ Node 22 or newer.
 - `npm run smoke`: builds, serves `dist/` and drives it in Chromium. Set `CHROMIUM_PATH` to a
   Chromium binary if it is not at the default.
 - `npm run reference`: builds, then compares the calculator with the spec's reference
-  implementation (section 13) in 27 scenarios. Anything but 27 of 27 means the calculator no longer
+  implementation (section 13) in 26 scenarios. Anything but 26 of 26 means the calculator no longer
   matches the spec. Same `CHROMIUM_PATH`.
 
 There is no lint script.

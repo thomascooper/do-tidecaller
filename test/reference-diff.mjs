@@ -30,7 +30,7 @@ const SCENARIOS = [
   ["never run out of mana", { w: 0 }], ["f 50, 200 s", { f: 50, t: 200 }],
   ["bigger character", { heal: 400, spi: 50, pool: 3000, g: 20, buff: 12 }], ["Lesser HW 1", { spell: "lhw1" }],
   ["edited Healing Wave 4", { edits: { hw4: { base: 300, cost: 150 } }, spell: "hw4" }], ["show gear you can't use", { showAll: true }],
-  ["usable up to 25", { maxlvl: 25 }], ["a user item", {}, [item]], ["level 60 hw1 (no bonus)", { level: 60, spell: "hw1" }],
+  ["a user item", {}, [item]], ["level 60 hw1 (no bonus)", { level: 60, spell: "hw1" }],
   ["level 40 hw7", { level: 40, spell: "hw7" }], ["Engineering and Enchanting", { profs: { Engineering: true, Enchanting: true } }],
   ["Improved HW off, hw3", { imphw: false, spell: "hw3" }], ["old Spirit default migrates", { sbase: 37.5, sper: 0.5 }],
   ["custom curve", { smodel: "curve", sA: 120, sB: 3000, spi: 200 }], ["Alliance level 22 showing all", { showAll: true, faction: "Alliance", level: 22 }],

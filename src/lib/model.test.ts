@@ -148,7 +148,7 @@ describe("fmt", () => {
 
 import { ITEMS } from "../data";
 import type { Item } from "./types";
-import { bestSet, candidates, maxLevel, score, sourceNote, whyNot } from "./model";
+import { bestSet, candidates, score, sourceNote, whyNot } from "./model";
 
 const boss = () => at("boss");
 const weightsOf = (s: State) => compute(s).weights;
@@ -205,9 +205,8 @@ describe("usability", () => {
     expect(set.rows.find((r) => r.slot === "Off hand")?.item?.name).not.toBe("Forcestone Buckler");
   });
 
-  it("a level cap excludes items that need more", () => {
-    const s = { ...boss(), maxlvl: 25 };
-    expect(maxLevel(s)).toBe(25);
+  it("the character's level excludes items that need more", () => {
+    const s = { ...boss(), level: 25 };
     for (const r of bestSet(ITEMS, weightsOf(s), s).rows) if (r.item) expect(r.item.req).toBeLessThanOrEqual(25);
     expect(whyNot({ ...buckler, faction: "Both", req: 26 }, s)).toBe("Needs level 26");
   });
