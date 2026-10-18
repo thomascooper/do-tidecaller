@@ -1,4 +1,7 @@
-import { renderToString } from "react-dom/server";
+import { renderToStaticMarkup, renderToString } from "react-dom/server";
+import { SiteFooter } from "./components/SiteFooter";
+import { SiteHeader } from "./components/SiteHeader";
+import { breadcrumbList } from "./seo/jsonld";
 import { headTags } from "./seo/head";
 import { routes } from "./routes";
 import type { Route } from "./routes";
@@ -16,9 +19,14 @@ export function renderDocument(route: Route, template: string): string {
     ogImage: route.ogImage,
     ogType: route.ogType,
     noindex: route.noindex,
-    jsonLd: route.jsonLd,
+    jsonLd: route.breadcrumbs ? [...route.jsonLd, breadcrumbList(route.breadcrumbs)] : route.jsonLd,
   });
-  let html = template.replace("<!--app-head-->", () => head).replace("<!--app-html-->", () => renderToString(route.render()));
+  const paths = routes.filter((r) => !r.noindex).map((r) => r.path);
+  let html = template
+    .replace("<!--app-head-->", () => head)
+    .replace("<!--app-header-->", () => renderToStaticMarkup(<SiteHeader path={route.path} paths={paths} />))
+    .replace("<!--app-html-->", () => renderToString(route.render()))
+    .replace("<!--app-footer-->", () => renderToStaticMarkup(<SiteFooter paths={paths} />));
   if (!route.hydrate) {
     html = html
       .replace(/<script type="module"[^>]*><\/script>\s*/g, "")

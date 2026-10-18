@@ -311,6 +311,53 @@ try {
   await check("no console errors", async () => eq(errors.join(" | "), "", "console errors"));
   await ctx.close();
 
+  // ---- Site pages: /about, redirects and the 404 -----------------------------
+  console.log("Site pages");
+  const siteCtx = await browser.newContext({ viewport: { width: 1280, height: 900 } });
+  const sp = await siteCtx.newPage();
+  const siteErrors = [];
+  sp.on("console", (m) => {
+    // The browser logs the 404 document itself as a failed resource load.
+    const url = m.location().url;
+    if (m.type() === "error" && !url.endsWith("/favicon.ico") && !url.endsWith("/no-such-page")) siteErrors.push(m.text());
+  });
+  await check("/about returns 200 with its h1 and no module script", async () => {
+    const res = await sp.goto(BASE + "/about");
+    eq(res.status(), 200, "status");
+    eq(await sp.locator("h1").innerText(), "About Tidecaller", "h1");
+    eq(await sp.locator('script[type="module"]').count(), 0, "module scripts");
+    eq(res.headers()["content-type"].startsWith("text/html"), true, "content type");
+  });
+  await check("the header nav is present on / and /about, with the current page marked", async () => {
+    await sp.goto(BASE + "/about");
+    eq(await sp.locator('header.site nav a[aria-current="page"]').innerText(), "About", "current on /about");
+    eq(await sp.locator("header.site nav a").first().innerText(), "Calculator", "first link");
+    await sp.goto(BASE + "/");
+    eq(await sp.locator('header.site nav a[aria-current="page"]').innerText(), "Calculator", "current on /");
+    eq(await sp.locator("footer.site-foot").count(), 1, "footer");
+  });
+  await check("the skip link is hidden until focused and jumps to main", async () => {
+    await sp.goto(BASE + "/about");
+    await sp.keyboard.press("Tab");
+    eq(await sp.evaluate(() => document.activeElement?.className), "skip", "first tab stop");
+    const left = await sp.evaluate(() => document.activeElement.getBoundingClientRect().left);
+    if (left < 0) throw new Error("skip link is off screen while focused");
+  });
+  await check("/about/ redirects 308 to /about", async () => {
+    const res = await fetch(BASE + "/about/", { redirect: "manual" });
+    eq(res.status, 308, "status");
+    eq(new URL(res.headers.get("location"), BASE).pathname, "/about", "location");
+  });
+  await check("/no-such-page returns 404 with Page not found and noindex", async () => {
+    const res = await sp.goto(BASE + "/no-such-page");
+    eq(res.status(), 404, "status");
+    eq(await sp.locator("h1").innerText(), "Page not found", "h1");
+    eq(await sp.locator('meta[name="robots"]').getAttribute("content"), "noindex", "robots");
+    eq(await sp.locator('main a[href="/"]').count(), 1, "calculator link");
+  });
+  await check("no console errors on the site pages", async () => eq(siteErrors.join(" | "), "", "console errors"));
+  await siteCtx.close();
+
   const phone = await browser.newContext({ viewport: { width: 400, height: 800 } });
   const phonePage = await phone.newPage();
   await phonePage.goto(BASE + "/");

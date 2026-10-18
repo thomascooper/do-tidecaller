@@ -10,9 +10,19 @@ import { Calculator } from "./calculator/Calculator";
 
 const root = document.getElementById("root")!;
 
-// Production: the HTML was prerendered, so hydrate it. Dev has no prerender, so render from scratch.
 if (import.meta.env.DEV) {
-  createRoot(root).render(<Calculator />);
+  // Dev has no prerender: render whichever route matches the URL, with the site header and footer.
+  const [{ routes }, { Layout }] = await Promise.all([import("./routes"), import("./components/Layout")]);
+  const path = location.pathname.replace(/(.)\/$/, "$1");
+  const route = routes.find((r) => r.path === path) ?? routes.find((r) => r.path === "/404")!;
+  const paths = routes.filter((r) => !r.noindex).map((r) => r.path);
+  document.getElementById("main")!.replaceWith(root);
+  createRoot(root).render(
+    <Layout path={route.path} paths={paths}>
+      {route.render()}
+    </Layout>,
+  );
 } else {
+  // Production: the HTML was prerendered, so hydrate it. Only the calculator page ships this script.
   hydrateRoot(root, <Calculator />);
 }

@@ -1,4 +1,4 @@
-import { SITE_NAME, SITE_URL } from "../site";
+import { canonicalUrl, SITE_NAME, SITE_URL } from "../site";
 
 export type JsonLd = Record<string, unknown>;
 
@@ -23,5 +23,24 @@ export function websiteAndApp(description: string): JsonLd {
         description,
       },
     ],
+  };
+}
+
+export interface Crumb {
+  name: string;
+  path: string;
+}
+
+/** BreadcrumbList for a trail that starts at Home and ends at the page itself. */
+export function breadcrumbList(trail: Crumb[]): JsonLd {
+  return {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    itemListElement: trail.map((crumb, i) => ({
+      "@type": "ListItem",
+      position: i + 1,
+      name: crumb.name,
+      item: canonicalUrl(crumb.path),
+    })),
   };
 }

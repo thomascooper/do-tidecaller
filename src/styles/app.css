@@ -134,3 +134,29 @@ td.score{font-weight:600}
 .foot{margin-top:22px;color:var(--muted);font-size:12.5px;max-width:90ch}
 .foot p{margin:0 0 8px}
 @media (prefers-reduced-motion: reduce){.fill,.sw i,.sw i::after{transition:none}}
+
+/* Site chrome: header, footer, breadcrumbs and the plain content pages */
+.skip{position:absolute;left:-9999px;top:8px;z-index:10;background:var(--accent);color:var(--panel);padding:8px 12px;border-radius:6px;text-decoration:none}
+.skip:focus{left:8px}
+.site-in{max-width:1200px;margin:0 auto;display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:6px 20px;padding-block:10px;padding-left:max(16px, env(safe-area-inset-left, 0px));padding-right:max(16px, env(safe-area-inset-right, 0px))}
+header.site{background:var(--panel);border-bottom:1px solid var(--line)}
+header.site .mark{font-family:var(--f-display);font-size:20px;letter-spacing:.04em;color:var(--ink);text-decoration:none}
+header.site nav,footer.site-foot nav{display:flex;flex-wrap:wrap;gap:4px 16px}
+header.site nav a{color:var(--muted);text-decoration:none;font-weight:500;padding:4px 0;border-bottom:2px solid transparent}
+header.site nav a:hover{color:var(--ink)}
+header.site nav a[aria-current="page"]{color:var(--ink);border-bottom-color:var(--accent)}
+header.site a:focus-visible,footer.site-foot a:focus-visible,.crumbs a:focus-visible,.page a:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+footer.site-foot{border-top:1px solid var(--line);color:var(--muted);font-size:12.5px;background:var(--panel)}
+footer.site-foot .site-in{display:block;padding-block:16px}
+footer.site-foot p{margin:0 0 6px}
+footer.site-foot nav{margin:8px 0}
+footer.site-foot a{color:var(--accent)}
+main:focus{outline:none}
+.crumbs ol{list-style:none;display:flex;flex-wrap:wrap;gap:4px 8px;margin:0 0 14px;padding:0;color:var(--muted);font-size:12.5px}
+.crumbs li+li::before{content:"/";margin-right:8px}
+.crumbs a{color:var(--accent)}
+.page{max-width:76ch}
+.page .lead{color:var(--muted);font-size:15px;margin:10px 0 0}
+.page h2{display:block;margin:26px 0 8px}
+.page p,.page li{margin:0 0 8px}
+.page a{color:var(--accent);overflow-wrap:anywhere}
