@@ -254,3 +254,11 @@ Started: Sun Oct 18 07:32:52 UTC 2026
 - **Learnings for future iterations:**
   - The script is inserted before `</body>`; run `npm run build` again to get a clean local dist after trying the production prerender.
 ---
+
+## 2026-10-18 - US-023
+- README.md (what it is, URL, every npm script, architecture, data update steps, social image regeneration, Ralph pointer) and docs/search-console.md (Google Domain and URL-prefix properties, sitemap, request indexing of / and /bis, Bing import, Vercel Web Analytics, first-month watch list).
+- Files: README.md, docs/search-console.md
+- Checks: typecheck ok, npm test 2602 passed, npm run build ok. No smoke or reference (docs only). No new checks added, so nothing broken on purpose. No em dashes in either file (grep count 0).
+- **Learnings for future iterations:**
+  - The URL-prefix HTML tag verification needs a head change, which is a code change; the guide tells the owner to ask a session, or use the DNS route.
+---
