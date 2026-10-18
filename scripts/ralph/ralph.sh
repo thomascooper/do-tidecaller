@@ -85,6 +85,10 @@ if [ ! -f "$PROGRESS_FILE" ]; then
   echo "---" >> "$PROGRESS_FILE"
 fi
 
+# Lets project hooks tell a Ralph iteration from an interactive session
+# (the iterations have no Vercel connector, so the push-URL reminder skips them).
+export RALPH_LOOP=1
+
 echo "Starting Ralph - Tool: $TOOL - Max iterations: $MAX_ITERATIONS - $(date -u +%H:%M:%SZ)"
 
 for i in $(seq 1 $MAX_ITERATIONS); do
