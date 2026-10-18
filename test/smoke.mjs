@@ -328,6 +328,21 @@ try {
     eq(await sp.locator('script[type="module"]').count(), 0, "module scripts");
     eq(res.headers()["content-type"].startsWith("text/html"), true, "content type");
   });
+  await check("/bis shows Holy Shroud 38.7 and a Horde total of 422.6 and has no module script", async () => {
+    const res = await sp.goto(BASE + "/bis");
+    eq(res.status(), 200, "status");
+    eq(await sp.locator("h1").innerText(), "Resto Shaman best in slot, level 30", "h1");
+    eq(await sp.locator('script[type="module"]').count(), 0, "module scripts");
+    const head = sp.locator("#hordeSet tbody tr").first();
+    eq((await head.innerText()).replace(/\s+/g, " ").startsWith("Head Holy Shroud 38.7"), true, "head row");
+    eq(await sp.locator("#hordeSet tfoot .score").innerText(), "422.6", "Horde total");
+    eq(await sp.locator("main h2", { hasText: "Does it change for other fights?" }).count(), 1, "fights section");
+    eq(await sp.locator("main h2", { hasText: "Crafter upgrades" }).count(), 1, "crafter section");
+  });
+  await check("the calculator page links to /bis", async () => {
+    await sp.goto(BASE + "/");
+    eq(await sp.locator('#h-what ~ p a[href="/bis"]').count(), 1, "link in What Tidecaller does");
+  });
   await check("the header nav is present on / and /about, with the current page marked", async () => {
     await sp.goto(BASE + "/about");
     eq(await sp.locator('header.site nav a[aria-current="page"]').innerText(), "About", "current on /about");

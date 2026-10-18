@@ -3,7 +3,7 @@ import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { parse } from "node-html-parser";
 import { renderDocument, routes } from "../src/entry-server";
-import { canonicalUrl, SITE_URL } from "../src/site";
+import { canonicalUrl, DATA_UPDATED, SITE_URL } from "../src/site";
 
 const STUB = `<!doctype html><html lang="en"><head><meta charset="utf-8" /><!--app-head--></head><body><!--app-header--><main id="main"><div id="root"><!--app-html--></div></main><!--app-footer--><script type="module" src="/src/entry-client.tsx"></script></body></html>`;
 
@@ -124,6 +124,19 @@ describe("site chrome and links", () => {
       expect(doc.querySelector("nav.crumbs li[aria-current='page']")).not.toBeNull();
     },
   );
+
+  it("/bis has an Article block and the PRD's title and h1", () => {
+    const bis = pages.find((p) => p.route.path === "/bis")!;
+    expect(bis.route.title).toBe("Resto Shaman BiS, Level 30 WoW Forever | Tidecaller");
+    expect(bis.doc.querySelector("h1")?.text).toBe("Resto Shaman best in slot, level 30");
+    const art = bis.doc
+      .querySelectorAll('script[type="application/ld+json"]')
+      .map((b) => JSON.parse(b.text))
+      .find((d) => d["@type"] === "Article");
+    expect(art.dateModified).toBe(DATA_UPDATED);
+    expect(art.publisher.name).toBe("Tidecaller");
+    expect(bis.route.description).toContain("Tidebringer's Claw");
+  });
 
   it("the 404 page is noindex, says Page not found and links to the sections", () => {
     const nf = pages.find((p) => p.route.path === "/404")!;

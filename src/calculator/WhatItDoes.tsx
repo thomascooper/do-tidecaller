@@ -12,7 +12,8 @@ export function WhatItDoes() {
       <p>
         It also lists every heal rank you know and the share of gear bonus each keeps, picks the best usable set
         from 155 candidate items for your faction, level and professions, and scores any item you add yourself.
-        The game data is from the Forever beta, and the values that are not yet confirmed are marked Check.
+        The game data is from the Forever beta, and the values that are not yet confirmed are marked Check. See the{" "}
+        <a href="/bis">Resto Shaman best in slot list</a> for the set at the default settings.
       </p>
       <p>
         Everything runs in your browser. Your settings and added items stay on your own device and nothing is sent

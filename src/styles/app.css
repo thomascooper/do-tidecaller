@@ -156,6 +156,8 @@ main:focus{outline:none}
 .crumbs li+li::before{content:"/";margin-right:8px}
 .crumbs a{color:var(--accent)}
 .page{max-width:76ch}
+.page.wide{max-width:1200px}
+.page h3{margin:14px 0 4px;font-size:15px}
 .page .lead{color:var(--muted);font-size:15px;margin:10px 0 0}
 .page h2{display:block;margin:26px 0 8px}
 .page p,.page li{margin:0 0 8px}

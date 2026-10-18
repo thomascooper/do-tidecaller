@@ -1,9 +1,11 @@
 import type { ReactElement } from "react";
 import { Calculator } from "./calculator/Calculator";
 import { About, ABOUT_TRAIL } from "./pages/About";
+import { Bis, BIS_TRAIL, topPicks } from "./pages/Bis";
 import { NotFound } from "./pages/NotFound";
 import type { Crumb, JsonLd } from "./seo/jsonld";
-import { websiteAndApp } from "./seo/jsonld";
+import { article, websiteAndApp } from "./seo/jsonld";
+import { DATA_UPDATED } from "./site";
 
 export interface Route {
   path: string;
@@ -27,6 +29,9 @@ const HOME_DESCRIPTION =
 /** THE route table: feeds the prerender, the sitemap and the SEO tests. */
 export const NOT_FOUND_PATH = "/404";
 
+const BIS_TITLE = "Resto Shaman BiS, Level 30 WoW Forever | Tidecaller";
+const BIS_DESCRIPTION = `Best Resto Shaman gear at level 30 in WoW Forever, led by ${topPicks().join(", ")}. Scored in points of Healing.`;
+
 export const routes: Route[] = [
   {
     path: "/",
@@ -37,6 +42,19 @@ export const routes: Route[] = [
     hydrate: true,
     jsonLd: [websiteAndApp(HOME_DESCRIPTION)],
     render: () => <Calculator />,
+  },
+  {
+    path: "/bis",
+    title: BIS_TITLE,
+    description: BIS_DESCRIPTION,
+    ogImage: "/og/bis.png",
+    ogType: "article",
+    hydrate: false,
+    breadcrumbs: BIS_TRAIL,
+    jsonLd: [
+      article({ headline: "Resto Shaman best in slot, level 30", description: BIS_DESCRIPTION, path: "/bis", dateModified: DATA_UPDATED }),
+    ],
+    render: () => <Bis />,
   },
   {
     path: "/about",

@@ -44,3 +44,17 @@ export function breadcrumbList(trail: Crumb[]): JsonLd {
     })),
   };
 }
+
+/** Article for a guide-style page: best in slot, slot pages and guides. */
+export function article(opts: { headline: string; description: string; path: string; dateModified: string }): JsonLd {
+  return {
+    "@context": "https://schema.org",
+    "@type": "Article",
+    headline: opts.headline,
+    description: opts.description,
+    dateModified: opts.dateModified,
+    mainEntityOfPage: canonicalUrl(opts.path),
+    author: { "@type": "Organization", name: SITE_NAME, url: `${SITE_URL}/` },
+    publisher: { "@type": "Organization", name: SITE_NAME, url: `${SITE_URL}/` },
+  };
+}
