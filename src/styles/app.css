@@ -23,6 +23,9 @@ body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:1
 .wrap{max-width:1200px;margin:0 auto;padding-block:28px 48px;padding-left:max(16px, env(safe-area-inset-left, 0px));padding-right:max(16px, env(safe-area-inset-right, 0px))}
 header.top{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:12px 24px;margin-bottom:22px}
 h1{font-family:var(--f-display);font-weight:400;font-size:clamp(26px,4vw,36px);letter-spacing:.02em;margin:0;line-height:1.1;text-wrap:balance}
+.share{flex-basis:100%;display:flex;flex-wrap:wrap;align-items:center;gap:8px 12px}
+.share .field{flex:1 1 100%}
+.share .hint{margin:0}
 .sub{color:var(--muted);margin:6px 0 0;max-width:62ch}
 .scen{display:flex;flex-wrap:wrap;gap:6px}
 .chip{font:500 13px var(--f-body);border:1px solid var(--line);background:var(--panel);color:var(--ink);padding:7px 12px;border-radius:999px;cursor:pointer}

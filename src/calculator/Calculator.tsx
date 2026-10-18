@@ -6,6 +6,7 @@ import { Candidates } from "./Candidates";
 import { Footer } from "./Footer";
 import { NumField } from "./NumField";
 import { RankTable } from "./RankTable";
+import { ShareLink } from "./ShareLink";
 import { RegenPanel } from "./RegenPanel";
 import { StatWeights } from "./StatWeights";
 import { WhatItDoes } from "./WhatItDoes";
@@ -43,6 +44,7 @@ export function Calculator() {
             </button>
           ))}
         </div>
+        <ShareLink state={state} items={items} />
       </header>
 
       <div className="main">

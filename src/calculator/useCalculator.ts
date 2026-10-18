@@ -1,6 +1,7 @@
 import { useEffect, useReducer, useRef } from "react";
 import { DEFAULTS, PRESETS } from "../lib/model";
 import type { PresetId, State } from "../lib/model";
+import { decodeShare } from "../lib/share";
 import { loadSaved, save } from "../lib/storage";
 import type { Item } from "../lib/types";
 
@@ -39,11 +40,29 @@ export function useCalculator() {
   const loaded = useRef(false);
 
   useEffect(() => {
+    let shared = null;
     try {
-      const saved = loadSaved(window.localStorage);
-      dispatch({ type: "load", state: saved.state, items: saved.items });
+      // A valid ?s= link replaces the saved settings (and is then saved by the effect below);
+      // an invalid one is ignored. Either way it leaves the address bar.
+      const url = new URL(window.location.href);
+      const code = url.searchParams.get("s");
+      if (code !== null) {
+        shared = decodeShare(code);
+        url.searchParams.delete("s");
+        window.history.replaceState(window.history.state, "", url.pathname + url.search + url.hash);
+      }
     } catch {
-      // storage unavailable: keep the defaults
+      // no usable address: nothing to apply
+    }
+    if (shared) {
+      dispatch({ type: "load", state: shared.state, items: shared.items });
+    } else {
+      try {
+        const saved = loadSaved(window.localStorage);
+        dispatch({ type: "load", state: saved.state, items: saved.items });
+      } catch {
+        // storage unavailable: keep the defaults
+      }
     }
     loaded.current = true;
   }, []);

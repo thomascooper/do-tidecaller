@@ -117,6 +117,45 @@ try {
     await page.waitForFunction(() => document.querySelector("#t").value === "300");
     eq(await pressed("Raid boss"), "true", "Raid boss");
   });
+  await check("share link: copy, open in a fresh context, settings arrive and ?s= is removed", async () => {
+    const sctx = await browser.newContext({ permissions: ["clipboard-read", "clipboard-write"] });
+    const sp = await sctx.newPage();
+    await sp.goto(BASE + "/");
+    await sp.waitForSelector("h1");
+    await sp.getByRole("button", { name: "Raid boss" }).click();
+    await sp.locator('[data-prof="Tailoring"]').check();
+    await sp.getByRole("button", { name: "Copy link to these settings" }).click();
+    await sp.getByText("Link copied").waitFor();
+    const link = await sp.evaluate(() => navigator.clipboard.readText());
+    if (!link.includes("/?s=")) throw new Error(`unexpected link ${link}`);
+    const fresh = await browser.newContext();
+    const fp = await fresh.newPage();
+    await fp.goto(BASE + new URL(link).search.replace(/^/, "/"));
+    await fp.waitForSelector("h1");
+    await fp.waitForFunction(() => document.querySelector("#t").value === "300");
+    eq(await fp.getByRole("button", { name: "Raid boss" }).getAttribute("aria-pressed"), "true", "Raid boss");
+    eq(await fp.locator('[data-prof="Tailoring"]').isChecked(), true, "Tailoring");
+    eq(new URL(fp.url()).search, "", "query left in the address bar");
+    await fp.reload();
+    await fp.waitForFunction(() => document.querySelector("#t").value === "300");
+    const bad = await fresh.newPage();
+    await bad.goto(BASE + "/?s=not-a-link");
+    await bad.waitForSelector("h1");
+    eq(new URL(bad.url()).search, "", "invalid query removed");
+    await sctx.close();
+    await fresh.close();
+  });
+  await check("share link: without a clipboard the link shows in a text field", async () => {
+    const nctx = await browser.newContext();
+    const np = await nctx.newPage();
+    await np.addInitScript(() => Object.defineProperty(navigator, "clipboard", { value: undefined }));
+    await np.goto(BASE + "/");
+    await np.waitForSelector("h1");
+    await np.getByRole("button", { name: "Copy link to these settings" }).click();
+    const v = await np.locator("#shareLink").inputValue();
+    if (!v.includes("/?s=")) throw new Error(`field has ${v}`);
+    await nctx.close();
+  });
   await check("stat weights: verdict, bars and readouts at defaults", async () => {
     await page.getByRole("button", { name: "Dungeon boss" }).click();
     eq((await page.locator("#verdict").innerText()).replace(/\s+/g, " "), "MP5 > Intellect > Healing = Spell Power > Spirit", "verdict");
