@@ -225,3 +225,14 @@ Started: Sun Oct 18 07:32:52 UTC 2026
   - The page draws the line from `DEFAULTS.sbase/sper` and the curve from `DEFAULTS.sA/sB` (114.0 / 2666, fitted to all twelve); worst misses are computed in the page (0.6 for the eleven on the line, 2.7 for the curve on all twelve), matching spec section 3.
   - Chart colours use the CSS tokens (`.chart` rules in app.css), so dark mode needs nothing extra. The build is slow in this container (about 2 minutes): run it in the background and wait on the output.
 ---
+
+## 2026-10-18 - US-020
+- Sitemap and robots written by the prerender (`src/seo/sitemap.ts`, exported through entry-server); favicon.svg, site.webmanifest, icon links in every head (`headTags`); `scripts/og.mjs` renders five 1200x630 cards and the three PNG icons (268 KB total).
+- Files: src/seo/{head.ts,sitemap.ts}, src/entry-server.tsx, scripts/{prerender.mjs,og.mjs}, public/*, test/{seo.test.ts,smoke.mjs}
+- Checks: typecheck ok, npm test 2599 passed, npm run build ok, npm run smoke 44 passed. `npm run reference` not run (calculator and model unchanged).
+- Broke on purpose: removed public/og/about.png (the og:image existence test failed). Restored.
+- **Learnings for future iterations:**
+  - Regenerate the images by hand: `CHROMIUM_PATH=... node scripts/og.mjs`. Card copy lives in the `cards` array there.
+  - The smoke console-error filters for /favicon.ico are gone: a missing icon now fails the run.
+  - Icon links are in `headTags`, so the 404 page has them too; the sitemap skips `noindex` routes.
+---
