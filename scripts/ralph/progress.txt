@@ -215,3 +215,13 @@ Started: Sun Oct 18 07:32:52 UTC 2026
   - The nav test now sees `/guides` as a section: header and footer link it. Guides use og image `/og/guides.png`, which US-020 must create.
   - In the model, `f` is the share of the fight inside the five-second rule (the "casting" slider) and `w` is how often mana runs out; the preset chips set t and f only.
 ---
+
+## 2026-10-18 - US-019
+- `/guides/spirit-regen`: five-second rule, gear MP5, Mindfulness and the Icon, Intellect, the twelve readings table, the fitted line and levels-off curve with worst misses, the 43 exclusion and the unconfirmed list. Build-time inline SVG chart (12 points, 43 hollow and labelled "excluded", line and dashed curve, axes, title and desc). The guides index, calculator "What Tidecaller does", `/bis` and the stat weights guide link it. Article + BreadcrumbList.
+- Files: src/pages/Guides.tsx, src/routes.tsx, src/styles/app.css, src/calculator/WhatItDoes.tsx, src/pages/Bis.tsx, test/{seo.test.ts,smoke.mjs}
+- Checks: typecheck ok, npm test 2238 passed, npm run build ok, npm run smoke 43 passed. `npm run reference` not run (calculator and model unchanged apart from a static link).
+- Broke on purpose: dropped the `excluded` class from the 43 point (the SEO test failed). Restored.
+- **Learnings for future iterations:**
+  - The page draws the line from `DEFAULTS.sbase/sper` and the curve from `DEFAULTS.sA/sB` (114.0 / 2666, fitted to all twelve); worst misses are computed in the page (0.6 for the eleven on the line, 2.7 for the curve on all twelve), matching spec section 3.
+  - Chart colours use the CSS tokens (`.chart` rules in app.css), so dark mode needs nothing extra. The build is slow in this container (about 2 minutes): run it in the background and wait on the output.
+---
