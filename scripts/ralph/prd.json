@@ -48,7 +48,7 @@
         "`npm run typecheck`, `npm test` and `npm run build` pass"
       ],
       "priority": 3,
-      "passes": false,
+      "passes": true,
       "notes": ""
     },
     {

@@ -36,3 +36,13 @@ Started: run 003 (header, icon, item popups, items table), 18 Oct 2026
   - The header is always dark, so its colours are literals, not theme variables; only the wave edge uses `var(--bg)`.
   - Smoke's `sp` page is 1280 wide; header checks that need 400 px set the viewport and restore it.
 ---
+
+## 18 Oct 2026 - US-003
+- Social cards: `scripts/og.mjs` cards now have the header art along the bottom (252 px tall, right bottom, inlined as a data URI, with a left-to-right dark overlay so the text stays clear of the totems), the totem badge (96 px, inlined from `public/favicon.svg`) beside the wordmark, and no left bar. Text, layout and kinds unchanged. The old wave mark code is gone from the script.
+- Files: scripts/og.mjs, public/og/*.png (each about 260 KB), test/seo.test.ts.
+- Checks: typecheck ok, 2629 tests ok, build ok. Smoke not run (no browser-rendered page changed).
+- New test "og/%s.png is a 1200 x 630 card under 300 KB" (the US-001 IHDR test did not cover the cards). Broke it by lowering the limit to 100 KB: 5 failed, restored.
+- **Learnings for future iterations:**
+  - The cards are close to the 300 KB cap (about 260 KB) because of the art; do not add more detail to them without checking size.
+  - Cards load no files: fonts, art and totem are inlined, so `setContent` needs no base URL.
+---
