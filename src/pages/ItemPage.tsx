@@ -1,4 +1,6 @@
 import { Breadcrumbs } from "../components/Breadcrumbs";
+import { ItemIcon } from "../calculator/ItemIcon";
+import { ItemName } from "../calculator/ItemName";
 import { wowheadUrl } from "../data";
 import { fmt } from "../lib/format";
 import { itemInfo, itemsBySlot } from "../lib/itemPage";
@@ -56,7 +58,10 @@ export function ItemPage({ item }: { item: Item }) {
   return (
     <div className="wrap page wide">
       <Breadcrumbs trail={itemTrail(item)} />
-      <h1>{item.name}</h1>
+      <h1 className="item-h1">
+        <ItemIcon item={item} size={56} />
+        {item.name}
+      </h1>
       <p className="lead">
         {item.name} is {article(kind)} {kind} item{" "}
         {item.req > 0 ? `for level ${item.req} and up` : "with no level requirement"}. At Tidecaller&apos;s default settings it
@@ -203,7 +208,7 @@ export function ItemsIndex() {
                   return (
                     <tr key={i.id}>
                       <td className="nm">
-                        <a href={itemPath(i)}>{i.name}</a>
+                        <ItemName item={i} />
                         {i.faction !== "Both" && <span className="tag">{i.faction}</span>}
                       </td>
                       <td>{i.req || ""}</td>

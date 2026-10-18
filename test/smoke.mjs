@@ -342,6 +342,13 @@ try {
     await page.mouse.move(5, 5);
     await page.locator('[role="tooltip"]').waitFor({ state: "detached" });
   });
+  await check("best set: the Head row shows an item icon that loads", async () => {
+    const img = page.locator("#bestTable tbody tr").first().locator("img.icon");
+    await img.scrollIntoViewIfNeeded();
+    await page.waitForFunction((el) => el.complete && el.naturalWidth > 0, await img.elementHandle());
+    eq(/\/icons\/[a-z0-9_]+\.jpg$/.test(await img.getAttribute("src")), true, "icon src");
+    eq(await img.getAttribute("width"), "20", "icon width");
+  });
   await check("best set: Alliance replaces the Horde-only off hand, Tailoring changes picks", async () => {
     await page.locator("#faction").selectOption("Alliance");
     const alliance = await picks();
@@ -526,6 +533,26 @@ try {
     await sp.setViewportSize(vp);
     eq(wide, false, "page scrolls sideways at 400 px");
   });
+  await check("/items shows item icons: Holy Shroud's loads, Red Wool Cloak gets the question mark; /items/holy-shroud has a 56 px icon beside the h1", async () => {
+    await sp.goto(BASE + "/items");
+    const row = (slug) => sp.locator("main tr", { has: sp.locator(`a[href="/items/${slug}"]`) }).locator("img.icon");
+    const img = row("holy-shroud");
+    await img.scrollIntoViewIfNeeded();
+    eq((await img.getAttribute("src")).endsWith("/icons/inv_helmet_16.jpg"), true, "Holy Shroud icon src");
+    await sp.waitForFunction((el) => el.complete && el.naturalWidth === 56, await img.elementHandle());
+    eq((await row("red-wool-cloak").getAttribute("src")).endsWith("/icons/inv_misc_questionmark.jpg"), true, "question mark");
+    await sp.goto(BASE + "/items/holy-shroud");
+    const h1img = sp.locator("main h1 img.icon");
+    await sp.waitForFunction((el) => el.complete && el.naturalWidth === 56, await h1img.elementHandle());
+    eq(await h1img.getAttribute("width"), "56", "h1 icon width");
+    eq(await sp.locator("main h1").innerText(), "Holy Shroud", "h1 text");
+    const vp = sp.viewportSize();
+    await sp.setViewportSize({ width: 400, height: 800 });
+    await sp.goto(BASE + "/items");
+    const wide = await sp.evaluate(() => document.documentElement.scrollWidth > document.documentElement.clientWidth);
+    await sp.setViewportSize(vp);
+    eq(wide, false, "page scrolls sideways at 400 px");
+  });
   await check("item popups on /items: hover shows and hides, keyboard focus shows and Escape hides, a link at the right edge stays inside a 400 px viewport", async () => {
     await sp.goto(BASE + "/items");
     const link = sp.locator('main td.nm a[href="/items/holy-shroud"]');
@@ -535,6 +562,8 @@ try {
     const text = (await tip.innerText()).replace(/\s+/g, " ");
     for (const want of ["Holy Shroud", "+33 Healing", "+6 Spirit", "Requires level 27", "World drop / auction house"])
       eq(text.includes(want), true, `popup has ${want}`);
+    const tipIcon = tip.locator("img.icon");
+    eq((await tipIcon.getAttribute("src")).endsWith("/icons/inv_helmet_16.jpg") && (await tipIcon.getAttribute("width")) === "40", true, "popup icon");
     eq(await link.getAttribute("aria-describedby"), await tip.getAttribute("id"), "aria-describedby");
     await sp.mouse.move(5, 5);
     await tip.waitFor({ state: "detached" });

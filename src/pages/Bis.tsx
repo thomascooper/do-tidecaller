@@ -1,5 +1,5 @@
 import { Breadcrumbs } from "../components/Breadcrumbs";
-import { itemPath } from "../lib/slug";
+import { ItemName } from "../calculator/ItemName";
 import { fmt } from "../lib/format";
 import { DEFAULTS, effectivePool, PRESETS, sourceNote } from "../lib/model";
 import type { BestSet } from "../lib/model";
@@ -41,7 +41,7 @@ function SetTable({ id, set }: { id: string; set: BestSet }) {
               <td className="nm">
                 <a href={slotPath(row.slot)}>{row.slot}</a>
               </td>
-              <td>{row.item ? <a href={itemPath(row.item)}>{row.item.name}</a> : <span className="dim">Nothing usable listed</span>}</td>
+              <td>{row.item ? <ItemName item={row.item} /> : <span className="dim">Nothing usable listed</span>}</td>
               <td className="score">{row.item ? fmt(row.score, 1) : ""}</td>
               <td className="src">{row.item ? sourceNote(row.item) : ""}</td>
             </tr>

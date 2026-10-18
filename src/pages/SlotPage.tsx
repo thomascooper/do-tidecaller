@@ -1,6 +1,6 @@
 import { Breadcrumbs } from "../components/Breadcrumbs";
+import { ItemName } from "../calculator/ItemName";
 import { fmt } from "../lib/format";
-import { itemPath } from "../lib/slug";
 import { neighbours, slotPath, slotRows, slotTitleCase, topFor, weaponCompare } from "../lib/slotPage";
 import type { SlotRow } from "../lib/slotPage";
 import type { Item, Slot } from "../lib/types";
@@ -138,7 +138,7 @@ export function SlotPage({ slot }: { slot: Slot }) {
             {rows.map((r) => (
               <tr key={r.item.id}>
                 <td className="nm">
-                  <a href={itemPath(r.item)}>{r.item.name}</a>
+                  <ItemName item={r.item} />
                 </td>
                 <td>{r.item.req}</td>
                 <td>{r.item.heal || ""}</td>

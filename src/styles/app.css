@@ -94,6 +94,10 @@ th{font:500 11.5px var(--f-body);color:var(--muted);text-align:right;padding:6px
 th:first-child,td:first-child{text-align:left}
 td{padding:7px 8px;border-bottom:1px solid var(--soft);text-align:right;font-family:var(--f-mono);font-size:13px;white-space:nowrap}
 td.nm{font-family:var(--f-body);font-weight:500}
+img.icon{display:block;flex:none;border:1px solid #03060d;border-radius:3px;background:#03060d}
+.iname{display:inline-flex;align-items:center;gap:7px;vertical-align:middle}
+.iname img.icon{margin:0}
+.item-h1{display:flex;align-items:center;gap:14px}
 tr.sel td{background:var(--accent-soft)}
 tr.click{cursor:pointer}
 tr.click:hover td{background:var(--soft)}
@@ -206,6 +210,8 @@ main:focus{outline:none}
 
 /* Item popup (src/tips/tips.ts): dark navy in both themes, like a WoW tooltip */
 .tip{position:fixed;z-index:50;max-width:320px;pointer-events:none;background:#0b1424;color:#e6ecf5;border:1px solid #4a5a78;border-radius:6px;padding:9px 12px;box-shadow:0 6px 24px rgba(0,0,0,.45);font:400 13px/1.45 var(--f-body)}
+.tip-head{display:flex;gap:10px;align-items:flex-start;margin-bottom:2px}
+.tip-head>div{flex:1;min-width:0}
 .tip-name{font-family:var(--f-display);font-size:16px;letter-spacing:.03em;color:#8ec5ff;margin-bottom:2px}
 .tip-slot{display:flex;justify-content:space-between;gap:16px}
 .tip-green{color:#4ade80}

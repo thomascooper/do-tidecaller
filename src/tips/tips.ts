@@ -2,6 +2,7 @@
 // Event delegation on `document` for item links, so links React renders later get popups too.
 import items from "../data/items.json";
 import { equipText, noteText } from "../lib/itemFacts";
+import { itemIconSrc } from "../lib/itemIcon";
 import { slugify } from "../lib/slug";
 import type { Item } from "../lib/types";
 
@@ -54,8 +55,18 @@ function build(item: Fact): HTMLElement {
   el.id = TIP_ID;
   el.className = "tip";
   el.setAttribute("role", "tooltip");
-  line(el, "tip-name", item.name);
-  const slot = line(el, "tip-slot", item.slot);
+  const head = document.createElement("div");
+  head.className = "tip-head";
+  const icon = document.createElement("img");
+  icon.className = "icon";
+  icon.src = itemIconSrc(item);
+  icon.width = icon.height = 40;
+  icon.alt = "";
+  const text = document.createElement("div");
+  head.append(icon, text);
+  el.append(head);
+  line(text, "tip-name", item.name);
+  const slot = line(text, "tip-slot", item.slot);
   if (item.armor !== "-") {
     const armor = document.createElement("span");
     armor.textContent = item.armor;
