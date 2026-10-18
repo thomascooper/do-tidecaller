@@ -1,5 +1,6 @@
 import spellsJson from "./spells.json";
 import itemsJson from "./items.json";
+import wowheadJson from "./wowhead.json";
 import { slugify } from "../lib/slug";
 import type { Item, Profession, Slot, Spell } from "../lib/types";
 
@@ -10,6 +11,14 @@ export const ITEMS: Item[] = (itemsJson as Omit<Item, "id" | "slug">[]).map((ite
   id: `db${i}`,
   slug: slugify(item.name),
 }));
+
+/** Item name to Wowhead id and icon (spec 14.5): links and art only, never stats. */
+export const WOWHEAD = wowheadJson as Record<string, { id: number; icon: string }>;
+
+export function wowheadUrl(item: Pick<Item, "name">): string | undefined {
+  const entry = WOWHEAD[item.name];
+  return entry ? `https://www.wowhead.com/forever/item=${entry.id}` : undefined;
+}
 
 export const SLOTS: Slot[] = [
   "Head",

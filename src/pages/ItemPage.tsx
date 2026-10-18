@@ -1,4 +1,5 @@
 import { Breadcrumbs } from "../components/Breadcrumbs";
+import { wowheadUrl } from "../data";
 import { fmt } from "../lib/format";
 import { itemInfo, itemsBySlot } from "../lib/itemPage";
 import { equipText, whereShort } from "../lib/itemFacts";
@@ -51,6 +52,7 @@ export function ItemPage({ item }: { item: Item }) {
     { label: "Raid boss", score: info.raid, rank: info.rankRaid },
   ];
   const prof = profText(item);
+  const wowhead = wowheadUrl(item);
   return (
     <div className="wrap page wide">
       <Breadcrumbs trail={itemTrail(item)} />
@@ -119,6 +121,15 @@ export function ItemPage({ item }: { item: Item }) {
 
       <h2>Where it comes from</h2>
       <p>{item.source || "No source is listed."}</p>
+      {wowhead && (
+        <p>
+          <a href={wowhead} target="_blank" rel="noopener noreferrer">
+            View {item.name} on Wowhead
+          </a>
+          . Wowhead&rsquo;s numbers can differ from Tidecaller&rsquo;s, which come from the Forever beta client, build
+          1.60.1.
+        </p>
+      )}
 
       <h2>In this slot</h2>
       {index === 0 ? (

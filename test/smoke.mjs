@@ -491,6 +491,11 @@ try {
     const text = await sp.locator("main").innerText();
     eq(text.includes("38.9"), true, "38.9");
     eq(text.includes("1 of 11 Head items"), true, "rank");
+    eq(await sp.locator('main a[href="https://www.wowhead.com/forever/item=2721"]').innerText(), "View Holy Shroud on Wowhead", "wowhead link");
+    eq(await sp.locator('main a[href="https://www.wowhead.com/forever/item=2721"]').getAttribute("rel"), "noopener noreferrer", "wowhead rel");
+    await sp.goto(BASE + "/items/red-wool-cloak");
+    eq(await sp.locator('main a[href*="wowhead.com"]').count(), 0, "no wowhead link without an entry");
+    await sp.goto(BASE + "/items/holy-shroud");
     await sp.goto(BASE + "/items/forcestone-buckler");
     eq((await sp.locator("main").innerText()).includes("Horde only"), true, "Horde only");
     await sp.goto(BASE + "/items");
