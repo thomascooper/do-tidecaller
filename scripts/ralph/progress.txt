@@ -192,3 +192,15 @@ Started: Sun Oct 18 07:32:52 UTC 2026
   - The Horde set on /bis has 16 rows (10 armour, 2 rings, 2 trinkets, main hand + off hand); the set is Horde 111.59 pair vs Wind Spirit Staff 85.17.
   - Routes are spread into the table with `...SLOTS.map(...)`; the SEO test and sitemap pick them up with no further change. Prerender writes `dist/bis/<slot>/index.html`.
 ---
+
+## 2026-10-18 - US-017
+- 155 item pages `/items/<slug>` and the `/items` index; database item names now link to their page in the calculator best set and candidate tables, `/bis` set tables and slot page tables (user items stay plain text via `src/calculator/ItemName.tsx`).
+- Files: src/lib/{itemPage.ts,slug.ts}, src/pages/{ItemPage.tsx,Bis.tsx,SlotPage.tsx}, src/calculator/{ItemName.tsx,BestSet.tsx,Candidates.tsx}, src/routes.tsx, test/{seo.test.ts,smoke.mjs}
+- Checks: typecheck ok, npm test 2189 passed, npm run build ok, npm run smoke 40 passed, npm run reference 27 of 27.
+- Broke on purpose: rank counted from 0 (item page test failed); removed the item links from the slot page table (link test failed). Both restored.
+- **Learnings for future iterations:**
+  - `itemPath(item)` lives in `src/lib/slug.ts` (not `itemPage.ts`) so the hydrated calculator bundle does not pull in the build-time ranking code. `src/lib/itemPage.ts` has `itemInfo(item)` (ranks per fight, equal scores share a rank) and `itemsBySlot()`.
+  - Item pages and `/items` use og image `/og/items.png`, which US-020 must create (like `/og/about.png`).
+  - Item pages carry only BreadcrumbList JSON-LD (no Article, no Product). Rank is among all built-in items in the slot, whatever the faction.
+  - The calculator's default candidate list hides unusable gear, so only about 128 item links show on `/` by default.
+---
