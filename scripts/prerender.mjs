@@ -1,0 +1,17 @@
+// Runs after the client and SSR builds: writes one HTML file per route into dist/.
+import { mkdir, readFile, writeFile } from "node:fs/promises";
+import { dirname, join } from "node:path";
+import { fileURLToPath, pathToFileURL } from "node:url";
+
+const root = join(dirname(fileURLToPath(import.meta.url)), "..");
+const dist = join(root, "dist");
+
+const template = await readFile(join(dist, "index.html"), "utf8");
+const { routes, renderDocument } = await import(pathToFileURL(join(root, "dist-ssr", "entry-server.js")).href);
+
+for (const route of routes) {
+  const file = route.path === "/" ? join(dist, "index.html") : join(dist, route.path, "index.html");
+  await mkdir(dirname(file), { recursive: true });
+  await writeFile(file, renderDocument(route, template));
+  console.log(`prerendered ${route.path}`);
+}

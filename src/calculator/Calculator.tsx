@@ -8,6 +8,7 @@ import { NumField } from "./NumField";
 import { RankTable } from "./RankTable";
 import { RegenPanel } from "./RegenPanel";
 import { StatWeights } from "./StatWeights";
+import { WhatItDoes } from "./WhatItDoes";
 import { useCalculator } from "./useCalculator";
 
 const PRESET_IDS = Object.keys(PRESETS) as PresetId[];
@@ -114,6 +115,8 @@ export function Calculator() {
           setUserItems={(next) => dispatch({ type: "items", items: next })}
         />
       </BestSet>
+
+      <WhatItDoes />
 
       <Footer />
     </div>

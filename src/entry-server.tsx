@@ -1,0 +1,28 @@
+import { renderToString } from "react-dom/server";
+import { headTags } from "./seo/head";
+import { routes } from "./routes";
+import type { Route } from "./routes";
+
+export { routes };
+export type { Route };
+
+/** Fill the Vite template for one route: head tags and rendered HTML. Pages that do not
+ *  hydrate lose the app script and its preloads, so they ship plain HTML and CSS. */
+export function renderDocument(route: Route, template: string): string {
+  const head = headTags({
+    path: route.path,
+    title: route.title,
+    description: route.description,
+    ogImage: route.ogImage,
+    ogType: route.ogType,
+    noindex: route.noindex,
+    jsonLd: route.jsonLd,
+  });
+  let html = template.replace("<!--app-head-->", () => head).replace("<!--app-html-->", () => renderToString(route.render()));
+  if (!route.hydrate) {
+    html = html
+      .replace(/<script type="module"[^>]*><\/script>\s*/g, "")
+      .replace(/<link rel="modulepreload"[^>]*>\s*/g, "");
+  }
+  return html;
+}

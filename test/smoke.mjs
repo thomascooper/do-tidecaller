@@ -1,5 +1,7 @@
 // Browser smoke checks: serves dist/ the way Vercel does and drives it in Chromium.
 // Run through `npm run smoke` (which builds first). The browser comes from CHROMIUM_PATH.
+import { readFileSync } from "node:fs";
+import { gzipSync } from "node:zlib";
 import { chromium } from "playwright-core";
 import { serveDist } from "../scripts/serve-dist.mjs";
 
@@ -43,6 +45,41 @@ try {
   await page.waitForSelector("h1");
 
   const pressed = (name) => page.getByRole("button", { name }).getAttribute("aria-pressed");
+
+  // ---- Prerender: what a crawler sees before any script runs ----------------
+  // Strip comments and tags (the verdict line is split across spans), then decode entities.
+  const decode = (html) =>
+    html.replace(/<!--.*?-->/gs, "").replace(/<[^>]+>/g, "").replace(/\s+/g, " ").replace(/&#x27;|&#39;/g, "'").replace(/&gt;/g, ">").replace(/&lt;/g, "<").replace(/&quot;/g, '"').replace(/&amp;/g, "&");
+  await check("raw HTML of / has the h1, Tidebringer's Claw and the priority line", async () => {
+    const raw = decode(await (await fetch(BASE + "/")).text());
+    for (const needle of ["Tidecaller Stat Weights", "Tidebringer's Claw", "MP5 > Intellect", "What Tidecaller does"]) {
+      if (!raw.includes(needle)) throw new Error(`missing ${needle}`);
+    }
+  });
+  await check("calculator JavaScript is under 120 KB gzipped", async () => {
+    const html = readFileSync(new URL("../dist/index.html", import.meta.url), "utf8");
+    const srcs = new Set([...html.matchAll(/<(?:script|link)[^>]*?(?:src|href)="(\/assets\/[^"]+\.js)"/g)].map((m) => m[1]));
+    if (!srcs.size) throw new Error("no script found in dist/index.html");
+    let total = 0;
+    for (const src of srcs) total += gzipSync(readFileSync(new URL(`../dist${src}`, import.meta.url))).length;
+    console.log(`       ${srcs.size} file(s), ${(total / 1024).toFixed(1)} KB gzipped`);
+    if (total >= 120 * 1024) throw new Error(`${total} bytes gzipped`);
+  });
+  await check("the page hydrated cleanly (no console errors yet) and Raid boss works", async () => {
+    const fresh = await browser.newContext();
+    const p = await fresh.newPage();
+    const errs = [];
+    p.on("console", (m) => {
+      if (m.type() === "error" && !m.location().url.endsWith("/favicon.ico")) errs.push(m.text());
+      if (m.type() === "warning" && /hydrat/i.test(m.text())) errs.push(m.text());
+    });
+    p.on("pageerror", (e) => errs.push(String(e)));
+    await p.goto(BASE + "/");
+    await p.getByRole("button", { name: "Raid boss" }).click();
+    eq(await p.locator("#t").inputValue(), "300", "Length after Raid boss");
+    await fresh.close();
+    eq(errs.join(" | "), "", "console problems");
+  });
 
   await check("h1 reads Tidecaller Stat Weights", async () => {
     eq(await page.locator("h1").count(), 1, "h1 count");

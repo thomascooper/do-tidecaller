@@ -141,3 +141,16 @@ Started: Sun Oct 18 07:32:52 UTC 2026
   - The reference CSS already had tabular numbers, `:focus-visible` outlines and the reduced-motion rule; only textarea and row focus were missing. The `.add` media query was already ported.
   - The accessible-name check opens every `<details>` and ticks "Show gear you can't use" first, so new controls inside panels are covered automatically.
 ---
+
+## 2026-10-18 - US-013
+- Prerender pipeline: `src/site.ts`, `src/seo/{head,jsonld}.ts`, `src/routes.tsx` (`/` only), `src/entry-server.tsx` (`routes`, `renderDocument`), `scripts/prerender.mjs`, three-step `build`, `preview` script. `/` has the PRD title, description, canonical, OG/Twitter, light and dark theme-color, WebSite + WebApplication JSON-LD. Static "What Tidecaller does" section sits between BestSet and Footer. `entry-client.tsx` hydrates in production, client-renders in dev.
+- Files: src/{site.ts,routes.tsx,entry-server.tsx,entry-client.tsx}, src/seo/*, src/calculator/{WhatItDoes.tsx,Calculator.tsx}, scripts/prerender.mjs, test/{seo.test.ts,smoke.mjs}, package.json, package-lock.json (node-html-parser), tsconfig.json (now includes `test`), vite.config.ts (vitest also picks up `test/**/*.test.ts`)
+- Checks: typecheck ok, npm test 83 passed, npm run build ok, npm run smoke 29 passed. Calculator JS: 1 file, 82.7 KB gzipped (limit 120).
+- Broke on purpose: shortened the home description (SEO length test failed); made WhatItDoes render different text on server and client (hydration smoke check and no-console-errors check failed). Both restored.
+- **Learnings for future iterations:**
+  - Add a page by adding an entry to `routes` in `src/routes.tsx` (`path, title, description, ogImage, ogType, hydrate, noindex?, jsonLd[], render()`). The SEO test iterates `routes`, so it covers it automatically. `renderDocument` strips the app `<script type="module">` and modulepreload links when `hydrate` is false.
+  - `headTags` does not yet emit icons or the manifest (US-020). Home's JSON-LD is one `@graph` block; other pages need a BreadcrumbList block (US-014+).
+  - The raw HTML splits the priority line across spans and escapes `'` and `>`, so smoke strips tags, comments and entities before matching text.
+  - The Vite template's `<!--app-head-->` and `<!--app-html-->` survive the client build; prerender reads `dist/index.html` as the template and overwrites it for `/`.
+  - React reports hydration mismatches as console errors even in the production bundle, so the smoke's console-error checks catch them.
+---
