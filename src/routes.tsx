@@ -2,6 +2,17 @@ import type { ReactElement } from "react";
 import { Calculator } from "./calculator/Calculator";
 import { About, ABOUT_TRAIL } from "./pages/About";
 import { Bis, BIS_TRAIL, topPicks } from "./pages/Bis";
+import {
+  DOWNRANKING_DESCRIPTION,
+  DOWNRANKING_TRAIL,
+  DownrankingGuide,
+  Guides,
+  GUIDES_DESCRIPTION,
+  GUIDES_TRAIL,
+  STAT_WEIGHTS_DESCRIPTION,
+  STAT_WEIGHTS_TRAIL,
+  StatWeightsGuide,
+} from "./pages/Guides";
 import { ItemPage, ItemsIndex, ITEMS_DESCRIPTION, ITEMS_TITLE, ITEMS_TRAIL, itemDescription, itemTitle, itemTrail } from "./pages/ItemPage";
 import { NotFound } from "./pages/NotFound";
 import { SlotPage, slotDescription, slotTitle, slotTrail } from "./pages/SlotPage";
@@ -105,6 +116,43 @@ export const routes: Route[] = [
       render: () => <ItemPage item={item} />,
     }),
   ),
+  {
+    path: "/guides",
+    title: "Resto Shaman Guides for WoW Forever | Tidecaller",
+    description: GUIDES_DESCRIPTION,
+    ogImage: "/og/guides.png",
+    ogType: "website",
+    hydrate: false,
+    breadcrumbs: GUIDES_TRAIL,
+    jsonLd: [],
+    render: () => <Guides />,
+  },
+  {
+    path: "/guides/stat-weights",
+    title: "Resto Shaman Stat Weights Explained, WoW Forever | Tidecaller",
+    description: STAT_WEIGHTS_DESCRIPTION,
+    ogImage: "/og/guides.png",
+    ogType: "article",
+    hydrate: false,
+    breadcrumbs: STAT_WEIGHTS_TRAIL,
+    jsonLd: [
+      article({ headline: "How Resto Shaman stat weights work", description: STAT_WEIGHTS_DESCRIPTION, path: "/guides/stat-weights", dateModified: DATA_UPDATED }),
+    ],
+    render: () => <StatWeightsGuide />,
+  },
+  {
+    path: "/guides/downranking",
+    title: "Healing Wave Downranking in WoW Forever | Tidecaller",
+    description: DOWNRANKING_DESCRIPTION,
+    ogImage: "/og/guides.png",
+    ogType: "article",
+    hydrate: false,
+    breadcrumbs: DOWNRANKING_TRAIL,
+    jsonLd: [
+      article({ headline: "Healing Wave downranking", description: DOWNRANKING_DESCRIPTION, path: "/guides/downranking", dateModified: DATA_UPDATED }),
+    ],
+    render: () => <DownrankingGuide />,
+  },
   {
     path: "/about",
     title: "About Tidecaller: Sources and Data Version",

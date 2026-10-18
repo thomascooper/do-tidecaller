@@ -377,6 +377,32 @@ try {
     await sp.goto(BASE + "/");
     eq(await sp.locator('#h-what ~ p a[href="/bis"]').count(), 1, "link in What Tidecaller does");
   });
+  await check("both guides return 200 with their h1 and no module script; downranking shows 65% kept for Healing Wave 2 at level 30", async () => {
+    for (const [path, h1] of [
+      ["/guides/stat-weights", "How Resto Shaman stat weights work"],
+      ["/guides/downranking", "Healing Wave downranking"],
+    ]) {
+      const res = await sp.goto(BASE + path);
+      eq(res.status(), 200, "status " + path);
+      eq(await sp.locator("h1").innerText(), h1, "h1 " + path);
+      eq(await sp.locator('script[type="module"]').count(), 0, "module scripts " + path);
+    }
+    const rows = sp.locator("#rankTable tbody tr");
+    eq(await rows.count(), 12, "rank rows");
+    const hw2 = (await rows.nth(1).innerText()).replace(/\s+/g, " ");
+    eq(hw2.startsWith("Healing Wave 2 6 ") && hw2.includes(" 65% "), true, "hw2 row: " + hw2);
+    await sp.goto(BASE + "/guides/stat-weights");
+    eq(await sp.locator("#presetWeights tbody tr").count(), 3, "preset rows");
+    await sp.goto(BASE + "/guides");
+    eq(await sp.locator('main a[href^="/guides/"]').count(), 2, "guide links");
+  });
+  await check("the calculator page and /bis link the guides", async () => {
+    for (const path of ["/", "/bis"]) {
+      await sp.goto(BASE + path);
+      eq(await sp.locator('main a[href="/guides/stat-weights"]').count() > 0, true, "stat weights link on " + path);
+      eq(await sp.locator('main a[href="/guides/downranking"]').count() > 0, true, "downranking link on " + path);
+    }
+  });
   await check("the header nav is present on / and /about, with the current page marked", async () => {
     await sp.goto(BASE + "/about");
     eq(await sp.locator('header.site nav a[aria-current="page"]').innerText(), "About", "current on /about");

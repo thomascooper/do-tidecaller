@@ -114,6 +114,12 @@ export function Bis() {
         </div>
       ))}
 
+      <h2>Why these weights</h2>
+      <p>
+        The scores come from the stat weights for this fight. Read <a href="/guides/stat-weights">how Resto Shaman stat
+        weights work</a> and <a href="/guides/downranking">how downranking works</a> for the reasoning.
+      </p>
+
       <h2>Crafter upgrades</h2>
       <p>What the Horde set gains when you have the profession (maker only items are usable by the crafter).</p>
       <ul>

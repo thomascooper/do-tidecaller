@@ -138,6 +138,26 @@ describe("site chrome and links", () => {
     expect(bis.route.description).toContain("Tidebringer's Claw");
   });
 
+  it("the guides have the PRD's titles and h1s, Article blocks on the two guides, and the index links both", () => {
+    const get = (path: string) => pages.find((p) => p.route.path === path)!;
+    expect(get("/guides").route.title).toBe("Resto Shaman Guides for WoW Forever | Tidecaller");
+    expect(get("/guides").doc.querySelector("h1")?.text).toBe("Resto Shaman guides");
+    const expected: [string, string, string][] = [
+      ["/guides/stat-weights", "Resto Shaman Stat Weights Explained, WoW Forever | Tidecaller", "How Resto Shaman stat weights work"],
+      ["/guides/downranking", "Healing Wave Downranking in WoW Forever | Tidecaller", "Healing Wave downranking"],
+    ];
+    const indexLinks = get("/guides").doc.querySelectorAll("main a").map((a) => a.getAttribute("href"));
+    for (const [path, title, h1] of expected) {
+      const g = get(path);
+      expect(g.route.title).toBe(title);
+      expect(g.doc.querySelector("h1")?.text).toBe(h1);
+      const types = g.doc.querySelectorAll('script[type="application/ld+json"]').map((b) => JSON.parse(b.text)["@type"]);
+      expect(types).toContain("Article");
+      expect(indexLinks).toContain(path);
+    }
+    expect(get("/guides/downranking").doc.querySelectorAll("#rankTable tbody tr").length).toBe(12);
+  });
+
   it("every slot page has the PRD's title and h1, a slot link back from /bis and prev/next links", () => {
     const slotPages = pages.filter((p) => p.route.path.startsWith("/bis/"));
     expect(slotPages.length).toBe(15);
