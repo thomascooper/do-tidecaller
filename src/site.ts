@@ -8,3 +8,4 @@ export const PARENT_SITE = { name: "Drunken Oath", url: "https://drunkenoath.com
 export function canonicalUrl(path: string): string {
   return path === "/" ? `${SITE_URL}/` : `${SITE_URL}${path}`;
 }
+export const SITE_TAGLINE = "WoW Forever beta 1.60.1, level 30. Every number is in points of Healing.";

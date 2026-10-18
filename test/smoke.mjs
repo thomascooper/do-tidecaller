@@ -546,6 +546,35 @@ try {
     eq(await sp.locator('header.site nav a[aria-current="page"]').innerText(), "Calculator", "current on /");
     eq(await sp.locator("footer.site-foot").count(), 1, "footer");
   });
+  await check("the header carries the art, the tagline and the wordmark on /, /bis and an item page", async () => {
+    for (const path of ["/", "/bis", "/items/holy-shroud"]) {
+      await sp.goto(BASE + path);
+      const bg = await sp.locator("header.site").evaluate((el) => getComputedStyle(el).backgroundImage);
+      eq(bg.includes("header-tide.svg"), true, "header art on " + path);
+      const tag = (await sp.locator("header.site .tagline").innerText()).replace(/\s+/g, " ");
+      eq(tag.includes("Resto Shaman stat weights and best in slot"), true, "tagline on " + path);
+      eq(tag.includes("WoW Forever beta 1.60.1, level 30. Every number is in points of Healing."), true, "second line on " + path);
+      eq(await sp.locator("header.site .mark img").evaluate((img) => img.naturalWidth > 0), true, "wordmark image on " + path);
+      eq(await sp.locator("header.site h1, header.site h2, header.site h3").count(), 0, "no headings in the header on " + path);
+      eq(await sp.locator("h1").count(), 1, "one h1 on " + path);
+    }
+    const res = await fetch(BASE + "/art/header-tide.svg");
+    eq(res.status, 200, "art status");
+    eq(res.headers.get("content-type").startsWith("image/svg+xml"), true, "art content type");
+    await sp.setViewportSize({ width: 400, height: 800 });
+    for (const path of ["/", "/bis", "/items/holy-shroud"]) {
+      await sp.goto(BASE + path);
+      const r = await sp.evaluate(() => ({
+        wide: document.documentElement.scrollWidth > window.innerWidth,
+        out: [...document.querySelectorAll("header.site nav a")].filter((a) => a.getBoundingClientRect().right > window.innerWidth).length,
+        rows: new Set([...document.querySelectorAll("header.site nav a")].map((a) => Math.round(a.getBoundingClientRect().top))).size,
+      }));
+      eq(r.wide, false, "sideways scroll at 400px on " + path);
+      eq(r.out, 0, "nav links inside the viewport on " + path);
+      eq(r.rows, 1, "nav on one row at 400px on " + path);
+    }
+    await sp.setViewportSize({ width: 1280, height: 900 });
+  });
   await check("the skip link is hidden until focused and jumps to main", async () => {
     await sp.goto(BASE + "/about");
     await sp.keyboard.press("Tab");
