@@ -105,3 +105,19 @@ Started: run 003 (header, icon, item popups, items table), 18 Oct 2026
   - `.iname` (inline-flex) holds icon and name so they never wrap apart; the sticky Item column on `/items` keeps both together.
   - The tips script imports only `lib/itemIcon.ts` (wowhead.json), not `data/index.ts`, to keep its bundle small.
 ---
+
+## 18 Oct 2026 - Delivering session, between and after the iterations
+- Between the two launches (Tom opened the environment to nether.wowhead.com and wow.zamimg.com):
+  spec 14.5 rewritten with 141 IDs and icon names, every one checked against Wowhead's Forever
+  tooltip data (dataEnv 16); `scripts/wowhead-icons.mjs` written and run (115 icons in
+  public/icons); US-007 adjusted to the new data shape and US-009 (icons) added. Also fixed the
+  Equip and Where headers' alignment on /items and the phone header spacing under the tagline.
+- Verified on the final Ralph commit: typecheck, 2,660 unit tests, 57 smoke checks, reference 26
+  of 26. Visual review in both themes at 1440 and 400 px, with a live popup.
+- Fixed in this session after review:
+  - the calculator's item links used the browser's default blue; `.iname a` now uses the accent
+    colour and has a focus outline;
+  - on phones the /items rows grew tall because Equip and Where squeezed into narrow columns;
+    Where stays on one line and Equip keeps a minimum width, so the table scrolls sideways instead;
+  - the social cards' art band started with a hard edge above the clouds; it now fades in.
+---

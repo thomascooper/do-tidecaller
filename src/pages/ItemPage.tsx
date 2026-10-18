@@ -217,8 +217,8 @@ export function ItemsIndex() {
                       <td>{i.sp || ""}</td>
                       <td>{i.heal || ""}</td>
                       <td>{i.mp5 || ""}</td>
-                      <td className="src">{equipText(i)}</td>
-                      <td className="src" title={i.source}>{whereShort(i)}</td>
+                      <td className="src eq">{equipText(i)}</td>
+                      <td className="src wh" title={i.source}>{whereShort(i)}</td>
                       <td className="score">{fmt(r.boss, 1)}</td>
                     </tr>
                   );

@@ -29,7 +29,7 @@ const cards = [
 const card = ([, kind, line]) => `<!doctype html><meta charset="utf-8"><style>${faces}
 *{box-sizing:border-box;margin:0}
 body{width:1200px;height:630px;background:#03060d;color:#e2eae7;font-family:"IBM Plex Sans",sans-serif;padding:72px 80px;display:flex;flex-direction:column;justify-content:space-between;position:relative;overflow:hidden}
-.art{position:absolute;left:0;right:0;bottom:0;height:252px;background:url(${artUri}) right bottom/auto 252px no-repeat}
+.art{position:absolute;left:0;right:0;bottom:0;height:252px;background:url(${artUri}) right bottom/auto 252px no-repeat;-webkit-mask-image:linear-gradient(180deg,transparent,#000 70px);mask-image:linear-gradient(180deg,transparent,#000 70px)}
 .art::after{content:"";position:absolute;inset:0;background:linear-gradient(90deg,rgba(3,6,13,.92),rgba(3,6,13,.55) 45%,rgba(3,6,13,0) 80%)}
 .row,.kind,.line,.foot{position:relative;z-index:1}
 .row{display:flex;align-items:center;gap:28px}
