@@ -388,6 +388,33 @@ try {
     eq(/\/icons\/[a-z0-9_]+\.jpg$/.test(await img.getAttribute("src")), true, "icon src");
     eq(await img.getAttribute("width"), "20", "icon width");
   });
+  await check("best set: the character sheet shows 19 slots with Head, Hands, weapons, relic and the set score", async () => {
+    const sheet = page.locator("#sheet");
+    const slots = await sheet.locator("li.slot").evaluateAll((lis) => lis.map((li) => li.getAttribute("data-slot")));
+    eq(slots.join(","), "Head,Neck,Shoulder,Back,Chest,Shirt,Tabard,Wrist,Hands,Waist,Legs,Feet,Finger,Finger,Trinket,Trinket,Main hand,Off hand,Relic", "slot order");
+    const text = async (slot, n = 0) => (await sheet.locator(`li.slot[data-slot="${slot}"]`).nth(n).innerText()).replace(/\s+/g, " ").trim();
+    eq(await text("Head"), "Holy Shroud Head · 38.9", "head");
+    eq(await sheet.locator('li.slot[data-slot="Head"] img').getAttribute("src").then((x) => /\/icons\/[a-z0-9_]+\.jpg$/.test(x)), true, "head icon");
+    eq((await sheet.locator("ul.right li.slot").first().getAttribute("data-slot")), "Hands", "right column starts at Hands");
+    eq(await text("Main hand"), "Tidebringer's Claw Main hand · 93.8", "main hand");
+    eq((await text("Off hand")).startsWith("Forcestone Buckler"), true, "off hand");
+    eq(await text("Shirt"), "Shirt Empty", "shirt");
+    eq(await text("Relic"), "Relic Relic: turn on Polished Driftwood Icon", "relic off");
+    eq((await sheet.locator(".who").innerText()).replace(/\s+/g, " ").includes("Level 30 Shaman, Horde"), true, "who");
+    eq((await sheet.locator(".who .set-score").innerText()).trim(), "448.1", "set score");
+    await page.locator("#icon").check();
+    eq(await text("Relic"), "Polished Driftwood Icon Relic", "relic on");
+    await page.locator("#icon").uncheck();
+    await sheet.locator('li.slot[data-slot="Head"] a.nm').hover();
+    await page.locator('[role="tooltip"]').waitFor({ state: "visible" });
+    await page.mouse.move(5, 5);
+    await page.locator('[role="tooltip"]').waitFor({ state: "detached" });
+    const vp = page.viewportSize();
+    await page.setViewportSize({ width: 400, height: 800 });
+    const wide = await page.evaluate(() => document.documentElement.scrollWidth > document.documentElement.clientWidth);
+    await page.setViewportSize(vp);
+    eq(wide, false, "no sideways scroll at 400 px");
+  });
   await check("best set: Alliance replaces the Horde-only off hand, Tailoring changes picks", async () => {
     await page.locator("#faction").selectOption("Alliance");
     const alliance = await picks();
