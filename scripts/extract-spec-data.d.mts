@@ -1,2 +1,2 @@
 export function jsonBlockUnder(spec: string, heading: string): unknown;
-export function extract(spec: string): { spells: unknown[]; items: unknown[]; wowhead: Record<string, { id: number; icon: string }> };
+export function extract(spec: string): { spells: unknown[]; items: unknown[]; wowhead: Record<string, { id: number; icon: string }>; itemLevels: Record<string, { ilvl: number; armor?: number }> };
