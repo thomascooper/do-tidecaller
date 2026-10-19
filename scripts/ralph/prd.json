@@ -1,0 +1,52 @@
+{
+  "project": "Tidecaller",
+  "branchName": "claude/sweet-hypatia-53cceb",
+  "description": "Run 004: item level and armor (AC), cached from Wowhead's Forever data into docs/spec.md SECTION 14.6 by Tom's ruling of 19 Oct, shown as two new columns on /items, in the item popup and on item pages. Display only: no score, weight or pick changes. FULL PRD: tasks/ralph-runs/004-item-level-armor/prd.md (read its Research findings). Run 003's PRD and progress log (tasks/ralph-runs/003-header-icon-item-popups/) describe the popup script, the Wowhead data and the items table you are extending.",
+  "userStories": [
+    {
+      "id": "US-001",
+      "title": "Item level and armor in the app's data",
+      "description": "As a developer, I want each item's item level and armor available beside its other data, so pages and the popup can show them.",
+      "acceptanceCriteria": [
+        "Read `docs/spec.md` sections 14.5 and 14.6 first",
+        "`scripts/extract-spec-data.mjs` also extracts the 14.6 JSON block (heading \"### 14.6 Item level and armor (cached from Wowhead's Forever data)\") to `src/data/itemLevels.json`; update `scripts/extract-spec-data.d.mts`; the existing test that the data files equal the spec covers it",
+        "A small helper beside `itemIconSrc` (so the popup script can import it without pulling in `data/index.ts`), for example `itemLevel(item)` and `itemArmor(item)`, each returning a number or `undefined`",
+        "Tests: every key in `itemLevels.json` is an item name in `items.json` and in `wowhead.json`, and every `wowhead.json` item has an entry; Holy Shroud is `{ ilvl: 32, armor: 40 }`; Forcestone Buckler's armor is 1078; Reedknot Ring has item level 35 and no armor; an item has armor exactly when its section 12 `armor` type is Cloth, Leather or Shield; no item level is below the item's `req`; an item with no 14.5 entry (Red Wool Cloak, unless 14.5 gains it) returns `undefined` for both",
+        "`npm run typecheck`, `npm test` and `npm run build` pass"
+      ],
+      "priority": 1,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-002",
+      "title": "Item level and AC columns on the items page",
+      "description": "As a player, I want item level and armor in the items table, so I can compare gear the way Tom asked.",
+      "acceptanceCriteria": [
+        "Every `/items` table's columns become: **Item**, **Lvl**, **iLvl**, **AC**, **Int**, **Spr**, **SP**, **Heal**, **MP5**, **Equip**, **Where**, **Score**, with `abbr` titles \"Item level\" and \"Armor\" on the new two; numbers right-aligned in the mono font like the other stat columns; blank when the item has none",
+        "The lead paragraph names the two new columns and says item level and armor come from Wowhead's Forever database, and that a blank means none or not yet known",
+        "Phone: the page still never scrolls sideways at 400 px (the table scrolls inside its box, Item column sticky)",
+        "Smoke (update the existing `/items` checks in place): the Head table's header row reads the twelve columns in order; Holy Shroud's row reads Lvl 27, iLvl 32, AC 40, Heal 33, Spr 6, Where \"World drop\", Score 38.9; a neck item with an entry shows an iLvl and a blank AC",
+        "`npm run typecheck`, `npm test`, `npm run build` and `CHROMIUM_PATH=/opt/pw-browsers/chromium-1194/chrome-linux/chrome npm run smoke` pass"
+      ],
+      "priority": 2,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-003",
+      "title": "Item level and armor in the popup and on the item page",
+      "description": "As a player, I want the popup and the item page to show item level and armor, so they read like the game's own tooltip.",
+      "acceptanceCriteria": [
+        "The popup, in WoW's order: \"Item Level 32\" under the name (in a muted gold), then the slot line, then \"40 Armor\" (plain) before the stats; each line only when the item has that value. The popup script stays under its 12 KB gzipped build limit",
+        "The item page's Stats table starts with \"Item level\" and \"Armor\" rows when the item has them; the lead sentence is unchanged",
+        "About page sources: the Wowhead line also says item level and armor are cached from Wowhead's Forever database (section 14.6); its other stats are not used",
+        "Smoke (beside the existing popup and item page checks): the Holy Shroud popup contains \"Item Level 32\" and \"40 Armor\"; `/items/holy-shroud`'s Stats table has Item level 32 and Armor 40; `/items/reedknot-ring` has an Item level row and no Armor row",
+        "`npm run typecheck`, `npm test`, `npm run build`, `npm run smoke` and `npm run reference` (26 of 26) pass"
+      ],
+      "priority": 3,
+      "passes": false,
+      "notes": ""
+    }
+  ]
+}

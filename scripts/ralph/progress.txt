@@ -1,0 +1,23 @@
+# Ralph Progress Log
+Started: run 004 (item level and armor), 19 Oct 2026
+---
+
+## Codebase Patterns
+(Carried over from runs 001 and 002; their full logs are in tasks/ralph-runs/.)
+- All math is pure functions in `src/lib/model.ts` taking `state` first; code reads `effectivePool(state)`, never `state.pool`.
+- New State keys need a DEFAULTS entry: `mergeState` (storage and share) filters by DEFAULTS keys and type.
+- Every page is in the route table `src/routes.tsx`, which feeds the prerender (`scripts/prerender.mjs`), the sitemap and the SEO tests (`test/seo.test.ts`).
+- The header and footer are rendered by `SiteHeader.tsx` / `SiteFooter.tsx` into the prerender template around `#root`; `Layout.tsx` is the same tree for dev.
+- Head tags (icons, theme-color, manifest) are written by `src/seo/head.ts`.
+- `scripts/og.mjs` is run by hand (not by the build) with playwright-core and writes the social cards and PNG icons into `public/`; commit what it writes.
+- `src/data/items.json` and `spells.json` are extracted verbatim from `docs/spec.md` by `scripts/extract-spec-data.mjs`; a test checks they equal the spec. Never hand-edit them.
+- Item names on the calculator are rendered by `src/calculator/ItemName.tsx` (a link to `/items/<slug>`); content pages use `itemPath(item)`.
+- Smoke checks go beside the checks for the same page in `test/smoke.mjs`. Normalize whitespace in text checks: JSX line breaks collapse in rendered text.
+- Smoke can read `src/data/items.json` via readFileSync for item facts.
+- `fmt(x, 0)` already adds thousands separators.
+- (Run 003) The item popup is `src/tips/tips.ts`, its own Vite entry (`vite.config.ts`), added to every page by `scripts/prerender.mjs`, which also fails the build over 12 KB gzipped. It imports only `lib/itemIcon.ts`-style small modules, never `data/index.ts`.
+- (Run 003) Wowhead data: spec 14.5 is extracted to `src/data/wowhead.json` by `scripts/extract-spec-data.mjs` (types in `scripts/extract-spec-data.d.mts`); `itemIconSrc(item)` lives in `src/lib/itemIcon.ts`. `scripts/wowhead-icons.mjs` needs network access Ralph iterations do not have: never run it in an iteration.
+- (Run 003) `.tag` is the Horde/Alliance/Check badge class; the header block is `.tagline`.
+- (Run 003) `/items` tables: `table.items`, Item cell `td.nm` (a smoke check counts 155 of them), text columns `td.src` with `.eq` and `.wh`, sticky first column with an opaque `var(--bg)`.
+- (Run 003) Smoke "no module script" checks exclude the popup: `script[type="module"]:not([src*="/assets/tips-"])`.
+---
