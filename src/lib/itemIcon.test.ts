@@ -3,8 +3,9 @@ import { existsSync } from "node:fs";
 import { resolve } from "node:path";
 import { ITEMS } from "../data";
 import wowhead from "../data/wowhead.json";
+import quality from "../data/quality.json";
 import levels from "../data/itemLevels.json";
-import { FALLBACK_ICON, itemArmor, itemIconSrc, itemLevel } from "./itemIcon";
+import { FALLBACK_ICON, itemArmor, itemIconSrc, itemLevel, itemQuality, RELIC } from "./itemIcon";
 
 describe("itemIconSrc", () => {
   it("names a file in public/icons for all 155 items", () => {
@@ -46,5 +47,24 @@ describe("itemLevel and itemArmor (spec 14.6)", () => {
   it("returns undefined for an item with no 14.5 entry", () => {
     expect(itemLevel({ name: "Red Wool Cloak" })).toBeUndefined();
     expect(itemArmor({ name: "Red Wool Cloak" })).toBeUndefined();
+  });
+});
+
+describe("itemQuality (spec 14.9)", () => {
+  it("reads green and blue, and nothing for an item without an entry", () => {
+    expect(itemQuality({ name: "Holy Shroud" })).toBe(3);
+    expect(itemQuality({ name: "Sea Giant's Toe Ring" })).toBe(2);
+    expect(itemQuality({ name: "Red Wool Cloak" })).toBeUndefined();
+  });
+  it("has 152 entries, all uncommon or rare, for the items in 14.5", () => {
+    const entries = Object.entries(quality.items);
+    expect(entries).toHaveLength(152);
+    for (const [name, q] of entries) expect([2, 3], name).toContain(q);
+    expect(Object.keys(quality.items).sort()).toEqual(Object.keys(wowhead).sort());
+  });
+  it("holds the rare Polished Driftwood Icon, which uses a file in public/icons", () => {
+    expect(RELIC.name).toBe("Polished Driftwood Icon");
+    expect(RELIC.quality).toBe(3);
+    expect(existsSync(resolve(__dirname, "../../public/icons", `${RELIC.icon}.jpg`))).toBe(true);
   });
 });

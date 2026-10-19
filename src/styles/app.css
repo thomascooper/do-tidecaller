@@ -2,6 +2,8 @@
 :root{
   --bg:#eef2f1; --panel:#ffffff; --ink:#16211f; --muted:#596966; --line:#d3dcd9; --soft:#e4ebe9;
   --accent:#0d6b62; --accent-soft:#d6ece8; --mana:#2c5aad; --mana-soft:#dbe5f6; --stam:#868e8b; --warn:#9a5a12;
+  --q-none:#7d8a88; --q0:#9d9d9d; --q1:#ffffff; --q2:#1eff00; --q3:#0070dd; --q4:#a335ee; --q5:#ff8000;
+  --qt-none:#d8e4e8; --qt0:#9d9d9d; --qt1:#ffffff; --qt2:#1eff00; --qt3:#3d9cff; --qt4:#b86bff; --qt5:#ff8000;
   --f-display:"Marcellus SC", "Trajan Pro", Georgia, serif;
   --f-body:"IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
   --f-mono:"IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
@@ -96,6 +98,13 @@ td{padding:7px 8px;border-bottom:1px solid var(--soft);text-align:right;font-fam
 td.nm{font-family:var(--f-body);font-weight:500}
 img.icon{display:block;flex:none;border:1px solid #03060d;border-radius:3px;background:#03060d}
 .iname{display:inline-flex;align-items:center;gap:7px;vertical-align:middle}
+img.icon[data-q="0"]{border-color:var(--q0)}
+img.icon[data-q="1"]{border-color:var(--q1)}
+img.icon[data-q="2"]{border-color:var(--q2)}
+img.icon[data-q="3"]{border-color:var(--q3)}
+img.icon[data-q="4"]{border-color:var(--q4)}
+img.icon[data-q="5"]{border-color:var(--q5)}
+img.icon[data-q="none"]{border-color:var(--q-none)}
 .iname img.icon{margin:0}
 .iname a{color:var(--accent)}
 .iname a:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
@@ -216,7 +225,13 @@ main:focus{outline:none}
 .tip{position:fixed;z-index:50;max-width:320px;pointer-events:none;background:#0b1424;color:#e6ecf5;border:1px solid #4a5a78;border-radius:6px;padding:9px 12px;box-shadow:0 6px 24px rgba(0,0,0,.45);font:400 13px/1.45 var(--f-body)}
 .tip-head{display:flex;gap:10px;align-items:flex-start;margin-bottom:2px}
 .tip-head>div{flex:1;min-width:0}
-.tip-name{font-family:var(--f-display);font-size:16px;letter-spacing:.03em;color:#8ec5ff;margin-bottom:2px}
+.tip-name{font-family:var(--f-display);font-size:16px;letter-spacing:.03em;color:var(--qt-none);margin-bottom:2px}
+.tip-name[data-q="0"]{color:var(--qt0)}
+.tip-name[data-q="1"]{color:var(--qt1)}
+.tip-name[data-q="2"]{color:var(--qt2)}
+.tip-name[data-q="3"]{color:var(--qt3)}
+.tip-name[data-q="4"]{color:var(--qt4)}
+.tip-name[data-q="5"]{color:var(--qt5)}
 .tip-ilvl{color:#d6b45a}
 .tip-slot{display:flex;justify-content:space-between;gap:16px}
 .tip-green{color:#4ade80}

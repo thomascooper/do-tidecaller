@@ -1,4 +1,5 @@
 import wowheadJson from "../data/wowhead.json";
+import qualityJson from "../data/quality.json";
 import levelsJson from "../data/itemLevels.json";
 import type { Item } from "./types";
 
@@ -23,3 +24,13 @@ export function itemLevel(item: Pick<Item, "name">): number | undefined {
 export function itemArmor(item: Pick<Item, "name">): number | undefined {
   return LEVELS[item.name]?.armor;
 }
+
+const QUALITY = qualityJson.items as Record<string, number>;
+
+/** The item's quality, 0 poor to 5 legendary (spec 14.9), or undefined without an entry. */
+export function itemQuality(item: Pick<Item, "name">): number | undefined {
+  return QUALITY[item.name];
+}
+
+/** The relic slot's Polished Driftwood Icon (spec 14.9). It is not an item in section 12. */
+export const RELIC = qualityJson.relic;
