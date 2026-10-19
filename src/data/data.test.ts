@@ -107,8 +107,8 @@ describe("wowhead links", () => {
   const names = new Set(ITEMS.map((i) => i.name));
   const entries = Object.entries(WOWHEAD);
 
-  it("has 141 entries, each for an item in items.json", () => {
-    expect(entries).toHaveLength(141);
+  it("has 152 entries, each for an item in items.json", () => {
+    expect(entries).toHaveLength(152);
     for (const [name] of entries) expect(names.has(name), name).toBe(true);
   });
 

@@ -1194,7 +1194,8 @@ comes from this spec. Wowhead is used for two things only:
   by `scripts/wowhead-icons.mjs`. An item with no entry here shows Wowhead's question-mark icon
   (`inv_misc_questionmark`).
 
-Wowhead's stats, item level, armor and quality are never shown or used.
+Wowhead's stats and quality are never shown or used. Item level and armor are cached in
+section 14.6 (Tom's ruling of 19 Oct 2026).
 
 **How the list was made (18 Oct 2026).** IDs were first found through Wowhead search results, then
 every one was checked against Wowhead's Forever tooltip data (`nether.wowhead.com`, `dataEnv=16`,
@@ -1210,10 +1211,12 @@ data has it under that ID.
   "Holy Shroud": {"id": 2721, "icon": "inv_helmet_16"},
   "Enduring Cap": {"id": 3020, "icon": "inv_helmet_15"},
   "Embalmed Shroud": {"id": 7691, "icon": "inv_helmet_28"},
+  "Wild Headdress": {"id": 270067, "icon": "inv_belt_25"},
   "Sorrow's Shroud": {"id": 284401, "icon": "inv_helmet_30"},
   "Filigreed Pristine Circlet": {"id": 253975, "icon": "inv_crown_01"},
   "Wisdom's Leather Helm": {"id": 252515, "icon": "inv_helmet_26"},
   "Kaleidoscope Chain": {"id": 13084, "icon": "inv_jewelry_amulet_07"},
+  "Archmagister's Faceted Pendant": {"id": 273049, "icon": "inv_misc_necklacea8"},
   "Crystal Starfire Medallion": {"id": 5003, "icon": "inv_jewelry_necklace_02"},
   "Giantstone Medallion": {"id": 281321, "icon": "inv_jewelry_necklace_15"},
   "Mark of the Pack Leader": {"id": 285331, "icon": "inv_jewelry_necklace_04"},
@@ -1233,6 +1236,7 @@ data has it under that ID.
   "Repairman's Cape": {"id": 9605, "icon": "inv_misc_cape_06"},
   "Brilliant Cloak": {"id": 277206, "icon": "inv_misc_cape_16"},
   "Glowing Thresher Cape": {"id": 6901, "icon": "inv_misc_monsterscales_03"},
+  "Tattered Kirin Tor Cloak": {"id": 286994, "icon": "inv_misc_cape_05"},
   "Battle Healer's Cloak": {"id": 19529, "icon": "inv_misc_cape_18"},
   "Windsong Drape": {"id": 15468, "icon": "inv_misc_cape_05"},
   "Thornweaver Drape": {"id": 274149, "icon": "inv_misc_cape_11"},
@@ -1251,6 +1255,7 @@ data has it under that ID.
   "Nightsky Wristbands": {"id": 6407, "icon": "inv_bracer_07"},
   "Silkstream Cuffs": {"id": 16791, "icon": "inv_bracer_13"},
   "Knife-Polishing Rag": {"id": 271740, "icon": "inv_bracer_10"},
+  "Graveweave Bindings": {"id": 273036, "icon": "inv_bracer_10"},
   "Bridgebreaker Bindings": {"id": 273808, "icon": "inv_bracer_07"},
   "Prospector Gloves": {"id": 4980, "icon": "inv_gauntlets_04"},
   "Truefaith Gloves": {"id": 7049, "icon": "inv_gauntlets_16"},
@@ -1268,6 +1273,7 @@ data has it under that ID.
   "Violet Sash": {"id": 251962, "icon": "inv_belt_04"},
   "Razzeric's Customized Seatbelt": {"id": 6726, "icon": "inv_belt_15"},
   "Belt of Arugal": {"id": 6392, "icon": "inv_belt_10"},
+  "Budding Leaf Belt": {"id": 284382, "icon": "inv_belt_03"},
   "Pristine Sash": {"id": 253925, "icon": "inv_belt_43"},
   "Wisdom's Leather Leggings": {"id": 252519, "icon": "inv_pants_02"},
   "Violet Sorcerer's Leggings": {"id": 286988, "icon": "inv_pants_cloth_18"},
@@ -1287,6 +1293,8 @@ data has it under that ID.
   "Philanthropist's Ring": {"id": 281635, "icon": "inv_jewelry_ring_14"},
   "Sea Giant's Toe Ring": {"id": 274746, "icon": "inv_jewelry_ring_02"},
   "Ladimore Heirloom Ring": {"id": 270051, "icon": "inv_jewelry_ring_08"},
+  "Solid Gold Band": {"id": 279845, "icon": "inv_jewelry_ring_03"},
+  "Runemender's Seal": {"id": 273031, "icon": "inv_jewelry_ring_28"},
   "Snake Hoop": {"id": 6750, "icon": "inv_jewelry_ring_06"},
   "Ring of Power Regulation": {"id": 273030, "icon": "inv_jewelry_ring_28"},
   "Electrocutioner Lagnut": {"id": 9447, "icon": "inv_misc_gear_04"},
@@ -1310,9 +1318,11 @@ data has it under that ID.
   "Painwalker Buckler": {"id": 274290, "icon": "inv_shield_07"},
   "Salve and Salvation": {"id": 276898, "icon": "inv_misc_book_01"},
   "Orb of Souls": {"id": 249395, "icon": "inv_misc_orb_04"},
+  "Geomancer Headdress": {"id": 274155, "icon": "inv_helmet_14"},
   "Pristine Circlet": {"id": 253949, "icon": "inv_crown_01"},
   "Wisdom's Leather Hood": {"id": 252507, "icon": "inv_helmet_33"},
   "Whisperwind Headdress": {"id": 6688, "icon": "inv_helmet_17"},
+  "Guardian's Emblem": {"id": 286995, "icon": "spell_arcane_arcaneresilience"},
   "Thermaplugg Medal of Honor": {"id": 274068, "icon": "inv_jewelry_amulet_03"},
   "Pendant of Myzrael": {"id": 4614, "icon": "inv_jewelry_necklace_07"},
   "Glowing Green Talisman": {"id": 5002, "icon": "inv_jewelry_necklace_01"},
@@ -1331,7 +1341,9 @@ data has it under that ID.
   "Daewyn's Girdle": {"id": 271769, "icon": "inv_belt_16"},
   "Earthen Leggings": {"id": 253999, "icon": "inv_pants_09"},
   "Ogre Loincloth": {"id": 273289, "icon": "inv_pants_09"},
+  "Kodohide Legguards": {"id": 285338, "icon": "inv_pants_12"},
   "Stormrider's Leather Pants": {"id": 252502, "icon": "inv_pants_10"},
+  "Roused Nature Footwraps": {"id": 286991, "icon": "inv_boots_09"},
   "Black Whelp Slippers": {"id": 252424, "icon": "inv_boots_leather_05red"},
   "Wingborne Boots": {"id": 15104, "icon": "inv_boots_07"},
   "Pristine Boots": {"id": 253889, "icon": "inv_boots_cloth_03"},
@@ -1351,6 +1363,199 @@ data has it under that ID.
 }
 ```
 
-Items with no ID yet (14): Wild Headdress, Archmagister's Faceted Pendant, Red Wool Cloak, Tattered Kirin Tor Cloak, Graveweave Bindings, Budding Leaf Belt, Solid Gold Band, Runemender's Seal, Geomancer Headdress, Guardian's Emblem, Darkspear Raider's Cloak, Kodohide Legguards, Roused Nature Footwraps, Sacristan Band. Wowhead lists them on its Forever
-pages, but its search could not be reached to read their IDs. Adding one here gives the item its
-link and icon with no code change (run `node scripts/wowhead-icons.mjs` to fetch the icon).
+**Added 19 Oct 2026 (11).** Wowhead's search could not be reached, so the remaining items were
+found by reading Wowhead's Forever tooltip data for IDs next to other new Forever items. Each one
+added here matches section 12 exactly: name, every stat and the required level.
+
+Items with no ID yet (3): Red Wool Cloak, Darkspear Raider's Cloak, Sacristan Band. Adding one here gives the item its
+link, icon, item level and armor with no code change (run `node scripts/wowhead-icons.mjs`, then
+`--levels` to refresh section 14.6).
+
+### 14.6 Item level and armor (cached from Wowhead's Forever data)
+
+Tom, 19 Oct 2026: *"item level and armor columns should be cached from wowhead forever, it can be
+trusted"*. For every item in section 14.5, its item level and (for Cloth, Leather and Shield items)
+its armor value, read from Wowhead's Forever tooltip data (`nether.wowhead.com`, `dataEnv=16`) on
+19 Oct 2026 by `node scripts/wowhead-icons.mjs --levels`, and checked: every Cloth, Leather and
+Shield item has an armor value, no other item does, and no item level is below the item's required
+level. Display only: item level and armor change no score, weight or pick. An item that is not in
+section 14.5 has neither. Run `node scripts/wowhead-icons.mjs --check` to compare this list with
+Wowhead again.
+
+```json
+{
+  "Holy Shroud": {"ilvl": 32, "armor": 40},
+  "Enduring Cap": {"ilvl": 33, "armor": 88},
+  "Embalmed Shroud": {"ilvl": 35, "armor": 42},
+  "Wild Headdress": {"ilvl": 39, "armor": 88},
+  "Sorrow's Shroud": {"ilvl": 29, "armor": 38},
+  "Filigreed Pristine Circlet": {"ilvl": 30, "armor": 38},
+  "Wisdom's Leather Helm": {"ilvl": 30, "armor": 84},
+  "Kaleidoscope Chain": {"ilvl": 35},
+  "Archmagister's Faceted Pendant": {"ilvl": 35},
+  "Crystal Starfire Medallion": {"ilvl": 31},
+  "Giantstone Medallion": {"ilvl": 32},
+  "Mark of the Pack Leader": {"ilvl": 25},
+  "Scorn's Icy Choker": {"ilvl": 35},
+  "Stygian Bone Amulet": {"ilvl": 34},
+  "Explorers' League Commendation": {"ilvl": 40},
+  "Death Speaker Mantle": {"ilvl": 32, "armor": 37},
+  "Batwing Mantle": {"ilvl": 34, "armor": 38},
+  "Bloodmage Mantle": {"ilvl": 35, "armor": 38},
+  "Berylline Pads": {"ilvl": 36, "armor": 39},
+  "Magician's Mantle": {"ilvl": 25, "armor": 32},
+  "Ghostly Mantle": {"ilvl": 27, "armor": 30},
+  "Fairywing Mantle": {"ilvl": 32, "armor": 33},
+  "Moonlit Amice": {"ilvl": 33, "armor": 34},
+  "Rose Mantle": {"ilvl": 27, "armor": 30},
+  "Naga Priestess's Mantle": {"ilvl": 40, "armor": 40},
+  "Repairman's Cape": {"ilvl": 32, "armor": 22},
+  "Brilliant Cloak": {"ilvl": 41, "armor": 27},
+  "Glowing Thresher Cape": {"ilvl": 29, "armor": 23},
+  "Tattered Kirin Tor Cloak": {"ilvl": 33, "armor": 25},
+  "Battle Healer's Cloak": {"ilvl": 33, "armor": 25},
+  "Windsong Drape": {"ilvl": 29, "armor": 21},
+  "Thornweaver Drape": {"ilvl": 30, "armor": 24},
+  "Prelacy Cape": {"ilvl": 26, "armor": 20},
+  "Death Speaker Robes": {"ilvl": 31, "armor": 48},
+  "Beguiler Robes": {"ilvl": 34, "armor": 50},
+  "Civinad Robes": {"ilvl": 37, "armor": 54},
+  "Pristine Gown": {"ilvl": 27, "armor": 45},
+  "Violet Sorcerer's Robes": {"ilvl": 32, "armor": 49},
+  "Wisdom's Leather Tunic": {"ilvl": 27, "armor": 98},
+  "Doomsayer's Robe": {"ilvl": 42, "armor": 55},
+  "Zealot's Robe": {"ilvl": 38, "armor": 50},
+  "Spidertank Oilrag": {"ilvl": 34, "armor": 22},
+  "Mindthrust Bracers": {"ilvl": 22, "armor": 17},
+  "Glowing Magical Bracelets": {"ilvl": 31, "armor": 21},
+  "Nightsky Wristbands": {"ilvl": 33, "armor": 20},
+  "Silkstream Cuffs": {"ilvl": 38, "armor": 22},
+  "Knife-Polishing Rag": {"ilvl": 33, "armor": 20},
+  "Graveweave Bindings": {"ilvl": 31, "armor": 21},
+  "Bridgebreaker Bindings": {"ilvl": 29, "armor": 20},
+  "Prospector Gloves": {"ilvl": 40, "armor": 69},
+  "Truefaith Gloves": {"ilvl": 30, "armor": 27},
+  "Gloves of Old": {"ilvl": 34, "armor": 32},
+  "Hotshot Pilot's Gloves": {"ilvl": 32, "armor": 31},
+  "Restorer's Fine Gloves": {"ilvl": 40, "armor": 33},
+  "Pristine Gloves": {"ilvl": 20, "armor": 23},
+  "Wisdom's Leather Gloves": {"ilvl": 20, "armor": 53},
+  "Naga Battle Gloves": {"ilvl": 27, "armor": 61},
+  "Oilrag Handwraps": {"ilvl": 31, "armor": 59},
+  "Shilly Mitts": {"ilvl": 32, "armor": 28},
+  "Mender's Leather Belt": {"ilvl": 35, "armor": 63},
+  "Blightleaf Rope": {"ilvl": 34, "armor": 28},
+  "Skycaller's Leather Belt": {"ilvl": 35, "armor": 63},
+  "Violet Sash": {"ilvl": 36, "armor": 27},
+  "Razzeric's Customized Seatbelt": {"ilvl": 41, "armor": 30},
+  "Belt of Arugal": {"ilvl": 28, "armor": 26},
+  "Budding Leaf Belt": {"ilvl": 32, "armor": 54},
+  "Pristine Sash": {"ilvl": 22, "armor": 22},
+  "Wisdom's Leather Leggings": {"ilvl": 30, "armor": 90},
+  "Violet Sorcerer's Leggings": {"ilvl": 34, "armor": 44},
+  "Pristine Leggings": {"ilvl": 30, "armor": 41},
+  "Filigreed Pristine Leggings": {"ilvl": 25, "armor": 37},
+  "Magistrate's Pantaloons": {"ilvl": 29, "armor": 41},
+  "Wisdom's Leather Pants": {"ilvl": 25, "armor": 82},
+  "Gaze Dreamer Pants": {"ilvl": 28, "armor": 40},
+  "Gilded Slippers": {"ilvl": 35, "armor": 35},
+  "Renewing Footpads": {"ilvl": 36, "armor": 78},
+  "Acidic Walkers": {"ilvl": 32, "armor": 34},
+  "Wisdom's Leather Boots": {"ilvl": 22, "armor": 61},
+  "Violet Sorcerer's Sandals": {"ilvl": 33, "armor": 34},
+  "Gnomebot Operating Boots": {"ilvl": 34, "armor": 76},
+  "Rotmender's Treads": {"ilvl": 24, "armor": 29},
+  "Everlast Boots": {"ilvl": 38, "armor": 35},
+  "Philanthropist's Ring": {"ilvl": 35},
+  "Sea Giant's Toe Ring": {"ilvl": 35},
+  "Ladimore Heirloom Ring": {"ilvl": 35},
+  "Solid Gold Band": {"ilvl": 36},
+  "Runemender's Seal": {"ilvl": 32},
+  "Snake Hoop": {"ilvl": 32},
+  "Ring of Power Regulation": {"ilvl": 33},
+  "Electrocutioner Lagnut": {"ilvl": 34},
+  "Advisor's Ring": {"ilvl": 33},
+  "Minor Recombobulator": {"ilvl": 28},
+  "Roogug's Severed Head": {"ilvl": 30},
+  "Worgenbane Talisman": {"ilvl": 26},
+  "Cursed Murloc Eye": {"ilvl": 29},
+  "Lookie's Spyglass": {"ilvl": 23},
+  "Wind Spirit Staff": {"ilvl": 34},
+  "Healer's Staff": {"ilvl": 33},
+  "Fallen Dragon's Scepter": {"ilvl": 32},
+  "Odo's Ley Staff": {"ilvl": 26},
+  "Tidebringer's Claw": {"ilvl": 40},
+  "Royal Diplomatic Scepter": {"ilvl": 35},
+  "Death Speaker Scepter": {"ilvl": 33},
+  "Forcestone Buckler": {"ilvl": 40, "armor": 1078},
+  "Elementalist's Guard": {"ilvl": 40, "armor": 1078},
+  "Heart of Agamaggan": {"ilvl": 35, "armor": 757},
+  "Seedcloud Buckler": {"ilvl": 24, "armor": 547},
+  "Painwalker Buckler": {"ilvl": 34, "armor": 738},
+  "Salve and Salvation": {"ilvl": 38},
+  "Orb of Souls": {"ilvl": 30},
+  "Geomancer Headdress": {"ilvl": 30, "armor": 84},
+  "Pristine Circlet": {"ilvl": 25, "armor": 35},
+  "Wisdom's Leather Hood": {"ilvl": 25, "armor": 76},
+  "Whisperwind Headdress": {"ilvl": 34, "armor": 89},
+  "Guardian's Emblem": {"ilvl": 33},
+  "Thermaplugg Medal of Honor": {"ilvl": 34},
+  "Pendant of Myzrael": {"ilvl": 35},
+  "Glowing Green Talisman": {"ilvl": 30},
+  "Invoker's Mantle": {"ilvl": 30, "armor": 32},
+  "Feline Mantle": {"ilvl": 28, "armor": 34},
+  "Heavy Woolen Cloak": {"ilvl": 21, "armor": 17},
+  "Robes of Arugal": {"ilvl": 28, "armor": 46},
+  "Wisdom's Leather Armor": {"ilvl": 20, "armor": 85},
+  "Ceremonial Gown": {"ilvl": 42, "armor": 55},
+  "Witherbite Bracers": {"ilvl": 20, "armor": 37},
+  "Tattered Mittens": {"ilvl": 28, "armor": 26},
+  "Gloves of Meditation": {"ilvl": 26, "armor": 25},
+  "Jutebraid Gloves": {"ilvl": 30, "armor": 27},
+  "Defiler's Cloth Girdle": {"ilvl": 33, "armor": 28},
+  "Wisdom's Leather Belt": {"ilvl": 17, "armor": 45},
+  "Daewyn's Girdle": {"ilvl": 33, "armor": 25},
+  "Earthen Leggings": {"ilvl": 35, "armor": 41},
+  "Ogre Loincloth": {"ilvl": 22, "armor": 35},
+  "Kodohide Legguards": {"ilvl": 29, "armor": 88},
+  "Stormrider's Leather Pants": {"ilvl": 25, "armor": 82},
+  "Roused Nature Footwraps": {"ilvl": 32, "armor": 73},
+  "Black Whelp Slippers": {"ilvl": 15, "armor": 53},
+  "Wingborne Boots": {"ilvl": 39, "armor": 35},
+  "Pristine Boots": {"ilvl": 17, "armor": 23},
+  "Reedknot Ring": {"ilvl": 35},
+  "Dog Whistle": {"ilvl": 30},
+  "Transformative Cocoon": {"ilvl": 30},
+  "Bottle of Powderfuse Port": {"ilvl": 42},
+  "Lightning's Grasp": {"ilvl": 40},
+  "Eye of Paleth": {"ilvl": 31},
+  "Alliance Outrunner Healing Rod": {"ilvl": 26},
+  "Orb of Mistmantle": {"ilvl": 28},
+  "Omega Orb": {"ilvl": 40},
+  "Raptor's Gaze": {"ilvl": 31},
+  "Staff of the Friar": {"ilvl": 26},
+  "Defiler's Talisman": {"ilvl": 33},
+  "Satchel of Potions": {"ilvl": 33}
+}
+```
+
+### 14.7 Spell Power before Healing in the priority line
+
+Tom, 19 Oct 2026: *"point for point spell power probably is on the left side and hp on the right,
+while they are = to each other SP does influence dmg as well if they are equal, but it should keep
+the = sign between them"*.
+
+Healing and Spell Power always have the same weight, so the priority line always joins them with
+"=". When weights tie, the line now lists **Spell Power before Healing**: section 5's sort starts
+from the base order mp5, int, spi, sp, heal (Stamina last, when its weight is above 0) instead of
+mp5, int, spi, heal, sp. The "=" rule is unchanged, no number changes, and the weight bars keep
+their order (MP5, Intellect, Spirit, Healing, Spell Power).
+
+This supersedes the tie order in section 5 and the priority line strings quoted in sections 1, 7
+and 14.3. They now read:
+
+- Section 7's character at Dungeon boss: "MP5 > Intellect > Spell Power = Healing > Spirit".
+- The section 14.3 defaults at Dungeon boss: "MP5 > Intellect > Spell Power = Healing = Spirit".
+
+The reference implementation in section 13 still uses the old order; the comparison with it
+reads its priority line with the two names swapped.
