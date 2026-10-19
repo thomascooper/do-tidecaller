@@ -1,7 +1,7 @@
 {
   "project": "Tidecaller",
   "branchName": "claude/sweet-hypatia-53cceb",
-  "description": "Run 004: item level and armor (AC), cached from Wowhead's Forever data into docs/spec.md SECTION 14.6 by Tom's ruling of 19 Oct, shown as two new columns on /items, in the item popup and on item pages. Display only: no score, weight or pick changes. FULL PRD: tasks/ralph-runs/004-item-level-armor/prd.md (read its Research findings). Run 003's PRD and progress log (tasks/ralph-runs/003-header-icon-item-popups/) describe the popup script, the Wowhead data and the items table you are extending.",
+  "description": "Run 004: item level and armor (AC), cached from Wowhead's Forever data into docs/spec.md SECTION 14.6 by Tom's ruling of 19 Oct, shown as two new columns on /items, in the item popup and on item pages (display only: no score, weight or pick changes); and Tom's ruling in SECTION 14.7 that the priority line lists Spell Power before Healing (US-004). FULL PRD: tasks/ralph-runs/004-item-level-armor/prd.md (read its Research findings). Run 003's PRD and progress log (tasks/ralph-runs/003-header-icon-item-popups/) describe the popup script, the Wowhead data and the items table you are extending.",
   "userStories": [
     {
       "id": "US-001",
@@ -46,6 +46,23 @@
       ],
       "priority": 3,
       "passes": true,
+      "notes": ""
+    },
+    {
+      "id": "US-004",
+      "title": "Spell Power before Healing in the priority line",
+      "description": "As a player, I want the priority line to list Spell Power before Healing, since they are worth the same for healing and Spell Power also adds damage.",
+      "acceptanceCriteria": [
+        "Read `docs/spec.md` section 14.7 and the PRD's research findings on it first",
+        "`priorityLine` in `src/lib/model.ts` sorts from the base order mp5, int, spi, sp, heal (then sta when its weight is above 0); the \"=\" rule is unchanged; the weight bars are unchanged",
+        "Tests follow 14.7: `model.test.ts` pins \"MP5 > Intellect > Spell Power = Healing > Spirit\" for the section 7 character at Dungeon boss and \"MP5 > Intellect > Spell Power = Healing = Spirit\" at the defaults; a new test checks that Spell Power comes right before Healing, joined by \"=\", at all three presets",
+        "`test/smoke.mjs`: the `#verdict` check reads \"MP5 > Intellect > Spell Power = Healing = Spirit\"",
+        "`test/reference-diff.mjs` normalises the reference's priority line as the PRD says, with a comment citing 14.7; 26 of 26",
+        "Any page copy that quotes the old order follows 14.7 (search `src/` for \"Healing = Spell Power\")",
+        "`npm run typecheck`, `npm test`, `npm run build`, `npm run smoke` and `npm run reference` (26 of 26) pass"
+      ],
+      "priority": 4,
+      "passes": false,
       "notes": ""
     }
   ]
