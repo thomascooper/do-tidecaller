@@ -1,5 +1,5 @@
 import { ITEMS } from "../data";
-import { activePreset, calcPool, compute, effectivePool, PRESETS } from "../lib/model";
+import { activePreset, calcCrit, calcPool, compute, effectiveCrit, effectivePool, intPerCrit, PRESETS } from "../lib/model";
 import type { PresetId } from "../lib/model";
 import { fmt } from "../lib/format";
 import { BestSet } from "./BestSet";
@@ -22,6 +22,8 @@ export function Calculator() {
   const allItems = [...ITEMS, ...items];
   const r = compute(state);
   const pool = calcPool(state);
+  const critCalc = calcCrit(state);
+  const trim = (x: number, d: number) => String(Number(x.toFixed(d)));
 
   return (
     <div className="wrap">
@@ -83,6 +85,48 @@ export function Calculator() {
                   </>
                 )}
               </p>
+              <NumField
+                id="crit"
+                label="Crit chance, %"
+                min={0}
+                max={100}
+                step={0.1}
+                value={Math.round(effectiveCrit(state) * 10) / 10}
+                onCommit={(v) => set({ crit: v, critAuto: false })}
+              />
+              <NumField
+                id="critExtra"
+                label="Crit from gear and talents, %"
+                min={0}
+                max={100}
+                step={0.5}
+                value={state.critExtra}
+                onCommit={(v) => set({ critExtra: v })}
+              />
+              <p className="hint row-full" id="critWork" aria-live="polite">
+                {state.critAuto ? (
+                  <>
+                    Base {trim(critCalc.base, 1)}% + {trim(critCalc.fromInt, 2)}% from {fmt(state.int, 0)} Intellect (
+                    {trim(intPerCrit(state.level).value, 1)} per 1%)
+                    {critCalc.estimated && (
+                      <>
+                        {" "}
+                        <span className="tag warn">Check</span>
+                      </>
+                    )}
+                    {critCalc.estimated && " (estimated)"} + {trim(critCalc.extra, 2)}% from gear and talents ={" "}
+                    {trim(critCalc.total, 2)}%.
+                  </>
+                ) : (
+                  <>
+                    Using your number.{" "}
+                    <button type="button" className="chip" onClick={() => set({ critAuto: true })}>
+                      Use calculated ({trim(critCalc.total, 1)}%)
+                    </button>
+                  </>
+                )}
+              </p>
+              <p className="hint row-full">Crit from gear and talents: for example Tidebringer's Claw adds 2% to Healing Wave and Lesser Healing Wave.</p>
               <NumField id="heal" label="Healing power" min={0} step={1} value={state.heal} onCommit={(v) => set({ heal: v })} />
               <NumField id="spi" label="Spirit" min={0} step={1} value={state.spi} onCommit={(v) => set({ spi: v })} />
               <NumField id="g" label="Gear MP5" min={0} step={1} value={state.g} onCommit={(v) => set({ g: v })} />

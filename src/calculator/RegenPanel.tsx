@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { fmt } from "../lib/format";
-import { castingShare, DEFAULT_READINGS, DEFAULTS, effectiveCrit, fitSpirit, parseReadings } from "../lib/model";
+import { castingShare, DEFAULT_READINGS, DEFAULTS, fitSpirit, parseReadings } from "../lib/model";
 import type { State } from "../lib/model";
 import { NumField } from "./NumField";
 
@@ -81,23 +81,8 @@ export function RegenPanel({ state, set }: Props) {
       {toggle(
         "ws",
         "Water Shield",
-        "Each heal crit returns 2% of max mana. Enter your heal crit chance; 5% is the default.",
+        "Each heal crit returns 2% of max mana. Uses your crit chance from the Character panel.",
         "Water Shield",
-        labelled(
-          "Crit %",
-          !state.ws,
-          <NumField
-            id="crit"
-            className="pct"
-            ariaLabel="Heal crit chance, percent"
-            min={0}
-            max={100}
-            step={0.5}
-            disabled={!state.ws}
-            value={Math.round(effectiveCrit(state) * 10) / 10}
-            onCommit={(v) => set({ crit: v, critAuto: false })}
-          />,
-        ),
       )}
 
       <details id="spiritbox">

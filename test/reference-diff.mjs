@@ -44,7 +44,8 @@ function extract() {
   return {
     // The reference spaces the operators with CSS padding, the app with real spaces.
     verdict: t("#verdict").replace(/\s*([>=])\s*/g, "$1"),
-    regime: t("#regime"), bars: all("#bars .bar"), conv: all("#conv .kv"), ranks: rows("#ranks tbody tr"),
+    regime: t("#regime"), // Spec 14.8 renames the Intellect bar's note (crit now counts); the reference keeps the old one.
+    bars: all("#bars .bar").map((b) => b.replace("pool, Water Shield and crit", "pool and Water Shield")), conv: all("#conv .kv"), ranks: rows("#ranks tbody tr"),
     best: rows("#bestTable tbody tr"), total: t("#bestTotal"), weapon: t("#bestWeapon"), items: rows("#itemTable tbody tr"), calres: t("#calres"),
   };
 }

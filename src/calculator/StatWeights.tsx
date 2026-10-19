@@ -6,7 +6,7 @@ const BAR_ORDER: StatKey[] = ["mp5", "int", "spi", "heal", "sp", "sta"];
 
 const SUB_LABELS = (ws: boolean): Record<StatKey, string> => ({
   mp5: "gear and buffs",
-  int: ws ? "pool and Water Shield" : "15 mana each",
+  int: ws ? "pool, Water Shield and crit" : "15 mana each",
   spi: "regen",
   heal: "heals only",
   sp: "heals and damage",
@@ -44,6 +44,9 @@ export function StatWeights({ state, r }: { state: State; r: Computed }) {
     ["Mana for the fight", fmt(r.E, 0), `${fmt(r.casts, 1)} casts`],
     ["Water Shield", fmt(r.wsBack, 1), "mana back per cast"],
   ];
+  if (state.critStat) {
+    readouts.push(["1% crit", fmt(W.crit, 2), `points of Healing (heals ${fmt(r.critHeal, 2)}, Water Shield ${fmt(W.crit - r.critHeal, 2)})`]);
+  }
 
   return (
     <section className="box" aria-labelledby="h-w">

@@ -162,7 +162,7 @@ try {
     eq(await page.locator('.bar[data-stat="mp5"] .v').innerText(), "2.84", "MP5 bar");
     eq(await page.locator(".bar").count(), 5, "bars without Stamina");
     eq(await page.locator("#wnote").innerText(), "1 Healing = 1.00", "note");
-    eq(await page.locator(".kv").count(), 7, "readouts");
+    eq(await page.locator(".kv").count(), 8, "readouts");
     eq(await page.locator(".kv", { hasText: "Mana for the fight" }).locator(".v").innerText(), "3,637 18.4 casts", "mana for the fight");
   });
   await check("stat weights: Raid boss MP5 reads 4.58", async () => {
@@ -224,6 +224,42 @@ try {
     await page.waitForSelector("#pool");
     eq(await page.locator("#pool").inputValue(), "2110", "calculated survives reload");
   });
+  await check("crit chance: working line, Intellect, typed number, Use calculated, gear bonus, reload (spec 14.8)", async () => {
+    await page.getByRole("button", { name: "Dungeon boss" }).click();
+    const work = () => page.locator("#critWork").innerText().then((t) => t.replace(/\s+/g, " "));
+    const readout = () => page.locator("#conv").innerText().then((t) => t.replace(/\s+/g, " "));
+    eq(await page.locator("#crit").inputValue(), "6.3", "calculated crit");
+    eq(await work(), "Base 2.3% + 4.03% from 115 Intellect (28.5 per 1%) CHECK (estimated) + 0% from gear and talents = 6.33%.", "working at defaults");
+    eq(await page.locator("#critWork .tag").count(), 1, "level 30 is estimated");
+    eq((await readout()).includes("1% crit 3.90 points of Healing (heals 2.98, Water Shield 0.92)"), true, "crit readout");
+    const intW = () => page.locator('.bar[data-stat="int"] .v').innerText();
+    const intBefore = await intW();
+    await page.locator("#int").fill("40");
+    await page.locator("#int").blur();
+    eq(await page.locator("#crit").inputValue(), "3.7", "crit at Intellect 40");
+    eq((await intW()) !== intBefore, true, "Intellect weight moved");
+    await page.locator("#int").fill("115");
+    await page.locator("#int").blur();
+    await page.locator("#crit").fill("10");
+    await page.locator("#crit").blur();
+    eq(await work(), "Using your number. Use calculated (6.3%)", "override working");
+    eq((await readout()).includes("1% crit 3.85 points of Healing"), true, "crit readout at 10%");
+    await page.reload();
+    await page.waitForSelector("#crit");
+    eq(await page.locator("#crit").inputValue(), "10", "override survives reload");
+    await page.getByRole("button", { name: /Use calculated/ }).click();
+    eq(await page.locator("#crit").inputValue(), "6.3", "back to calculated");
+    await page.locator("#critExtra").fill("2");
+    await page.locator("#critExtra").blur();
+    eq(await page.locator("#crit").inputValue(), "8.3", "gear and talents add");
+    await page.reload();
+    await page.waitForSelector("#crit");
+    eq(await page.locator("#crit").inputValue(), "8.3", "calculated choice survives reload");
+    await page.locator("#critExtra").fill("0");
+    await page.locator("#critExtra").blur();
+    eq(await page.locator("#crit").getAttribute("id"), "crit", "box present");
+    eq(await page.locator("#crit").evaluate((el) => !!el.labels?.length), true, "crit has a label");
+  });
   await check("stat weights: Stamina bar appears only with a Stamina weight", async () => {
     await page.locator("#stw").fill("5");
     eq(await page.locator('.bar[data-stat="sta"]').count(), 1, "stamina bar");
@@ -252,18 +288,19 @@ try {
     await page.locator("#talent").setChecked(true, { force: true });
     eq(await page.locator("#pct").isDisabled(), false, "pct enabled again");
     await page.locator("#ws").setChecked(false, { force: true });
-    eq(await page.locator("#crit").isDisabled(), true, "crit disabled");
+    eq(await page.locator("#crit").isDisabled(), false, "crit stays enabled: it also buys healing");
     await page.locator("#ws").setChecked(true, { force: true });
   });
-  await check("regen: the boxes beside Water Shield and the talent are labelled", async () => {
-    for (const [id, text] of [["#crit", "Crit %"], ["#pct", "Kept %"]]) {
+  await check("regen: the box beside the talent is labelled and Water Shield has no number box", async () => {
+    eq(await page.locator("#ws").count(), 1, "Water Shield switch");
+    eq(await page.locator("#crit").evaluate((el) => !!el.closest("#h-reg, section[aria-labelledby=h-reg]")), false, "crit box is not in the regen panel");
+    for (const [id, text] of [["#pct", "Kept %"]]) {
       const box = await page.locator(id).boundingBox();
       const lab = await page.getByText(text, { exact: true }).first().boundingBox();
       if (!box || !lab) throw new Error(`${text} or ${id} not visible`);
       const dist = Math.hypot(box.x - lab.x, box.y - lab.y);
       if (dist > 60) throw new Error(`${text} is ${Math.round(dist)} px from ${id}`);
     }
-    eq(await page.locator("#crit").getAttribute("aria-label"), "Heal crit chance, percent", "crit name");
     eq(await page.locator("#pct").getAttribute("aria-label"), "Share kept while casting, percent", "pct name");
   });
   await check("calibration: levels-off fit, restore defaults, casting share", async () => {
