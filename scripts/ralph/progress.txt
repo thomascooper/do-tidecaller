@@ -65,3 +65,12 @@ Started: run 005 (crit stat, rarity, character sheet), 19 Oct 2026
   - US-005's sheet should use `data-q` / the `--q*` and `--qt*` tokens, and `RELIC.quality` for the relic slot.
   - Popup size stays small: tips.ts only imports `itemIcon.ts`, which now also pulls the 152-entry quality.json.
 ---
+
+## 19 Oct 2026 - US-005
+- `CharacterSheet` (src/calculator/CharacterSheet.tsx) renders a `BestSet` as 19 slots (left, right, bottom in the WoW order), each with a quality-bordered icon, the name as an item link (popup works), slot name and score. Shirt and Tabard are empty; a two-hander sits in Main hand with Off hand reading "Two-hand"; the relic slot shows Polished Driftwood Icon only while `state.icon` is on. Centre art is `public/art/totem-figure.svg`; the level, faction and healing, max mana and crit line are live. Placed above the table in `BestSet.tsx`. CSS (`.doll`) is at the end of app.css, always dark, with the 760 px phone layout.
+- Props are generic (`heal`, `maxMana`, `crit` optional) so US-006 can reuse it on /bis.
+- Checks: typecheck, vitest 2684, build, smoke 60/60, reference 26/26. The new smoke check failed once on a missing `vp` variable, then passed.
+- **Learnings for future iterations:**
+  - There are two `.set-score` elements (centre and phone); the phone one is hidden above 760 px, so read it through `.who`.
+  - Items with no quality use the class `qn` (neutral text and grey border); `q1` is real common (white).
+---
