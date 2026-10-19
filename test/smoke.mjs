@@ -522,10 +522,12 @@ try {
   await check("/items shows the stat columns: Head header row, Holy Shroud row, Tidebringer's Claw equip, no sideways scroll at 400 px", async () => {
     await sp.goto(BASE + "/items");
     const head = (await sp.locator("main table").first().locator("thead th").allInnerTexts()).map((t) => t.trim());
-    eq(head.join("|"), "Item|Lvl|Int|Spr|SP|Heal|MP5|Equip|Where|Score", "header row");
+    eq(head.join("|"), "Item|Lvl|iLvl|AC|Int|Spr|SP|Heal|MP5|Equip|Where|Score", "header row");
     const cells = (await sp.locator("main tr", { has: sp.locator('a[href="/items/holy-shroud"]') }).locator("td").allInnerTexts()).map((t) => t.trim());
-    eq([cells[1], cells[2], cells[3], cells[4], cells[5], cells[6], cells[8], cells[9]].join("|"), "27||6||33||World drop|38.9", "Holy Shroud row");
-    const eqp = await sp.locator("main tr", { has: sp.locator('a[href="/items/tidebringers-claw"]') }).locator("td").nth(7).innerText();
+    eq([cells[1], cells[2], cells[3], cells[4], cells[5], cells[6], cells[7], cells[8], cells[10], cells[11]].join("|"), "27|32|40||6||33||World drop|38.9", "Holy Shroud row");
+    const neck = (await sp.locator("main tr", { has: sp.locator('a[href="/items/kaleidoscope-chain"]') }).locator("td").allInnerTexts()).map((t) => t.trim());
+    eq(neck[2] + "|" + neck[3], "35|", "Kaleidoscope Chain (neck) iLvl and blank AC");
+    const eqp = await sp.locator("main tr", { has: sp.locator('a[href="/items/tidebringers-claw"]') }).locator("td").nth(9).innerText();
     eq(eqp.trim(), "+2% crit on Healing Wave and Lesser Healing Wave", "Tidebringer's Claw equip");
     const vp = sp.viewportSize();
     await sp.setViewportSize({ width: 400, height: 800 });

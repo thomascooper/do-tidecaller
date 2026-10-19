@@ -30,3 +30,12 @@ Started: run 004 (item level and armor), 19 Oct 2026
   - `extract()` returns `itemLevels` too; the extractor test compares all four files.
   - Armor is optional in the json: `itemArmor` undefined means none (rings, necks, weapons).
 ---
+
+## 19 Oct 2026 - US-002
+- `/items` tables gain iLvl and AC columns after Lvl (`ItemsIndex` in `src/pages/ItemPage.tsx`); lead paragraph names them and credits Wowhead's Forever database.
+- Files: src/pages/ItemPage.tsx, test/smoke.mjs
+- Checks: typecheck ok, npm test 2665 passed, build ok, smoke 57 passed. Broke the AC `<td>` (deleted it): the `/items` stat columns smoke check failed, restored.
+- **Learnings for future iterations:**
+  - Column indexes in the Holy Shroud smoke row shifted by two after Lvl; the Equip column is now td index 9.
+  - Slot item ids are not in items.json (`id` is undefined in node); the `/items` neck check uses Kaleidoscope Chain (ilvl 35, no armor).
+---

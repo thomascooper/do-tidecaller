@@ -5,6 +5,7 @@ import { wowheadUrl } from "../data";
 import { fmt } from "../lib/format";
 import { itemInfo, itemsBySlot } from "../lib/itemPage";
 import { equipText, whereShort } from "../lib/itemFacts";
+import { itemArmor, itemLevel } from "../lib/itemIcon";
 import { itemPath } from "../lib/slug";
 import { STAT_LABELS } from "../lib/model";
 import type { StatKey } from "../lib/model";
@@ -176,9 +177,10 @@ export function ItemsIndex() {
       <Breadcrumbs trail={ITEMS_TRAIL} />
       <h1>{itemsH1}</h1>
       <p className="lead">
-        Every item in the game data, grouped by slot. The columns are the required level (Lvl), Intellect (Int), Spirit (Spr),
-        Spell Power (SP), Healing (Heal), mana per 5 seconds (MP5), the equip effect, where it comes from and its score. A blank
-        cell means none. Scores are points of Healing for a Dungeon boss fight at the calculator defaults. Open an item for its
+        Every item in the game data, grouped by slot. The columns are the required level (Lvl), item level (iLvl), armor (AC),
+        Intellect (Int), Spirit (Spr), Spell Power (SP), Healing (Heal), mana per 5 seconds (MP5), the equip effect, where it
+        comes from and its score. Item level and armor come from Wowhead's Forever database. A blank cell means none, or not yet
+        known. Scores are points of Healing for a Dungeon boss fight at the calculator defaults. Open an item for its
         full stats and who can use it.
       </p>
       {groups.map((g) => (
@@ -192,6 +194,8 @@ export function ItemsIndex() {
                 <tr>
                   <th>Item</th>
                   <th><abbr title="Required level">Lvl</abbr></th>
+                  <th><abbr title="Item level">iLvl</abbr></th>
+                  <th><abbr title="Armor">AC</abbr></th>
                   <th><abbr title="Intellect">Int</abbr></th>
                   <th><abbr title="Spirit">Spr</abbr></th>
                   <th><abbr title="Spell Power">SP</abbr></th>
@@ -212,6 +216,8 @@ export function ItemsIndex() {
                         {i.faction !== "Both" && <span className="tag">{i.faction}</span>}
                       </td>
                       <td>{i.req || ""}</td>
+                      <td>{itemLevel(i) ?? ""}</td>
+                      <td>{itemArmor(i) ?? ""}</td>
                       <td>{i.int || ""}</td>
                       <td>{i.spi || ""}</td>
                       <td>{i.sp || ""}</td>
