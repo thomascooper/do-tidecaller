@@ -509,8 +509,14 @@ try {
     const text = await sp.locator("main").innerText();
     eq(text.includes("38.9"), true, "38.9");
     eq(text.includes("1 of 11 Head items"), true, "rank");
+    const stat = async (name) => (await sp.locator("#itemStats tr", { has: sp.locator(`td:text-is("${name}")`) }).locator("td").nth(1).allInnerTexts())[0];
+    eq(await stat("Item level"), "32", "Holy Shroud item level row");
+    eq(await stat("Armor"), "40", "Holy Shroud armor row");
     eq(await sp.locator('main a[href="https://www.wowhead.com/forever/item=2721"]').innerText(), "View Holy Shroud on Wowhead", "wowhead link");
     eq(await sp.locator('main a[href="https://www.wowhead.com/forever/item=2721"]').getAttribute("rel"), "noopener noreferrer", "wowhead rel");
+    await sp.goto(BASE + "/items/reedknot-ring");
+    eq(await sp.locator('#itemStats td.nm:text-is("Item level")').count(), 1, "Reedknot Ring item level row");
+    eq(await sp.locator('#itemStats td.nm:text-is("Armor")').count(), 0, "Reedknot Ring has no armor row");
     await sp.goto(BASE + "/items/red-wool-cloak");
     eq(await sp.locator('main a[href*="wowhead.com"]').count(), 0, "no wowhead link without an entry");
     await sp.goto(BASE + "/items/holy-shroud");
@@ -562,7 +568,7 @@ try {
     await link.hover();
     await tip.waitFor({ state: "visible" });
     const text = (await tip.innerText()).replace(/\s+/g, " ");
-    for (const want of ["Holy Shroud", "+33 Healing", "+6 Spirit", "Requires level 27", "World drop / auction house"])
+    for (const want of ["Holy Shroud", "Item Level 32", "40 Armor", "+33 Healing", "+6 Spirit", "Requires level 27", "World drop / auction house"])
       eq(text.includes(want), true, `popup has ${want}`);
     const tipIcon = tip.locator("img.icon");
     eq((await tipIcon.getAttribute("src")).endsWith("/icons/inv_helmet_16.jpg") && (await tipIcon.getAttribute("width")) === "40", true, "popup icon");

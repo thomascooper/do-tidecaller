@@ -47,6 +47,8 @@ export function ItemPage({ item }: { item: Item }) {
   const { rows, index } = info;
   const kind = [item.armor === "-" ? "" : item.armor, item.slot].filter(Boolean).join(" ");
   const stats = STAT_ORDER.filter((k) => item[k] !== 0);
+  const ilvl = itemLevel(item);
+  const armor = itemArmor(item);
   const top = rows[0];
   const near = [...rows.slice(Math.max(0, index - 3), index), ...rows.slice(index + 1, index + 4)];
   const fights = [
@@ -70,7 +72,7 @@ export function ItemPage({ item }: { item: Item }) {
       </p>
 
       <h2>Stats</h2>
-      {stats.length > 0 && (
+      {(stats.length > 0 || ilvl !== undefined) && (
         <div className="scroll">
           <table id="itemStats">
             <thead>
@@ -80,6 +82,18 @@ export function ItemPage({ item }: { item: Item }) {
               </tr>
             </thead>
             <tbody>
+              {ilvl !== undefined && (
+                <tr>
+                  <td className="nm">Item level</td>
+                  <td>{ilvl}</td>
+                </tr>
+              )}
+              {armor !== undefined && (
+                <tr>
+                  <td className="nm">Armor</td>
+                  <td>{armor}</td>
+                </tr>
+              )}
               {stats.map((k) => (
                 <tr key={k}>
                   <td className="nm">{STAT_LABELS[k]}</td>

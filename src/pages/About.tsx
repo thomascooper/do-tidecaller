@@ -81,8 +81,8 @@ export function About() {
         <li>wowvendor, classicwowforever.com and wowclassicforever.info Resto BiS lists.</li>
         <li>Base mana by level: the Wowpedia and Vanilla WoW Archive &ldquo;Base mana&rdquo; pages.</li>
         <li>
-          Wowhead&rsquo;s Forever database, used only for the &ldquo;View on Wowhead&rdquo; links and the item icons; its
-          stats are not used.
+          Wowhead&rsquo;s Forever database, used for the &ldquo;View on Wowhead&rdquo; links, the item icons, and each
+          item&rsquo;s item level and armor, cached from it (spec section 14.6); its other stats are not used.
         </li>
         <li>Mindfulness ranks: Wowhead Forever spell 1223033.</li>
         <li>Spirit readings and the Water Shield tooltip: measured in the beta by the site owner.</li>

@@ -39,3 +39,11 @@ Started: run 004 (item level and armor), 19 Oct 2026
   - Column indexes in the Holy Shroud smoke row shifted by two after Lvl; the Equip column is now td index 9.
   - Slot item ids are not in items.json (`id` is undefined in node); the `/items` neck check uses Kaleidoscope Chain (ilvl 35, no armor).
 ---
+
+## 19 Oct 2026 - US-003
+- Popup shows "Item Level N" (class `tip-ilvl`, muted gold) under the name and "N Armor" (`tip-armor`) before the stats; item page Stats table leads with Item level and Armor rows (table also shows when an item has an item level but no stats); About sources line updated.
+- Files: src/tips/tips.ts, src/styles/app.css, src/pages/ItemPage.tsx, src/pages/About.tsx, test/smoke.mjs
+- Checks: typecheck ok, npm test 2665 passed, build ok, smoke 57 passed, reference 26 of 26. Popup script 10370 bytes gzipped (limit 12 KB). Broke the popup armor line and the item page armor row (one at a time): the popup check and the item page check each failed, restored.
+- **Learnings for future iterations:**
+  - `tips.ts` now imports `itemLevel`/`itemArmor` from `lib/itemIcon.ts`, which adds `itemLevels.json` to the popup bundle (about 1.4 KB gzipped).
+---

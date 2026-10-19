@@ -217,6 +217,7 @@ main:focus{outline:none}
 .tip-head{display:flex;gap:10px;align-items:flex-start;margin-bottom:2px}
 .tip-head>div{flex:1;min-width:0}
 .tip-name{font-family:var(--f-display);font-size:16px;letter-spacing:.03em;color:#8ec5ff;margin-bottom:2px}
+.tip-ilvl{color:#d6b45a}
 .tip-slot{display:flex;justify-content:space-between;gap:16px}
 .tip-green{color:#4ade80}
 .tip-req,.tip-faction{color:#e6ecf5}

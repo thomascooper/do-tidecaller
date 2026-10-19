@@ -2,7 +2,7 @@
 // Event delegation on `document` for item links, so links React renders later get popups too.
 import items from "../data/items.json";
 import { equipText, noteText } from "../lib/itemFacts";
-import { itemIconSrc } from "../lib/itemIcon";
+import { itemArmor, itemIconSrc, itemLevel } from "../lib/itemIcon";
 import { slugify } from "../lib/slug";
 import type { Item } from "../lib/types";
 
@@ -66,12 +66,16 @@ function build(item: Fact): HTMLElement {
   head.append(icon, text);
   el.append(head);
   line(text, "tip-name", item.name);
+  const ilvl = itemLevel(item);
+  if (ilvl !== undefined) line(text, "tip-ilvl", `Item Level ${ilvl}`);
   const slot = line(text, "tip-slot", item.slot);
   if (item.armor !== "-") {
     const armor = document.createElement("span");
     armor.textContent = item.armor;
     slot.append(armor);
   }
+  const ac = itemArmor(item);
+  if (ac !== undefined) line(el, "tip-armor", `${ac} Armor`);
   for (const [key, label] of PRIMARY) if (item[key]) line(el, "tip-stat", `+${item[key]} ${label}`);
   for (const [key, label] of SECONDARY) if (item[key]) line(el, "tip-stat tip-green", `+${item[key]} ${label}`);
   const equip = equipText(item);
