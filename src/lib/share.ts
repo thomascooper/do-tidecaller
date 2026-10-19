@@ -37,6 +37,8 @@ export function encodeShare(state: State, items: Item[]): ShareCode {
   }
   // a stale pool means nothing while max mana is calculated, and would read as typed in a link without manaAuto
   if (state.manaAuto) delete s.pool;
+  // likewise a stale typed crit while crit chance is calculated
+  if (state.critAuto) delete s.crit;
   const user = items.filter((i) => i.id.charAt(0) === "u");
   const full = toBase64Url(JSON.stringify({ v: 1, s, i: user }));
   if (full.length <= MAX_SHARE_LENGTH) return { code: full, itemsOmitted: false };

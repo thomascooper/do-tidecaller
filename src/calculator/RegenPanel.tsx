@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { fmt } from "../lib/format";
-import { castingShare, DEFAULT_READINGS, DEFAULTS, fitSpirit, parseReadings } from "../lib/model";
+import { castingShare, DEFAULT_READINGS, DEFAULTS, effectiveCrit, fitSpirit, parseReadings } from "../lib/model";
 import type { State } from "../lib/model";
 import { NumField } from "./NumField";
 
@@ -94,8 +94,8 @@ export function RegenPanel({ state, set }: Props) {
             max={100}
             step={0.5}
             disabled={!state.ws}
-            value={state.crit}
-            onCommit={(v) => set({ crit: v })}
+            value={Math.round(effectiveCrit(state) * 10) / 10}
+            onCommit={(v) => set({ crit: v, critAuto: false })}
           />,
         ),
       )}

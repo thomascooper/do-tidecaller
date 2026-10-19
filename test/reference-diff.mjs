@@ -72,7 +72,9 @@ try {
     const payload = JSON.stringify({ state, items: items ?? [] });
     // The reference has no manaAuto and always uses its own pool (2223 unless a scenario sets one), so the app
     // is pinned to a typed pool of the same value instead of calculating max mana from level and Intellect.
-    const appPayload = JSON.stringify({ state: { pool: 2223, ...state, manaAuto: false }, items: items ?? [] });
+    // Likewise the reference has no calculated crit and no crit stat (spec 14.8): the app runs on the scenario's
+    // typed crit (5 when it sets none) with crit left out of the weights.
+    const appPayload = JSON.stringify({ state: { pool: 2223, ...state, manaAuto: false, critAuto: false, critStat: false }, items: items ?? [] });
     const a = await snapshot(REF, payload);
     const b = await snapshot(base, appPayload);
     // Spec 14.7: the app lists Spell Power before Healing; section 13's reference still uses the old tie order.

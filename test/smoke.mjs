@@ -230,9 +230,11 @@ try {
     eq((await page.locator("#verdict").innerText()).startsWith("Stamina"), true, "Stamina first");
     await page.locator("#stw").fill("0");
   });
-  await check("stat weights: with the run-out slider at 0 every mana stat is 0.00", async () => {
+  await check("stat weights: with the run-out slider at 0 the mana stats are 0.00 and Intellect keeps only its crit (0.10)", async () => {
     await page.locator("#w").fill("0");
-    for (const k of ["mp5", "int", "spi"]) eq(await page.locator(`.bar[data-stat="${k}"] .v`).innerText(), "0.00", k);
+    for (const k of ["mp5", "spi"]) eq(await page.locator(`.bar[data-stat="${k}"] .v`).innerText(), "0.00", k);
+    // spec 14.8: the healing part of crit does not depend on mana, so Intellect is worth 2.979 / 28.52 for its crit
+    eq(await page.locator('.bar[data-stat="int"] .v').innerText(), "0.10", "int");
     eq(await page.locator("#regime").innerText(), "You set mana as never running out, so only Healing and Spell Power count.", "regime");
     await page.locator("#w").fill("100");
   });
@@ -327,12 +329,12 @@ try {
     await page.evaluate(() => window.localStorage.clear());
     await page.reload();
     await page.waitForSelector("#bestTotal");
-    eq(await page.locator("#bestTotal").textContent(), "428.4", "total");
+    eq(await page.locator("#bestTotal").textContent(), "448.1", "total");
     const rows = await picks();
     eq(rows.length, 16, "rows");
     eq(rows.includes("Main hand: Tidebringer's Claw"), true, "main hand");
     eq(rows.includes("Off hand: Forcestone Buckler"), true, "off hand");
-    eq(await page.locator("#bestWeapon").textContent(), "Main hand and off hand beat the best two-hander by 26.2", "weapon note");
+    eq(await page.locator("#bestWeapon").textContent(), "Main hand and off hand beat the best two-hander by 34.0", "weapon note");
     eq(await page.locator("#maxlvl").count(), 0, "no separate gear level input");
   });
   await check("best set: hovering an item name shows the item popup", async () => {
@@ -474,14 +476,14 @@ try {
     await sp.goto(BASE + "/guides/stat-weights");
     eq((await sp.locator("main").innerText()).includes("base mana for your level plus the mana from your Intellect"), true, "guide paragraph");
   });
-  await check("/bis shows Holy Shroud 38.9 and a Horde total of 428.4 and has no module script", async () => {
+  await check("/bis shows Holy Shroud 38.9 and a Horde total of 448.1 and has no module script", async () => {
     const res = await sp.goto(BASE + "/bis");
     eq(res.status(), 200, "status");
     eq(await sp.locator("h1").innerText(), "Resto Shaman best in slot, level 30", "h1");
     eq(await sp.locator('script[type="module"]:not([src*="/assets/tips-"])').count(), 0, "module scripts");
     const head = sp.locator("#hordeSet tbody tr").first();
     eq((await head.innerText()).replace(/\s+/g, " ").startsWith("Head Holy Shroud 38.9"), true, "head row");
-    eq(await sp.locator("#hordeSet tfoot .score").innerText(), "428.4", "Horde total");
+    eq(await sp.locator("#hordeSet tfoot .score").innerText(), "448.1", "Horde total");
     eq(await sp.locator("main h2", { hasText: "Does it change for other fights?" }).count(), 1, "fights section");
     eq(await sp.locator("main h2", { hasText: "Crafter upgrades" }).count(), 1, "crafter section");
   });

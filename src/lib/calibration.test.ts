@@ -104,6 +104,18 @@ describe("storage", () => {
     expect(load({ pool: 1800, manaAuto: true }).manaAuto).toBe(true);
   });
 
+  it("a saved typed crit keeps critAuto false; the old default 5 or no crit becomes calculated (spec 14.8)", () => {
+    const load = (st: object) => loadSaved(memory(JSON.stringify({ state: st }))).state;
+    const typed = load({ crit: 12 });
+    expect(typed.critAuto).toBe(false);
+    expect(typed.crit).toBe(12);
+    expect(load({ crit: 5 }).critAuto).toBe(true);
+    expect(load({ t: 300 }).critAuto).toBe(true);
+    expect(load({ crit: 12, critAuto: true }).critAuto).toBe(true);
+    expect(load({ crit: 5, critAuto: false }).critAuto).toBe(false);
+    expect(load({ critExtra: 2 }).critExtra).toBe(2);
+  });
+
   it("drops a saved maxlvl", () => {
     const { state } = loadSaved(memory(JSON.stringify({ state: { maxlvl: 25, t: 300 } })));
     expect("maxlvl" in state).toBe(false);
@@ -207,6 +219,19 @@ describe("share encoding", () => {
     expect(calc.int).toBe(40);
     expect(decodeShare(text({ v: 1, s: { pool: 1800 }, i: [] }))!.state.manaAuto).toBe(false);
     expect(decodeShare(text({ v: 1, s: { t: 300 }, i: [] }))!.state.manaAuto).toBe(true);
+  });
+
+  it("round trips critAuto and critExtra, and migrates an old link with a typed crit", () => {
+    const text = (o: unknown) => btoa(JSON.stringify(o)).replace(/=+$/, "");
+    const typed = { ...DEFAULTS, critAuto: false, crit: 10, critExtra: 2 };
+    expect(decodeShare(encodeShare(typed, []).code)!.state).toEqual(typed);
+    const typedFive = { ...DEFAULTS, critAuto: false, crit: 5 };
+    expect(decodeShare(encodeShare(typedFive, []).code)!.state.critAuto).toBe(false);
+    const calc = decodeShare(encodeShare({ ...DEFAULTS, crit: 10, critExtra: 3 }, []).code)!.state;
+    expect(calc.critAuto).toBe(true);
+    expect(calc.critExtra).toBe(3);
+    expect(decodeShare(text({ v: 1, s: { crit: 12 }, i: [] }))!.state.critAuto).toBe(false);
+    expect(decodeShare(text({ v: 1, s: { t: 300 }, i: [] }))!.state.critAuto).toBe(true);
   });
 
   it("drops a shared maxlvl", () => {

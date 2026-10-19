@@ -1,4 +1,4 @@
-import { SLOTS, SPELLS } from "../data";
+import { ITEM_CRIT, SLOTS, SPELLS } from "../data";
 import { fmt } from "./format";
 import type { Faction, Item, Profession, Slot, Spell } from "./types";
 
@@ -40,7 +40,14 @@ export interface State {
   profs: Partial<Record<Profession, boolean>>;
   showAll: boolean;
   ws: boolean;
+  /** A typed heal crit chance in %; used only while `critAuto` is false. */
   crit: number;
+  /** True while crit chance is worked out from level, Intellect and `critExtra` (spec 14.8). */
+  critAuto: boolean;
+  /** Crit from gear and talents, in %. */
+  critExtra: number;
+  /** Value crit as a stat. No control: section 7's checks and the reference comparison run without it. */
+  critStat: boolean;
 }
 
 export const DEFAULTS: State = {
@@ -72,6 +79,9 @@ export const DEFAULTS: State = {
   showAll: false,
   ws: true,
   crit: 5,
+  critAuto: true,
+  critExtra: 0,
+  critStat: true,
 };
 
 export type PresetId = "trash" | "boss" | "raid";
@@ -146,6 +156,53 @@ export function effectivePool(state: Pick<State, "level" | "int" | "manaAuto" | 
   return state.manaAuto ? calcPool(state).total : state.pool;
 }
 
+/** Shaman base spell crit chance in %: wowsims Season of Discovery `ClassBaseCrit`. Not yet checked in Forever (spec 14.8). */
+export const BASE_CRIT = 2.3;
+
+/**
+ * Intellect for 1% spell crit at the documented levels: wowsims Season of Discovery simulator
+ * (`sim/core/base_stats.go`, `CritPerIntAtLevel`, as 1 / crit per Intellect). Classic data; Forever has not
+ * confirmed it (spec 14.8).
+ */
+export const INT_PER_CRIT: Record<number, number> = { 25: 23.697, 40: 38.168, 50: 48.077, 60: 59.172 };
+
+const CRIT_LEVELS = Object.keys(INT_PER_CRIT).map(Number).sort((a, b) => a - b);
+
+/** Intellect per 1% crit: the table where documented, linear between rows, level 25's scaled below it, level 60's above. */
+export function intPerCrit(level: number): { value: number; estimated: boolean } {
+  const lv = clamp(isFinite(level) ? level : 1, 1, 60);
+  const known = INT_PER_CRIT[lv];
+  if (known !== undefined) return { value: known, estimated: false };
+  if (lv < CRIT_LEVELS[0]) return { value: (INT_PER_CRIT[CRIT_LEVELS[0]] * lv) / CRIT_LEVELS[0], estimated: true };
+  const lo = CRIT_LEVELS.filter((l) => l < lv).pop() as number;
+  const hi = CRIT_LEVELS.find((l) => l > lv) as number;
+  const a = INT_PER_CRIT[lo];
+  const b = INT_PER_CRIT[hi];
+  return { value: a + ((b - a) * (lv - lo)) / (hi - lo), estimated: true };
+}
+
+export interface CritCalc {
+  base: number;
+  fromInt: number;
+  extra: number;
+  total: number;
+  estimated: boolean;
+}
+
+export function calcCrit(state: Pick<State, "level" | "int" | "critExtra">): CritCalc {
+  const ipc = intPerCrit(state.level);
+  const fromInt = Math.max(0, state.int) / ipc.value;
+  return { base: BASE_CRIT, fromInt, extra: state.critExtra, total: BASE_CRIT + fromInt + state.critExtra, estimated: ipc.estimated };
+}
+
+/** Heal crit chance in % the model uses: the calculated value, or the typed one while `critAuto` is false. */
+export function effectiveCrit(state: Pick<State, "level" | "int" | "critExtra" | "critAuto" | "crit">): number {
+  return state.critAuto ? calcCrit(state).total : state.crit;
+}
+
+/** A heal crit heals for 150% (not yet checked in Forever). */
+export const CRIT_MULT = 1.5;
+
 export interface EditedSpell extends Spell {
   edited: boolean;
 }
@@ -210,7 +267,8 @@ export function spellCalc(state: State, spell: Spell): SpellCalc {
 }
 
 export type StatKey = "heal" | "sp" | "mp5" | "int" | "spi" | "sta";
-export type Weights = Record<StatKey, number>;
+/** `crit` is per 1% crit chance, the others per point, so it stays out of the priority line. */
+export type Weights = Record<StatKey, number> & { crit: number };
 
 export interface Computed {
   m: number;
@@ -231,6 +289,11 @@ export interface Computed {
   wsBack: number;
   intWS: number;
   casts: number;
+  /** Heal crit chance in % the model used. */
+  crit: number;
+  /** The two parts of one percent of crit: more healing, and Water Shield mana (before the mana weight). */
+  critHeal: number;
+  critWS: number;
 }
 
 export function compute(state: State): Computed {
@@ -253,11 +316,18 @@ export function compute(state: State): Computed {
   const wf = state.w / 100;
   const spiInMP5 = spiritMarginal(state, state.spi) * k;
   const intInMP5 = 75 / T;
-  const pc = clamp(state.crit, 0, 100) / 100;
+  const crit = effectiveCrit(state);
+  const pc = clamp(crit, 0, 100) / 100;
   const wsBack = state.ws ? pc * 0.02 * pool : 0;
   const cEff = Math.max(1, sp.cost - wsBack);
   const intWS = state.ws && c.ce > 0 ? (c.heal * pc * 0.3) / (c.ce * cEff) : 0;
   const intRaw = intInMP5 * X + intWS;
+  // Spec 14.8: 1% crit is worth more healing per cast and, with Water Shield, more mana back per cast.
+  const cc = CRIT_MULT - 1;
+  const critHeal = (0.01 * c.heal * cc) / (c.ce * (1 + cc * pc));
+  const critWS = state.ws ? (0.01 * c.heal * 0.02 * pool) / (c.ce * cEff) : 0;
+  const wCrit = state.critStat ? (c.ce > 0 ? critHeal + wf * critWS : NaN) : 0;
+  const wInt = wf * intRaw + (state.critStat ? wCrit / intPerCrit(state.level).value : 0);
   return {
     m,
     k,
@@ -272,11 +342,14 @@ export function compute(state: State): Computed {
     wf,
     spiInMP5,
     intInMP5,
-    weights: { heal: 1, sp: 1, mp5: wf * X, int: wf * intRaw, spi: wf * spiInMP5 * X, sta: state.stw },
+    weights: { heal: 1, sp: 1, mp5: wf * X, int: wInt, spi: wf * spiInMP5 * X, sta: state.stw, crit: wCrit },
     raw: { mp5: X, int: intRaw, spi: spiInMP5 * X },
     wsBack,
     intWS,
     casts: E / cEff,
+    crit,
+    critHeal: c.ce > 0 ? critHeal : NaN,
+    critWS: c.ce > 0 ? critWS : NaN,
   };
 }
 
@@ -321,7 +394,8 @@ export function score(item: Item, W: Weights): number {
     (item.mp5 || 0) * f(W.mp5) +
     (item.int || 0) * f(W.int) +
     (item.spi || 0) * f(W.spi) +
-    (item.sta || 0) * f(W.sta)
+    (item.sta || 0) * f(W.sta) +
+    (item.custom ? 0 : ITEM_CRIT[item.name] || 0) * f(W.crit)
   );
 }
 
