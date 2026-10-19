@@ -82,3 +82,17 @@ Started: run 005 (crit stat, rarity, character sheet), 19 Oct 2026
 - **Learnings for future iterations:**
   - The sheet's set score on /bis is read through `.who .set-score`, as on the calculator.
 ---
+
+## 19 Oct 2026 - Delivering session
+- Before the run: spec 14.8 (crit) and 14.9 (quality, relic) written, with every number computed by an
+  independent Python port of the model that also reproduces sections 7 and 14.3; Tom's level 25
+  level-up recorded in 14.4 (base mana at 25 confirmed); `scripts/wowhead-icons.mjs --quality`.
+- Verified on the final commit: typecheck, 2,684 unit tests, 61 smoke checks, reference 26 of 26.
+- Cross-check: the app's compute() and bestSet() against the independent port on 300 random states
+  (levels 10 to 60, typed and calculated crit and mana, Water Shield on and off, both factions, line
+  and curve Spirit): MP5, Intellect, Spirit and Crit weights, crit chance and the best set total all
+  agree within 0.01%. The app stores Intellect per 1% crit as 14.8's rounded column (23.697 for
+  1/0.0422), which moves crit by about 0.0001%.
+- Visual review: Character panel crit field and working line, the crit readout, the character sheet
+  on / (light, 1440) and at 400 px (dark), its popup, and /bis (dark). Nothing needed fixing.
+---
