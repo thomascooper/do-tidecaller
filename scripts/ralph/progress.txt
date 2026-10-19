@@ -56,3 +56,12 @@ Started: run 005 (crit stat, rarity, character sheet), 19 Oct 2026
   - Guide numbers are computed from `compute()` in the page component, so they cannot drift from the model.
   - The smoke check for the max mana wording lives in the "/bis, /about and the stat weights guide say where max mana comes from" check.
 ---
+
+## 19 Oct 2026 - US-004
+- Rarity (spec 14.9): extractor writes `src/data/quality.json` (items and relic); `itemQuality(item)` and `RELIC` live in `src/lib/itemIcon.ts` (the popup script imports them). CSS tokens `--q0..5`, `--q-none` (borders) and `--qt0..5`, `--qt-none` (text; rare text is the lighter #3d9cff) in `:root`, theme independent. `ItemIcon` and the popup icon carry `data-q`; `img.icon[data-q]` sets the 1 px border colour; `.tip-name[data-q]` sets the popup name colour. Table item links keep the accent colour.
+- Files: scripts/extract-spec-data.mjs/.d.mts, src/data/quality.json, data.test.ts, itemIcon.ts/.test.ts, ItemIcon.tsx, tips/tips.ts, styles/app.css, test/smoke.mjs.
+- Checks: typecheck, vitest 2684, build, smoke 59/59, reference 26/26. Broke `--q2` (one digit off): the new smoke check failed, restored.
+- **Learnings for future iterations:**
+  - US-005's sheet should use `data-q` / the `--q*` and `--qt*` tokens, and `RELIC.quality` for the relic slot.
+  - Popup size stays small: tips.ts only imports `itemIcon.ts`, which now also pulls the 152-entry quality.json.
+---
