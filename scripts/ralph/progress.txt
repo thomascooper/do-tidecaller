@@ -37,3 +37,13 @@ Started: run 005 (crit stat, rarity, character sheet), 19 Oct 2026
   - 14.8 prints values truncated to 3 places (28.520 for 28.5207): assert level 30 with 2 places.
   - With the run-out slider at 0, Intellect is not 0 any more: crit's healing part is not scaled by the mana weight.
 ---
+
+## 19 Oct 2026 - US-002
+- Character panel: `#crit` (Crit chance, %, effective value, typing sets `crit` and `critAuto: false`) and `#critExtra` (Crit from gear and talents, %), with the working line `#critWork` (Check tag and "(estimated)" when `intPerCrit` is estimated; "Using your number." with a Use calculated button otherwise) and a hint naming Tidebringer's Claw. The Water Shield row lost its box and reads the new description; the talent row keeps "Kept %".
+- Stat weights: Intellect note "pool, Water Shield and crit" (Water Shield on); a "1% crit" readout (weights.crit, with heals and Water Shield parts) shown only while `critStat` is on, so the reference comparison (critStat false) sees the same 7 readouts as the reference.
+- Smoke: new crit check beside the max mana checks; readouts count 7 to 8; the old Water Shield "Crit %" label and disabled checks replaced. `test/reference-diff.mjs` maps the new Intellect note back to the reference's wording.
+- Checks: typecheck, vitest 2681, build, smoke 58/58, reference 26/26. New smoke check was seen failing on first run (spacing and CHECK casing), not broken on purpose.
+- **Learnings for future iterations:**
+  - `.tag` text is uppercased by CSS, so `innerText` reads "CHECK".
+  - Anything new on the calculator page that the reference lacks must be hidden under `critStat` false or normalised in `extract()` in `test/reference-diff.mjs`.
+---
