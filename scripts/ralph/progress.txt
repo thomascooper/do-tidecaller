@@ -24,3 +24,16 @@ Started: run 005 (crit stat, rarity, character sheet), 19 Oct 2026
 - (Run 004) The reference comparison normalises the reference's priority line (spec 14.7) in `test/reference-diff.mjs`; app-side state overrides for scenarios live there too.
 - (Run 004) A story added to the PRD must also be in prd.json: the delivering session regenerates prd.json from prd.md.
 ---
+
+## 19 Oct 2026 - US-001
+- Crit chance and crit as a stat (spec 14.8): `State` gains `critAuto`, `critExtra`, `critStat`; `model.ts` exports `INT_PER_CRIT`, `intPerCrit`, `calcCrit`, `effectiveCrit`, `CRIT_MULT`; `compute()` uses the effective crit for Water Shield and returns `crit`, `critHeal`, `critWS`, `weights.crit`; `weights.int` includes the crit term. `Weights` is now `Record<StatKey, number> & { crit }` so crit stays out of the priority line.
+- Item crit: extractor writes `src/data/itemCrit.json` (14.8's block), `ITEM_CRIT` in `data/index.ts`, `score()` adds `crit * weights.crit` (never for user items).
+- `storage.ts` migration (typed crit other than 5 without `critAuto` stays typed); `share.ts` drops a stale `crit` while `critAuto` (like `pool`). The Water Shield box still exists: it shows the effective crit and typing sets `crit` and `critAuto: false` (US-002 moves it).
+- `test/reference-diff.mjs` adds `critAuto: false, critStat: false` to the app state.
+- Smoke re-pinned: total 448.1, weapon margin 34.0, and the run-out slider at 0 leaves Intellect at 0.10 (the healing part of crit does not depend on mana, 14.8).
+- Checks: typecheck, vitest 2681, build, smoke 57/57, reference 26/26. Broke CRIT_MULT (1.6) and the migration (`!== 6`): 8 new tests failed, restored.
+- **Learnings for future iterations:**
+  - Section 7 and 14.3 tests use `ORIG`/`NO_CRIT` (critAuto false, crit 5, critStat false) in `model.test.ts` and `bis.test.ts`; new 14.8 tests use plain `DEFAULTS`.
+  - 14.8 prints values truncated to 3 places (28.520 for 28.5207): assert level 30 with 2 places.
+  - With the run-out slider at 0, Intellect is not 0 any more: crit's healing part is not scaled by the mana weight.
+---
