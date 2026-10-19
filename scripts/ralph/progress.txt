@@ -47,3 +47,12 @@ Started: run 005 (crit stat, rarity, character sheet), 19 Oct 2026
   - `.tag` text is uppercased by CSS, so `innerText` reads "CHECK".
   - Anything new on the calculator page that the reference lacks must be hidden under `critStat` false or normalised in `extract()` in `test/reference-diff.mjs`.
 ---
+
+## 19 Oct 2026 - US-003
+- Unconfirmed paragraph (Footer.tsx) and About list add base crit 2.3%, the Intellect-per-crit table (levels between rows estimated) and the 150% crit heal; About sources name the wowsims base_stats.go. The stat weights guide gains "What 1% crit is worth" (numbers computed from the model at Dungeon boss, so they follow 14.8). Every "naked level 24 ... matches" sentence now says levels 24 and 25.
+- Files: src/calculator/Footer.tsx, Calculator.tsx, src/lib/model.ts (comment), src/pages/About.tsx, Guides.tsx, test/smoke.mjs.
+- Checks: typecheck, vitest 2681, build, smoke 58/58. Broke the guide heading ("is worth" to "costs"): the smoke check failed, restored.
+- **Learnings for future iterations:**
+  - Guide numbers are computed from `compute()` in the page component, so they cannot drift from the model.
+  - The smoke check for the max mana wording lives in the "/bis, /about and the stat weights guide say where max mana comes from" check.
+---
