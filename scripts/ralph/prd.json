@@ -1,0 +1,107 @@
+{
+  "project": "Tidecaller",
+  "branchName": "claude/sweet-hypatia-53cceb",
+  "description": "Run 005: crit chance worked out from level and Intellect and valued as a stat (docs/spec.md SECTION 14.8, which wins over sections 4, 5 and 7 where they differ), rarity colours from SECTION 14.9, and the best set shown as a WoW character sheet on the calculator and /bis. FULL PRD: tasks/ralph-runs/005-crit-character-sheet/prd.md (read its Design inputs and Research findings; design files in tasks/ralph-runs/005-crit-character-sheet/design/). Section 7 and 14.3 tests keep their values on the states the PRD gives (crit off). Run 004's PRD and progress log describe the data files and helpers you extend.",
+  "userStories": [
+    {
+      "id": "US-001",
+      "title": "Crit chance and the crit stat in the model",
+      "description": "As a player, I want my crit chance worked out from my level and Intellect and crit valued as a stat, so Water Shield, Intellect and crit gear are scored properly.",
+      "acceptanceCriteria": [
+        "Read `docs/spec.md` section 14.8 and this PRD's research findings first",
+        "`model.ts`: `State` gains `critAuto` (true), `critExtra` (0) and `critStat` (true); `crit` stays (default 5, used only while `critAuto` is false). Export `INT_PER_CRIT` (the documented table, with a comment naming the wowsims source and that Forever has not confirmed it), `intPerCrit(level)` returning `{ value, estimated }` per 14.8, `calcCrit(state)` returning `{ base, fromInt, extra, total, estimated }`, and `effectiveCrit(state)`. `compute()` uses the effective crit for Water Shield and returns `weights.crit` and its two parts (`critHeal`, `critWS`); `weights.int` gains the crit term, all as 14.8 writes them",
+        "Item crit: `scripts/extract-spec-data.mjs` extracts 14.8's JSON block to `src/data/itemCrit.json` (update the `.d.mts`; the data-equals-spec test covers it); `score()` adds `crit * weights.crit`; Tidebringer's Claw is the only item with crit",
+        "Tests pin 14.8: `intPerCrit` exact at 25, 40, 50 and 60 (not estimated), 30 is 28.520 and 24 is 22.749 (both estimated); the defaults' crit is 6.332; level 24 with 40 Intellect is 4.058; for all three presets E, X, MP5, Int, Spirit, Crit (3 places), Water Shield per cast, casts and both faction totals (2 places); `critHeal` 2.979 and `critWS` 1.315; the Dungeon boss best set pick by pick (2 places), 119.62 against 85.64; the three priority lines; Tom's example (33.73 and 37.63); Water Shield off, typed crit 10 and `critExtra` 5 as 14.8 lists them",
+        "Section 7 and section 14.3 tests run on the states the research findings give, values unchanged; `bis.test.ts` and any other test that pins old defaults follows the same rule",
+        "`storage.ts` migration per 14.8 (no `critAuto` and a crit other than 5 keeps it typed; 5 or none becomes calculated), with tests; `share.ts` carries `critAuto` and `critExtra`",
+        "`test/reference-diff.mjs` per the research findings; 26 of 26",
+        "Until US-002 moves the crit box, typing in the existing Water Shield box sets `crit` and `critAuto: false`, so it still works",
+        "Re-pin every smoke check and unit test that asserts a changed default (research findings' ripple list) to 14.8",
+        "`npm run typecheck`, `npm test`, `npm run build`, `CHROMIUM_PATH=/opt/pw-browsers/chromium-1194/chrome-linux/chrome npm run smoke` and `npm run reference` (26 of 26) pass"
+      ],
+      "priority": 1,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-002",
+      "title": "Crit chance in the Character panel and crit in the stat weights",
+      "description": "As a player, I want to see my crit chance worked out with its working, type my own if I prefer, and see what 1% crit is worth.",
+      "acceptanceCriteria": [
+        "Character panel: a **Crit chance, %** field showing the effective crit (one decimal), and under it one line of working while calculated, for example \"Base 2.3% + 4.03% from 115 Intellect (28.5 per 1%) + 0% from gear and talents = 6.33%.\", with the existing Check tag when `intPerCrit` is estimated. Typing a number sets `crit` and `critAuto: false`; the line then reads \"Using your number.\" with a **Use calculated (6.3%)** button (live value), exactly like Max mana",
+        "A **Crit from gear and talents, %** input (`critExtra`) beside it, with a hint: for example Tidebringer's Claw adds 2% to Healing Wave and Lesser Healing Wave",
+        "The Water Shield row loses its \"Crit %\" box; its description reads \"Each heal crit returns 2% of max mana. Uses your crit chance from the Character panel.\" The talent row keeps its \"Kept %\" box",
+        "Stat weights: crit stays out of the priority line; a readout under the readouts already there reads, for example, \"1% crit 3.90 points of Healing (heals 2.98, Water Shield 0.92)\"; the Intellect bar's note reads \"pool, Water Shield and crit\"",
+        "Every new control has an accessible name and works at 400 px with no sideways scroll",
+        "Smoke (beside the Character panel and weights checks): defaults show crit 6.3 and the working line with the Check tag; Intellect 40 changes the crit and the Intellect weight; typing 10 shows \"Using your number.\" and the crit readout reads 3.85; \"Use calculated\" returns to 6.3; `critExtra` 2 makes it 8.3; the choice survives reload; the Water Shield row has no number box",
+        "`npm run typecheck`, `npm test`, `npm run build`, `npm run smoke` and `npm run reference` (26 of 26) pass"
+      ],
+      "priority": 2,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-003",
+      "title": "Say how crit is worked out, and that levels 24 and 25 match",
+      "description": "As a player reading the site, I want to know where the crit numbers come from and what is unconfirmed.",
+      "acceptanceCriteria": [
+        "The calculator's \"Unconfirmed\" paragraph and the About page's unconfirmed list add: the 2.3% base crit, the Intellect-per-crit table (and that levels between its rows are estimated), and that a crit heals for 150%, all Classic values not yet checked in Forever",
+        "About sources: the wowsims Season of Discovery simulator's base stats (its `base_stats.go`), named as plain text, for base crit and crit per Intellect",
+        "`/guides/stat-weights` adds a short section on crit: what 1% crit is worth and its two parts (more healing, more Water Shield mana), that Intellect also buys crit, and that Tidebringer's Claw's +2% now counts; numbers from 14.8",
+        "Every page sentence that says base mana matches at level 24 now says levels 24 and 25 (search `src/` for \"level 24\")",
+        "No em dashes; no game facts beyond `docs/spec.md`",
+        "`npm run typecheck`, `npm test`, `npm run build` and `npm run smoke` pass"
+      ],
+      "priority": 3,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-004",
+      "title": "Rarity colours on every item icon and in the popup",
+      "description": "As a player, I want items shown in their rarity colour, so I can tell green and blue gear apart at a glance like in the game.",
+      "acceptanceCriteria": [
+        "Read `docs/spec.md` section 14.9 first. `scripts/extract-spec-data.mjs` extracts its JSON block to `src/data/quality.json` (items and relic); the data-equals-spec test covers it",
+        "A helper beside `itemIconSrc` (so the popup script can use it without `data/index.ts`), for example `itemQuality(item)` returning 0 to 5 or `undefined`. Tests: Holy Shroud 3, Sea Giant's Toe Ring 2, Red Wool Cloak `undefined`; 152 entries, all 2 or 3",
+        "CSS tokens for the qualities per the research findings; every item icon (tables, item page, popup) gets a 1 px border in its quality colour (neutral grey without a quality); the popup's item name takes its quality's text colour (the popup is dark in both themes)",
+        "Table item links on light backgrounds keep the site's link colour (a bright green or blue would be unreadable there)",
+        "Smoke: the Holy Shroud popup's name colour is the rare text colour; Sea Giant's Toe Ring's icon border on `/items` is the uncommon colour; Red Wool Cloak's is the neutral grey",
+        "`npm run typecheck`, `npm test`, `npm run build`, `npm run smoke` and `npm run reference` (26 of 26) pass"
+      ],
+      "priority": 4,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-005",
+      "title": "The best set as a character sheet on the calculator",
+      "description": "As a player, I want the calculator's best set laid out like the game's character sheet, gear down both sides and weapons along the bottom, each item in its rarity colour.",
+      "acceptanceCriteria": [
+        "Look at `design/sheet-desktop.png`, `design/sheet-phone.png` and `design/sheet-mock.html` first; match them. Copy `design/totem-figure.svg` to `public/art/totem-figure.svg`",
+        "A `CharacterSheet` component at the top of the calculator's Best set box, above the existing table (which stays). Slots in the WoW order of the research findings; each filled slot shows the 40 px icon with a quality-coloured border and glow, the item name in its quality text colour (a link to the item page, so the popup works), and under it the slot name and the item's score. The right column mirrors the left (icon on the outside, text right-aligned)",
+        "Shirt and Tabard show as empty slots. When the best set uses a two-hander, Main hand shows it and Off hand reads \"Two-hand\". A slot with no usable item reads \"Empty\". The relic slot shows Polished Driftwood Icon (its icon and rare colour, no score) while the Icon toggle is on, and otherwise \"Relic: turn on Polished Driftwood Icon\"",
+        "The centre shows `/art/totem-figure.svg` (`alt=\"\"`), under it \"Level 30 Shaman, Horde\" (live level and faction), a line with Healing power, Max mana and Crit chance, and \"Set score\" with the best set total; the sheet follows the faction, level, profession and \"Show gear you can't use\" filters exactly as the table does",
+        "The sheet is always dark (like the game's frame) in both themes; at 760 px and narrower the centre art hides, the two columns sit side by side with names cut short with an ellipsis, the set score moves to the top, and the page never scrolls sideways at 400 px",
+        "Smoke (beside the best set checks): the sheet shows 19 slots in the order above; Head shows Holy Shroud with its icon and 38.9; the right column's first slot is Hands; Main hand shows Tidebringer's Claw 93.8 and Off hand Forcestone Buckler; the relic slot shows Polished Driftwood Icon only after the Icon toggle is turned on; the set score reads 448.1; hovering an item in the sheet shows its popup; at 400 px no sideways scroll",
+        "`npm run typecheck`, `npm test`, `npm run build`, `npm run smoke` and `npm run reference` (26 of 26) pass"
+      ],
+      "priority": 5,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-006",
+      "title": "The character sheet on the best-in-slot page",
+      "description": "As a visitor to the best-in-slot page, I want the same character sheet for the default set, so the page shows the gear the way the game does.",
+      "acceptanceCriteria": [
+        "`/bis` shows the same `CharacterSheet` (prerendered HTML, no app JavaScript; the popup script already runs on every page) for the default Horde set at the Dungeon boss settings, above its tables, with the relic slot showing \"Relic\" and no item (the default character does not have the Icon on)",
+        "The page keeps exactly one `h1`, its title, description and structured data unchanged, and passes the SEO tests",
+        "Smoke (beside the `/bis` checks): the sheet's Head is Holy Shroud and Main hand Tidebringer's Claw; the set score matches the Horde table's total; at 400 px no sideways scroll",
+        "`npm run typecheck`, `npm test`, `npm run build` and `npm run smoke` pass"
+      ],
+      "priority": 6,
+      "passes": false,
+      "notes": ""
+    }
+  ]
+}

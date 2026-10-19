@@ -1131,8 +1131,9 @@ editable.
 
 - A level between documented ones is interpolated linearly between its neighbours and rounded,
   and is shown as estimated (for example level 18 reads 326, estimated).
-- **Checked at level 24** (section 14.4): a naked level 24 Forever Shaman matches exactly. Other
-  levels are Classic's documented values, not yet checked in Forever. A player
+- **Checked at levels 24 and 25** (section 14.4): a naked level 24 Forever Shaman matches exactly,
+  and the mana gained at level 25 matches the step from 476 to 505. Other levels are Classic's
+  documented values, not yet checked in Forever. A player
   can check their own sheet: max mana minus mana from Intellect is their base mana.
 - New input **Intellect** (the total on the character sheet), default **115**: a fully geared
   level 30 (the default best set carries 75 Intellect, plus the character's own). Owner's choice,
@@ -1178,6 +1179,12 @@ Section 7's numbers still hold for the original character (max mana typed in as 
 **Level 24 confirms the mana model in Forever:** 476 base (the documented Classic value) + 20 + 15 x
 20 = 796, exactly what the client shows. The level 22 Spirit of 43 is the "no bonus Spirit" reading
 in section 3. At level 22 the model predicts a naked max mana of 421 + 20 + 15 x 18 = 711.
+
+**Level 25, 19 Oct 2026** (Tom's level-up message): "You have gained 26 hit points and 44 mana ...
+Your Strength increases by 1. Your Stamina increases by 2. Your Intellect increases by 1. Your
+Spirit increases by 1." The 44 mana is the base mana step from level 24 to 25 (476 to 505, +29)
+plus 15 for the one point of Intellect (above 20, section 14.2), so base mana at level 25 is
+confirmed too. Naked at 25 that makes Strength 45, Agility 27, Stamina 46, Intellect 41, Spirit 47.
 
 ### 14.5 Wowhead item IDs and icons (links and art only)
 
@@ -1559,3 +1566,295 @@ and 14.3. They now read:
 
 The reference implementation in section 13 still uses the old order; the comparison with it
 reads its priority line with the two names swapped.
+
+### 14.8 Crit chance, worked out, and crit as a stat
+
+Tom, 19 Oct 2026: *"create the exact formula for calculating crit % with the specific gear so that
+water shield can be calculated and that stat should go into giving items weight as well, even if
+its small. think about 2 items, both 10 int, 5 mp5, one has 33 armor the other has 1% crit, the 1%
+crit item should have more points"*.
+
+**Crit chance** (heal crit chance, in %), worked out the way max mana is (section 14.2):
+
+```
+critCalc = 2.3 + int / intPerCrit(level) + critExtra
+```
+
+- 2.3 is the Shaman base spell crit chance.
+- `intPerCrit(level)` is the Intellect a Shaman needs for 1% spell crit. Documented at four levels:
+
+| Level | 25 | 40 | 50 | 60 |
+|---|---|---|---|---|
+| Crit per Intellect, % | 0.0422 | 0.0262 | 0.0208 | 0.0169 |
+| Intellect per 1% crit | 23.697 | 38.168 | 48.077 | 59.172 |
+
+  Between documented levels it is linear in Intellect per 1% crit; below level 25 it is
+  `intPerCrit(25) * level / 25`; above 60 it is the level 60 value. Any level not in the table is
+  estimated (shown with the Check tag). Level 30 is 28.520 (estimated); level 24 is 22.749
+  (estimated).
+- Source: the wowsims Season of Discovery simulator's base stats (github.com/wowsims/sod,
+  `sim/core/base_stats.go`: `ClassBaseCrit` gives Shaman spell crit 2.3, `CritPerIntAtLevel` the
+  rows above), which are Classic game data. The level 60 value is the long-standing Classic figure
+  of 59.2 Intellect per 1%. **Not yet checked in Forever.** Tom can check: naked at level 25 with
+  41 Intellect, the character sheet's spell crit chance should read 4.03%.
+- `critExtra` is the new input "Crit from gear and talents, %", default 0: crit from items (for
+  example Tidebringer's Claw's +2% on Healing Wave and Lesser Healing Wave) and from any talent.
+- New state keys: `critAuto` (default true), `critExtra` (default 0) and `critStat` (default true;
+  it has no control on the page and exists so section 7's checks and the reference comparison can
+  run the model without crit). `crit` keeps its meaning, a typed crit chance, and is used only
+  while `critAuto` is false.
+- The model's crit chance is `pc = clamp((critAuto ? critCalc : crit) / 100, 0, 1)`. Water Shield
+  (section 5) uses this `pc`.
+- Migration: a saved state without `critAuto` keeps a typed crit (`critAuto` false) unless it is
+  the old default 5, which becomes calculated (`critAuto` true).
+
+**Crit as a stat.** The weight of 1% heal crit, in points of Healing, added to section 5 after
+`costEff` (`pool` is the effective pool of section 14.2):
+
+```
+CRIT_MULT    = 1.5                                         // a heal crit heals for 150%
+c            = CRIT_MULT - 1
+critHeal     = 0.01 * h * c / (ce * (1 + c * pc))          // more healing from crits
+critWS       = ws ? 0.01 * h * 0.02 * pool / (ce * costEff) : 0   // Water Shield mana, mana-bound
+weights.crit = critStat ? (ce > 0 ? critHeal + wf * critWS : NaN) : 0
+weights.int += critStat ? weights.crit / intPerCrit(level) : 0    // Intellect also buys crit
+```
+
+Why it works: when mana runs out, total healing = casts * h * (1 + c * pc), with
+casts = E / costEff and costEff = cost - pc * 0.02 * pool. One point of Healing adds
+casts * ce * (1 + c * pc). Differentiating total healing by pc and dividing by that gives the two
+terms (per unit of pc; times 0.01 for 1%). The healing term holds whether or not mana runs out, so
+it is not scaled by w; the Water Shield term is mana, so it is scaled by w like MP5. Section 5's
+note that crits cancel still holds for the ratios between the other stats; crit as a stat of its
+own is new.
+
+**Items with crit.** `score(item)` (section 7) adds `crit * weights.crit`, with crit from this list:
+
+```json
+{
+  "Tidebringer's Claw": 2
+}
+```
+
+Tidebringer's Claw's "+2% crit on Healing Wave and Lesser Healing Wave" counts in full, because
+every spell the calculator models is a Healing Wave or Lesser Healing Wave rank. Lightning's
+Grasp's "+1% Lightning Bolt crit" does not heal and counts 0. No other item in section 12 has crit
+(checked against Wowhead's Forever tooltips on 19 Oct 2026).
+
+**On the page.**
+- Character panel: **Crit chance** with its working, like Max mana, for example "Base 2.3% + 4.03%
+  from 115 Intellect (28.5 per 1%) + 0% from gear and talents = 6.33%.", with the Check tag while
+  `intPerCrit` is estimated. Typing a number overrides it; "Use calculated (6.3%)" returns. New
+  input **Crit from gear and talents, %**.
+- The Water Shield row loses its own box; its text says it uses the crit chance from the
+  Character panel.
+- Stat weights: crit is not in the priority line (it is per 1%, the others per point). A readout
+  shows it, for example "1% crit: 3.90 points of Healing (heals 2.98, Water Shield 0.92)".
+- Unconfirmed in Forever: the 2.3% base, the crit per Intellect table, and CRIT_MULT 1.5.
+
+**Numbers at the new defaults** (Horde, level 30, 115 Intellect, `critAuto` true, `critExtra` 0;
+crit chance 6.332% at every preset):
+
+| Preset | E | X | MP5 | Int | Spirit | Crit | WS per cast | Casts | Horde total | Alliance total |
+|---|---|---|---|---|---|---|---|---|---|---|
+| Trash pull | 3430.5 | 3.226 | 2.258 | 2.060 | 0.919 | 3.900 | 2.672 | 17.38 | 452.21 | 453.40 |
+| Dungeon boss | 3636.8 | 4.057 | 2.840 | 1.953 | 0.978 | 3.900 | 2.672 | 18.43 | 448.15 | 449.18 |
+| Raid boss | 5634.5 | 6.546 | 4.582 | 1.324 | 1.434 | 3.900 | 2.672 | 28.55 | 452.36 | 444.79 |
+
+- `critHeal` is 2.979 and `critWS` 1.315 at all three presets.
+- Priority lines: Trash pull "MP5 > Intellect > Spell Power = Healing > Spirit"; Dungeon boss
+  "MP5 > Intellect > Spell Power = Healing = Spirit"; Raid boss "MP5 > Spirit > Intellect > Spell
+  Power = Healing".
+- Best set at Dungeon boss (scores to 2 places): Holy Shroud 38.87, Scorn's Icy Choker 18.72, Death
+  Speaker Mantle 27.48, Darkspear Raider's Cloak 19.54, Death Speaker Robes 41.48, Mindthrust
+  Bracers 18.28, Gloves of Old 21.50, Blightleaf Rope 26.53, Violet Sorcerer's Leggings 42.28,
+  Acidic Walkers 24.54, Philanthropist's Ring 19.77, Sea Giant's Toe Ring 18.00, Roogug's Severed
+  Head 5.87, Worgenbane Talisman 5.68, Tidebringer's Claw 93.80, Forcestone Buckler 25.82. Main hand
+  and off hand 119.62 beat the best two-hander (Wind Spirit Staff) 85.64, by 33.98.
+- Tom's example at Dungeon boss: an item with 10 Intellect and 5 MP5 scores 33.73 with 33 armor
+  (armor is worth 0) and 37.63 with 1% crit instead.
+- More checks at Dungeon boss: Water Shield off gives Crit 2.979 and Int 1.879; a typed crit of 10%
+  gives Crit 3.855, Int 1.976 and Water Shield 4.220 per cast; `critExtra` 5 gives crit 11.332% and
+  Crit 3.839; level 24 with 40 Intellect gives crit 4.058%.
+
+**Sections 7 and 14.3 stay true for the model without crit**, and their tests keep their values:
+section 7 runs on `{ ...DEFAULTS, manaAuto: false, pool: 2223, critAuto: false, crit: 5, critStat:
+false }`, section 14.3 on `{ ...DEFAULTS, critAuto: false, crit: 5, critStat: false }`. The
+reference comparison (section 13) runs the app with `critAuto: false` and `critStat: false`, with
+`crit` as each scenario sets it (5 when it sets none).
+
+These numbers come from an independent port of the model (Python, written from this spec), which
+also reproduces every number in sections 7 and 14.3.
+
+### 14.9 Item quality and the relic (cached from Wowhead's Forever data)
+
+Tom, 19 Oct 2026, on the character sheet: *"coloring for white/green/blue/purple etc based on
+rarity"*, and Wowhead's Forever data *"can be trusted"*. Each item's quality, read from Wowhead's
+Forever tooltip data by `node scripts/wowhead-icons.mjs --quality`: 2 is uncommon (green) and 3 is
+rare (blue); none of the 152 items in section 14.5 is common or epic. An item not in 14.5 has no
+quality and is shown in a neutral colour. The game's colours: 0 poor #9d9d9d, 1 common #ffffff,
+2 uncommon #1eff00, 3 rare #0070dd, 4 epic #a335ee, 5 legendary #ff8000.
+
+The relic is section 3's Polished Driftwood Icon (Wowhead 249398, a rare Shaman totem, requires
+level 20, "Allows 8% of your Mana regeneration to continue while casting"). The character sheet
+shows it in the relic slot while its toggle is on. It is not an item in section 12 and has no score.
+
+```json
+{
+  "items": {
+    "Holy Shroud": 3,
+    "Enduring Cap": 3,
+    "Embalmed Shroud": 3,
+    "Wild Headdress": 2,
+    "Sorrow's Shroud": 3,
+    "Filigreed Pristine Circlet": 3,
+    "Wisdom's Leather Helm": 3,
+    "Kaleidoscope Chain": 3,
+    "Archmagister's Faceted Pendant": 3,
+    "Crystal Starfire Medallion": 2,
+    "Giantstone Medallion": 3,
+    "Mark of the Pack Leader": 3,
+    "Scorn's Icy Choker": 3,
+    "Stygian Bone Amulet": 3,
+    "Explorers' League Commendation": 3,
+    "Death Speaker Mantle": 3,
+    "Batwing Mantle": 3,
+    "Bloodmage Mantle": 3,
+    "Berylline Pads": 3,
+    "Magician's Mantle": 3,
+    "Ghostly Mantle": 2,
+    "Fairywing Mantle": 2,
+    "Moonlit Amice": 2,
+    "Rose Mantle": 2,
+    "Naga Priestess's Mantle": 2,
+    "Repairman's Cape": 2,
+    "Brilliant Cloak": 2,
+    "Glowing Thresher Cape": 3,
+    "Tattered Kirin Tor Cloak": 3,
+    "Battle Healer's Cloak": 3,
+    "Windsong Drape": 2,
+    "Thornweaver Drape": 3,
+    "Prelacy Cape": 2,
+    "Death Speaker Robes": 3,
+    "Beguiler Robes": 3,
+    "Civinad Robes": 3,
+    "Pristine Gown": 3,
+    "Violet Sorcerer's Robes": 3,
+    "Wisdom's Leather Tunic": 3,
+    "Doomsayer's Robe": 2,
+    "Zealot's Robe": 2,
+    "Spidertank Oilrag": 3,
+    "Mindthrust Bracers": 3,
+    "Glowing Magical Bracelets": 3,
+    "Nightsky Wristbands": 2,
+    "Silkstream Cuffs": 2,
+    "Knife-Polishing Rag": 2,
+    "Graveweave Bindings": 3,
+    "Bridgebreaker Bindings": 3,
+    "Prospector Gloves": 2,
+    "Truefaith Gloves": 2,
+    "Gloves of Old": 3,
+    "Hotshot Pilot's Gloves": 3,
+    "Restorer's Fine Gloves": 2,
+    "Pristine Gloves": 3,
+    "Wisdom's Leather Gloves": 3,
+    "Naga Battle Gloves": 3,
+    "Oilrag Handwraps": 2,
+    "Shilly Mitts": 2,
+    "Mender's Leather Belt": 3,
+    "Blightleaf Rope": 3,
+    "Skycaller's Leather Belt": 3,
+    "Violet Sash": 2,
+    "Razzeric's Customized Seatbelt": 2,
+    "Belt of Arugal": 3,
+    "Budding Leaf Belt": 2,
+    "Pristine Sash": 3,
+    "Wisdom's Leather Leggings": 3,
+    "Violet Sorcerer's Leggings": 3,
+    "Pristine Leggings": 3,
+    "Filigreed Pristine Leggings": 3,
+    "Magistrate's Pantaloons": 3,
+    "Wisdom's Leather Pants": 3,
+    "Gaze Dreamer Pants": 3,
+    "Gilded Slippers": 3,
+    "Renewing Footpads": 3,
+    "Acidic Walkers": 3,
+    "Wisdom's Leather Boots": 3,
+    "Violet Sorcerer's Sandals": 3,
+    "Gnomebot Operating Boots": 3,
+    "Rotmender's Treads": 3,
+    "Everlast Boots": 2,
+    "Philanthropist's Ring": 3,
+    "Sea Giant's Toe Ring": 2,
+    "Ladimore Heirloom Ring": 2,
+    "Solid Gold Band": 2,
+    "Runemender's Seal": 3,
+    "Snake Hoop": 2,
+    "Ring of Power Regulation": 3,
+    "Electrocutioner Lagnut": 3,
+    "Advisor's Ring": 3,
+    "Minor Recombobulator": 2,
+    "Roogug's Severed Head": 3,
+    "Worgenbane Talisman": 3,
+    "Cursed Murloc Eye": 3,
+    "Lookie's Spyglass": 3,
+    "Wind Spirit Staff": 3,
+    "Healer's Staff": 3,
+    "Fallen Dragon's Scepter": 3,
+    "Odo's Ley Staff": 3,
+    "Tidebringer's Claw": 3,
+    "Royal Diplomatic Scepter": 3,
+    "Death Speaker Scepter": 3,
+    "Forcestone Buckler": 3,
+    "Elementalist's Guard": 3,
+    "Heart of Agamaggan": 3,
+    "Seedcloud Buckler": 3,
+    "Painwalker Buckler": 3,
+    "Salve and Salvation": 3,
+    "Orb of Souls": 3,
+    "Geomancer Headdress": 3,
+    "Pristine Circlet": 3,
+    "Wisdom's Leather Hood": 3,
+    "Whisperwind Headdress": 3,
+    "Guardian's Emblem": 3,
+    "Thermaplugg Medal of Honor": 3,
+    "Pendant of Myzrael": 2,
+    "Glowing Green Talisman": 2,
+    "Invoker's Mantle": 2,
+    "Feline Mantle": 3,
+    "Heavy Woolen Cloak": 2,
+    "Robes of Arugal": 3,
+    "Wisdom's Leather Armor": 3,
+    "Ceremonial Gown": 2,
+    "Witherbite Bracers": 3,
+    "Tattered Mittens": 2,
+    "Gloves of Meditation": 2,
+    "Jutebraid Gloves": 2,
+    "Defiler's Cloth Girdle": 3,
+    "Wisdom's Leather Belt": 3,
+    "Daewyn's Girdle": 2,
+    "Earthen Leggings": 2,
+    "Ogre Loincloth": 3,
+    "Kodohide Legguards": 3,
+    "Stormrider's Leather Pants": 3,
+    "Roused Nature Footwraps": 3,
+    "Black Whelp Slippers": 3,
+    "Wingborne Boots": 2,
+    "Pristine Boots": 3,
+    "Reedknot Ring": 2,
+    "Dog Whistle": 3,
+    "Transformative Cocoon": 2,
+    "Bottle of Powderfuse Port": 2,
+    "Lightning's Grasp": 3,
+    "Eye of Paleth": 2,
+    "Alliance Outrunner Healing Rod": 3,
+    "Orb of Mistmantle": 3,
+    "Omega Orb": 3,
+    "Raptor's Gaze": 3,
+    "Staff of the Friar": 3,
+    "Defiler's Talisman": 3,
+    "Satchel of Potions": 2
+  },
+  "relic": {"name": "Polished Driftwood Icon", "id": 249398, "icon": "spell_shaman_totemrecall", "quality": 3}
+}
+```

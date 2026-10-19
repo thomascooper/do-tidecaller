@@ -1,4 +1,4 @@
-// Run by hand, not by the build: node scripts/wowhead-icons.mjs [--check | --levels]
+// Run by hand, not by the build: node scripts/wowhead-icons.mjs [--check | --levels | --quality]
 //
 // No flag: downloads the item icons listed in docs/spec.md section 14.5 into
 // public/icons/<icon>.jpg (Wowhead's 56 px "large" icons), plus the question-mark icon used for
@@ -8,8 +8,11 @@
 // 14.5), read from Wowhead's Forever tooltip data. Paste it into the spec, then run
 // `node scripts/extract-spec-data.mjs`.
 //
+// --quality prints the JSON block for spec section 14.9 (each item's quality, 2 uncommon, 3 rare,
+// 4 epic, plus the Shaman relic), read from the same data.
+//
 // --check asks Wowhead's Forever tooltip data (dataEnv 16) for every ID in section 14.5 and reports
-// any name, icon, item level or armor that no longer matches sections 14.5 and 14.6; it changes
+// any name, icon, item level, armor or quality that no longer matches sections 14.5, 14.6 and 14.9; it changes
 // nothing. Exit code 1 on a mismatch.
 //
 // Needs network access to nether.wowhead.com and wow.zamimg.com. Behind a proxy that Node's
@@ -22,6 +25,9 @@ import { jsonBlockUnder } from "./extract-spec-data.mjs";
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const HEADING = "### 14.5 Wowhead item IDs and icons (links and art only)";
 const LEVELS_HEADING = "### 14.6 Item level and armor (cached from Wowhead's Forever data)";
+const QUALITY_HEADING = "### 14.9 Item quality and the relic (cached from Wowhead's Forever data)";
+/** The Shaman relic of section 3 (Polished Driftwood Icon), shown in the character sheet's relic slot. */
+const RELIC = { name: "Polished Driftwood Icon", id: 249398 };
 export const PLACEHOLDER_ICON = "inv_misc_questionmark";
 
 const spec = readFileSync(resolve(root, "docs/spec.md"), "utf8");
@@ -38,6 +44,7 @@ async function tooltip(id) {
   return {
     name: data.name ?? data.error,
     icon: data.icon,
+    quality: data.quality,
     ilvl: ilvl ? Number(ilvl[1]) : null,
     armor: armor ? Number(armor[1]) : null,
   };
@@ -59,14 +66,31 @@ if (process.argv.includes("--levels")) {
   process.exit(0);
 }
 
+if (process.argv.includes("--quality")) {
+  const lines = [];
+  for (const [name, { id }] of Object.entries(entries)) {
+    const t = await tooltip(id);
+    if (t.name !== name) throw new Error(`${name} (${id}): Wowhead says ${t.name}`);
+    lines.push(`    ${JSON.stringify(name)}: ${t.quality}`);
+    await pause();
+  }
+  const r = await tooltip(RELIC.id);
+  if (r.name !== RELIC.name) throw new Error(`relic ${RELIC.id}: Wowhead says ${r.name}`);
+  const relic = { name: r.name, id: RELIC.id, icon: r.icon, quality: r.quality };
+  console.log(`{\n  "items": {\n${lines.join(",\n")}\n  },\n  "relic": ${JSON.stringify(relic).replace(/,/g, ", ").replace(/":/g, '": ')}\n}`);
+  process.exit(0);
+}
+
 if (process.argv.includes("--check")) {
   const levels = spec.includes(LEVELS_HEADING) ? jsonBlockUnder(spec, LEVELS_HEADING) : {};
+  const quality = spec.includes(QUALITY_HEADING) ? jsonBlockUnder(spec, QUALITY_HEADING).items : {};
   let bad = 0;
   for (const [name, { id, icon }] of Object.entries(entries)) {
     const t = await tooltip(id);
     const want = levels[name];
     const got = levelEntry(t);
-    if (t.name !== name || t.icon !== icon || (want && JSON.stringify(want) !== JSON.stringify(got))) {
+    const q = quality[name];
+    if (t.name !== name || t.icon !== icon || (want && JSON.stringify(want) !== JSON.stringify(got)) || (q !== undefined && q !== t.quality)) {
       bad++;
       console.log(`MISMATCH ${name} (${id}): Wowhead says ${t.name}, icon ${t.icon}, ${JSON.stringify(got)}`);
     }
@@ -78,7 +102,8 @@ if (process.argv.includes("--check")) {
 
 const dir = resolve(root, "public/icons");
 mkdirSync(dir, { recursive: true });
-const icons = [...new Set([...Object.values(entries).map((e) => e.icon), PLACEHOLDER_ICON])];
+const relicIcon = spec.includes(QUALITY_HEADING) ? jsonBlockUnder(spec, QUALITY_HEADING).relic.icon : null;
+const icons = [...new Set([...Object.values(entries).map((e) => e.icon), PLACEHOLDER_ICON, ...(relicIcon ? [relicIcon] : [])])];
 let fetched = 0;
 for (const icon of icons) {
   const file = resolve(dir, `${icon}.jpg`);
