@@ -1178,3 +1178,179 @@ Section 7's numbers still hold for the original character (max mana typed in as 
 **Level 24 confirms the mana model in Forever:** 476 base (the documented Classic value) + 20 + 15 x
 20 = 796, exactly what the client shows. The level 22 Spirit of 43 is the "no bonus Spirit" reading
 in section 3. At level 22 the model predicts a naked max mana of 421 + 20 + 15 x 18 = 711.
+
+### 14.5 Wowhead item IDs and icons (links and art only)
+
+Tom, 18 Oct 2026: *"i also need every item link in the game to use wowhead or another popup library"*,
+then *"you should also be able to get item art for icons for the tables both on the home page and on
+the items page from wowhead as well"*.
+
+The site shows its own item popups, built from section 12, so every number a visitor sees still
+comes from this spec. Wowhead is used for two things only:
+
+- a "View on Wowhead" link on each item's page, to `https://www.wowhead.com/forever/item=<id>`;
+- the item's icon, shown beside its name. The site serves its own copy of each 56 px icon at
+  `/icons/<icon>.jpg`, downloaded once from `https://wow.zamimg.com/images/wow/icons/large/<icon>.jpg`
+  by `scripts/wowhead-icons.mjs`. An item with no entry here shows Wowhead's question-mark icon
+  (`inv_misc_questionmark`).
+
+Wowhead's stats, item level, armor and quality are never shown or used.
+
+**How the list was made (18 Oct 2026).** IDs were first found through Wowhead search results, then
+every one was checked against Wowhead's Forever tooltip data (`nether.wowhead.com`, `dataEnv=16`,
+the environment that also holds Forever-only items such as Tidebringer's Claw 280605). All 141
+names match this spec's item names exactly, and every required level Wowhead shows agrees with
+section 12. Where several items share a name, the one whose required level matches section 12 was
+taken: Defiler's Talisman 21120 and Battle Healer's Cloak 19529 (both level 28), Advisor's Ring
+19521 (level 28). Invoker's Mantle 215365 is the same ID Season of Discovery uses; Forever's tooltip
+data has it under that ID.
+
+```json
+{
+  "Holy Shroud": {"id": 2721, "icon": "inv_helmet_16"},
+  "Enduring Cap": {"id": 3020, "icon": "inv_helmet_15"},
+  "Embalmed Shroud": {"id": 7691, "icon": "inv_helmet_28"},
+  "Sorrow's Shroud": {"id": 284401, "icon": "inv_helmet_30"},
+  "Filigreed Pristine Circlet": {"id": 253975, "icon": "inv_crown_01"},
+  "Wisdom's Leather Helm": {"id": 252515, "icon": "inv_helmet_26"},
+  "Kaleidoscope Chain": {"id": 13084, "icon": "inv_jewelry_amulet_07"},
+  "Crystal Starfire Medallion": {"id": 5003, "icon": "inv_jewelry_necklace_02"},
+  "Giantstone Medallion": {"id": 281321, "icon": "inv_jewelry_necklace_15"},
+  "Mark of the Pack Leader": {"id": 285331, "icon": "inv_jewelry_necklace_04"},
+  "Scorn's Icy Choker": {"id": 23169, "icon": "inv_jewelry_necklace_03"},
+  "Stygian Bone Amulet": {"id": 6695, "icon": "inv_jewelry_necklace_04"},
+  "Explorers' League Commendation": {"id": 7746, "icon": "inv_jewelry_talisman_01"},
+  "Death Speaker Mantle": {"id": 6685, "icon": "inv_shoulder_09"},
+  "Batwing Mantle": {"id": 6697, "icon": "inv_shoulder_05"},
+  "Bloodmage Mantle": {"id": 7684, "icon": "inv_shoulder_05"},
+  "Berylline Pads": {"id": 4197, "icon": "inv_shoulder_05"},
+  "Magician's Mantle": {"id": 12998, "icon": "inv_shoulder_13"},
+  "Ghostly Mantle": {"id": 3324, "icon": "inv_shoulder_09"},
+  "Fairywing Mantle": {"id": 9536, "icon": "inv_shoulder_02"},
+  "Moonlit Amice": {"id": 11884, "icon": "inv_shoulder_02"},
+  "Rose Mantle": {"id": 5274, "icon": "inv_shoulder_09"},
+  "Naga Priestess's Mantle": {"id": 279889, "icon": "inv_shoulder_18"},
+  "Repairman's Cape": {"id": 9605, "icon": "inv_misc_cape_06"},
+  "Brilliant Cloak": {"id": 277206, "icon": "inv_misc_cape_16"},
+  "Glowing Thresher Cape": {"id": 6901, "icon": "inv_misc_monsterscales_03"},
+  "Battle Healer's Cloak": {"id": 19529, "icon": "inv_misc_cape_18"},
+  "Windsong Drape": {"id": 15468, "icon": "inv_misc_cape_05"},
+  "Thornweaver Drape": {"id": 274149, "icon": "inv_misc_cape_11"},
+  "Prelacy Cape": {"id": 7004, "icon": "inv_misc_cape_18"},
+  "Death Speaker Robes": {"id": 6682, "icon": "inv_chest_cloth_20"},
+  "Beguiler Robes": {"id": 7728, "icon": "inv_chest_cloth_25"},
+  "Civinad Robes": {"id": 9623, "icon": "inv_chest_cloth_18"},
+  "Pristine Gown": {"id": 253961, "icon": "inv_chest_cloth_32"},
+  "Violet Sorcerer's Robes": {"id": 273044, "icon": "inv_chest_cloth_17"},
+  "Wisdom's Leather Tunic": {"id": 252511, "icon": "inv_chest_leather_01"},
+  "Doomsayer's Robe": {"id": 4746, "icon": "inv_chest_cloth_19"},
+  "Zealot's Robe": {"id": 17043, "icon": "inv_chest_cloth_06"},
+  "Spidertank Oilrag": {"id": 9448, "icon": "inv_misc_bandage_09"},
+  "Mindthrust Bracers": {"id": 1974, "icon": "inv_bracer_07"},
+  "Glowing Magical Bracelets": {"id": 13106, "icon": "inv_bracer_19"},
+  "Nightsky Wristbands": {"id": 6407, "icon": "inv_bracer_07"},
+  "Silkstream Cuffs": {"id": 16791, "icon": "inv_bracer_13"},
+  "Knife-Polishing Rag": {"id": 271740, "icon": "inv_bracer_10"},
+  "Bridgebreaker Bindings": {"id": 273808, "icon": "inv_bracer_07"},
+  "Prospector Gloves": {"id": 4980, "icon": "inv_gauntlets_04"},
+  "Truefaith Gloves": {"id": 7049, "icon": "inv_gauntlets_16"},
+  "Gloves of Old": {"id": 9395, "icon": "inv_gauntlets_24"},
+  "Hotshot Pilot's Gloves": {"id": 9491, "icon": "inv_gauntlets_16"},
+  "Restorer's Fine Gloves": {"id": 270059, "icon": "inv_gauntlets_21"},
+  "Pristine Gloves": {"id": 253913, "icon": "inv_gauntlets_16"},
+  "Wisdom's Leather Gloves": {"id": 252499, "icon": "inv_gauntlets_60"},
+  "Naga Battle Gloves": {"id": 888, "icon": "inv_gauntlets_13"},
+  "Oilrag Handwraps": {"id": 16741, "icon": "inv_gauntlets_12"},
+  "Shilly Mitts": {"id": 9609, "icon": "inv_gauntlets_27"},
+  "Mender's Leather Belt": {"id": 252523, "icon": "inv_belt_26"},
+  "Blightleaf Rope": {"id": 273039, "icon": "inv_belt_10"},
+  "Skycaller's Leather Belt": {"id": 252522, "icon": "inv_belt_39a"},
+  "Violet Sash": {"id": 251962, "icon": "inv_belt_04"},
+  "Razzeric's Customized Seatbelt": {"id": 6726, "icon": "inv_belt_15"},
+  "Belt of Arugal": {"id": 6392, "icon": "inv_belt_10"},
+  "Pristine Sash": {"id": 253925, "icon": "inv_belt_43"},
+  "Wisdom's Leather Leggings": {"id": 252519, "icon": "inv_pants_02"},
+  "Violet Sorcerer's Leggings": {"id": 286988, "icon": "inv_pants_cloth_18"},
+  "Pristine Leggings": {"id": 253987, "icon": "inv_pants_01"},
+  "Filigreed Pristine Leggings": {"id": 253937, "icon": "inv_pants_01"},
+  "Magistrate's Pantaloons": {"id": 270036, "icon": "inv_pants_14"},
+  "Wisdom's Leather Pants": {"id": 252503, "icon": "inv_pants_06"},
+  "Gaze Dreamer Pants": {"id": 6903, "icon": "inv_pants_02"},
+  "Gilded Slippers": {"id": 254001, "icon": "inv_boots_cloth_08"},
+  "Renewing Footpads": {"id": 279840, "icon": "inv_boots_03"},
+  "Acidic Walkers": {"id": 9454, "icon": "inv_boots_05"},
+  "Wisdom's Leather Boots": {"id": 252444, "icon": "inv_boots_chain_03"},
+  "Violet Sorcerer's Sandals": {"id": 286987, "icon": "inv_boots_05"},
+  "Gnomebot Operating Boots": {"id": 9450, "icon": "inv_boots_03"},
+  "Rotmender's Treads": {"id": 271214, "icon": "inv_boots_05"},
+  "Everlast Boots": {"id": 10359, "icon": "inv_boots_07"},
+  "Philanthropist's Ring": {"id": 281635, "icon": "inv_jewelry_ring_14"},
+  "Sea Giant's Toe Ring": {"id": 274746, "icon": "inv_jewelry_ring_02"},
+  "Ladimore Heirloom Ring": {"id": 270051, "icon": "inv_jewelry_ring_08"},
+  "Snake Hoop": {"id": 6750, "icon": "inv_jewelry_ring_06"},
+  "Ring of Power Regulation": {"id": 273030, "icon": "inv_jewelry_ring_28"},
+  "Electrocutioner Lagnut": {"id": 9447, "icon": "inv_misc_gear_04"},
+  "Advisor's Ring": {"id": 19521, "icon": "inv_jewelry_ring_20"},
+  "Minor Recombobulator": {"id": 4381, "icon": "inv_gizmo_07"},
+  "Roogug's Severed Head": {"id": 274152, "icon": "inv_misc_head_quillboar_01"},
+  "Worgenbane Talisman": {"id": 273643, "icon": "inv_jewelry_talisman_06"},
+  "Cursed Murloc Eye": {"id": 273840, "icon": "spell_shadow_evileye"},
+  "Lookie's Spyglass": {"id": 273298, "icon": "inv_misc_spyglass_01"},
+  "Wind Spirit Staff": {"id": 6689, "icon": "inv_staff_01"},
+  "Healer's Staff": {"id": 271767, "icon": "inv_staff_10"},
+  "Fallen Dragon's Scepter": {"id": 281312, "icon": "inv_staff_08"},
+  "Odo's Ley Staff": {"id": 6318, "icon": "inv_staff_27"},
+  "Tidebringer's Claw": {"id": 280605, "icon": "inv_weapon_hand_15"},
+  "Royal Diplomatic Scepter": {"id": 9457, "icon": "inv_mace_08"},
+  "Death Speaker Scepter": {"id": 2816, "icon": "inv_mace_07"},
+  "Forcestone Buckler": {"id": 17508, "icon": "inv_shield_02"},
+  "Elementalist's Guard": {"id": 280696, "icon": "inv_shield_09"},
+  "Heart of Agamaggan": {"id": 6694, "icon": "inv_shield_02"},
+  "Seedcloud Buckler": {"id": 6630, "icon": "inv_shield_10"},
+  "Painwalker Buckler": {"id": 274290, "icon": "inv_shield_07"},
+  "Salve and Salvation": {"id": 276898, "icon": "inv_misc_book_01"},
+  "Orb of Souls": {"id": 249395, "icon": "inv_misc_orb_04"},
+  "Pristine Circlet": {"id": 253949, "icon": "inv_crown_01"},
+  "Wisdom's Leather Hood": {"id": 252507, "icon": "inv_helmet_33"},
+  "Whisperwind Headdress": {"id": 6688, "icon": "inv_helmet_17"},
+  "Thermaplugg Medal of Honor": {"id": 274068, "icon": "inv_jewelry_amulet_03"},
+  "Pendant of Myzrael": {"id": 4614, "icon": "inv_jewelry_necklace_07"},
+  "Glowing Green Talisman": {"id": 5002, "icon": "inv_jewelry_necklace_01"},
+  "Invoker's Mantle": {"id": 215365, "icon": "inv_shoulder_02"},
+  "Feline Mantle": {"id": 3748, "icon": "inv_shoulder_05"},
+  "Heavy Woolen Cloak": {"id": 4311, "icon": "inv_misc_cape_14"},
+  "Robes of Arugal": {"id": 6324, "icon": "inv_chest_cloth_31"},
+  "Wisdom's Leather Armor": {"id": 252493, "icon": "inv_chest_fur"},
+  "Ceremonial Gown": {"id": 270082, "icon": "inv_shirt_13"},
+  "Witherbite Bracers": {"id": 271202, "icon": "inv_bracer_07"},
+  "Tattered Mittens": {"id": 270030, "icon": "inv_gauntlets_27"},
+  "Gloves of Meditation": {"id": 4318, "icon": "inv_gauntlets_05"},
+  "Jutebraid Gloves": {"id": 10654, "icon": "inv_gauntlets_21"},
+  "Defiler's Cloth Girdle": {"id": 20164, "icon": "inv_belt_17"},
+  "Wisdom's Leather Belt": {"id": 252433, "icon": "inv_belt_06"},
+  "Daewyn's Girdle": {"id": 271769, "icon": "inv_belt_16"},
+  "Earthen Leggings": {"id": 253999, "icon": "inv_pants_09"},
+  "Ogre Loincloth": {"id": 273289, "icon": "inv_pants_09"},
+  "Stormrider's Leather Pants": {"id": 252502, "icon": "inv_pants_10"},
+  "Black Whelp Slippers": {"id": 252424, "icon": "inv_boots_leather_05red"},
+  "Wingborne Boots": {"id": 15104, "icon": "inv_boots_07"},
+  "Pristine Boots": {"id": 253889, "icon": "inv_boots_cloth_03"},
+  "Reedknot Ring": {"id": 9622, "icon": "inv_belt_33"},
+  "Dog Whistle": {"id": 3456, "icon": "ability_hunter_beastcall"},
+  "Transformative Cocoon": {"id": 276895, "icon": "inv_misc_web_02"},
+  "Bottle of Powderfuse Port": {"id": 274948, "icon": "inv_drink_11"},
+  "Lightning's Grasp": {"id": 280607, "icon": "inv_weapon_hand_09"},
+  "Eye of Paleth": {"id": 2943, "icon": "inv_misc_orb_03"},
+  "Alliance Outrunner Healing Rod": {"id": 285348, "icon": "inv_wand_04"},
+  "Orb of Mistmantle": {"id": 13031, "icon": "inv_misc_orb_01"},
+  "Omega Orb": {"id": 7749, "icon": "inv_misc_orb_03"},
+  "Raptor's Gaze": {"id": 273027, "icon": "spell_nature_crystalball"},
+  "Staff of the Friar": {"id": 3415, "icon": "inv_staff_32"},
+  "Defiler's Talisman": {"id": 21120, "icon": "inv_jewelry_talisman_05"},
+  "Satchel of Potions": {"id": 280766, "icon": "inv_misc_bag_08"}
+}
+```
+
+Items with no ID yet (14): Wild Headdress, Archmagister's Faceted Pendant, Red Wool Cloak, Tattered Kirin Tor Cloak, Graveweave Bindings, Budding Leaf Belt, Solid Gold Band, Runemender's Seal, Geomancer Headdress, Guardian's Emblem, Darkspear Raider's Cloak, Kodohide Legguards, Roused Nature Footwraps, Sacristan Band. Wowhead lists them on its Forever
+pages, but its search could not be reached to read their IDs. Adding one here gives the item its
+link and icon with no code change (run `node scripts/wowhead-icons.mjs` to fetch the icon).

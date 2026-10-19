@@ -1,0 +1,123 @@
+# Ralph Progress Log
+Started: run 003 (header, icon, item popups, items table), 18 Oct 2026
+---
+
+## Codebase Patterns
+(Carried over from runs 001 and 002; their full logs are in tasks/ralph-runs/.)
+- All math is pure functions in `src/lib/model.ts` taking `state` first; code reads `effectivePool(state)`, never `state.pool`.
+- New State keys need a DEFAULTS entry: `mergeState` (storage and share) filters by DEFAULTS keys and type.
+- Every page is in the route table `src/routes.tsx`, which feeds the prerender (`scripts/prerender.mjs`), the sitemap and the SEO tests (`test/seo.test.ts`).
+- The header and footer are rendered by `SiteHeader.tsx` / `SiteFooter.tsx` into the prerender template around `#root`; `Layout.tsx` is the same tree for dev.
+- Head tags (icons, theme-color, manifest) are written by `src/seo/head.ts`.
+- `scripts/og.mjs` is run by hand (not by the build) with playwright-core and writes the social cards and PNG icons into `public/`; commit what it writes.
+- `src/data/items.json` and `spells.json` are extracted verbatim from `docs/spec.md` by `scripts/extract-spec-data.mjs`; a test checks they equal the spec. Never hand-edit them.
+- Item names on the calculator are rendered by `src/calculator/ItemName.tsx` (a link to `/items/<slug>`); content pages use `itemPath(item)`.
+- Smoke checks go beside the checks for the same page in `test/smoke.mjs`. Normalize whitespace in text checks: JSX line breaks collapse in rendered text.
+- Smoke can read `src/data/items.json` via readFileSync for item facts.
+- `fmt(x, 0)` already adds thousands separators.
+---
+
+## 18 Oct 2026 - US-001
+- Totem icon: `public/favicon.svg` is `design/totem.svg` byte for byte. `scripts/og.mjs` now renders apple-touch-icon (84% on #03060d), icon-192/512 (transparent), the new icon-maskable-512 (72% on #0a2a36) from it, and writes `favicon.ico` (16, 32, 48 px PNG images, small ICO writer in the script). The social cards are untouched (US-003).
+- Files: public icons, favicon.ico, site.webmanifest, src/seo/head.ts (ico link before svg, both theme-color metas #03060d), scripts/og.mjs, test/seo.test.ts.
+- Checks: typecheck ok, 2624 tests ok, build ok, smoke 50 of 50. Broke the manifest (removed `purpose: maskable`): "manifest and icon files exist" failed, restored.
+- **Learnings for future iterations:**
+  - `scripts/og.mjs` output is deterministic: the og PNGs came out byte-identical, so only icon files show as changed.
+  - New "icon files" describe block in test/seo.test.ts reads IHDR and ICO headers; it reads the design totem.svg from tasks/ralph-runs/003-*/design/ to check favicon.svg.
+  - Screenshot with `omitBackground: true` gives transparent PNGs.
+---
+
+## 18 Oct 2026 - US-002
+- Universal header: `scripts/header-art.mjs` (from the design generator, writes `public/art/header-tide.svg`, byte-identical to the design file), `SiteHeader.tsx` (totem img, wordmark, kicker, tagline block, `SITE_TAGLINE` in `src/site.ts`), header CSS in `src/styles/app.css` replaced with the mock's (art, overlay, wave edge, 640px rules, print rules, cyan focus outline).
+- Checks: typecheck ok, 2624 tests ok, build ok, smoke 51 of 51, reference 26 of 26. New smoke check ("the header carries the art...") failed once against a real bug (tagline text came back uppercase), fixed.
+- **Learnings for future iterations:**
+  - `.tag` is already the Horde/Alliance/Check badge class (uppercase pill). The header's block is `.tagline`; do not reuse `.tag` for anything new.
+  - There was no print CSS before; the header's `@media print` block is the first.
+  - The header is always dark, so its colours are literals, not theme variables; only the wave edge uses `var(--bg)`.
+  - Smoke's `sp` page is 1280 wide; header checks that need 400 px set the viewport and restore it.
+---
+
+## 18 Oct 2026 - US-003
+- Social cards: `scripts/og.mjs` cards now have the header art along the bottom (252 px tall, right bottom, inlined as a data URI, with a left-to-right dark overlay so the text stays clear of the totems), the totem badge (96 px, inlined from `public/favicon.svg`) beside the wordmark, and no left bar. Text, layout and kinds unchanged. The old wave mark code is gone from the script.
+- Files: scripts/og.mjs, public/og/*.png (each about 260 KB), test/seo.test.ts.
+- Checks: typecheck ok, 2629 tests ok, build ok. Smoke not run (no browser-rendered page changed).
+- New test "og/%s.png is a 1200 x 630 card under 300 KB" (the US-001 IHDR test did not cover the cards). Broke it by lowering the limit to 100 KB: 5 failed, restored.
+- **Learnings for future iterations:**
+  - The cards are close to the 300 KB cap (about 260 KB) because of the art; do not add more detail to them without checking size.
+  - Cards load no files: fonts, art and totem are inlined, so `setContent` needs no base URL.
+---
+
+## 18 Oct 2026 - US-004
+- `src/lib/itemFacts.ts`: `equipText(item)` (other starting with +, Use: or Proc), `noteText(item)` (any other `other`), `whereShort(item)` (kind, place or "kind, place" derived from `source` only). Tests in `src/lib/itemFacts.test.ts`: all 22 rows of the PRD where table, the shape and verbatim-place guard over all 155 items, and the five named equip/note examples.
+- Checks: typecheck ok, 2654 tests ok, build ok. Smoke and reference not run (nothing browser-rendered changed).
+- Broke the Proc prefix in the equip rule: the named-examples test failed, restored.
+- **Learnings for future iterations:**
+  - Quest place rule: the last "(...)" group, first part before a comma, minus " final boss", dropped if it starts with "from" or has a digit; with no parens, the text after ", ". Boss sources take the text after the last comma, minus a trailing "(...)", "trash" or "drop".
+  - Reputation items show the faction name ("Reputation, Defilers"); vendors with a parenthetical show it ("Vendor, Arathi Basin").
+  - All functions take `Pick<Item, ...>`, so the popup script can pass plain data objects.
+  - Do not `pkill -f` anything in a command that contains the same pattern: it kills the shell itself.
+---
+
+## 18 Oct 2026 - US-005
+- `/items` tables now have ten columns (Item, Lvl, Int, Spr, SP, Heal, MP5, Equip, Where, Score) with `abbr` titles; Horde/Alliance tag after the name replaces the Faction column; Where uses `whereShort` with the full source as `title`; Item column sticky inside the `.scroll` box. Lead paragraph explains the columns and blanks.
+- Files: src/pages/ItemPage.tsx, src/styles/app.css (`table.items` rules), test/smoke.mjs.
+- Checks: typecheck ok, 2654 tests ok, build ok, smoke 52 of 52. Reference not run (calculator untouched). Broke the new smoke check by swapping Int and Spr in the expected header: it failed, restored.
+- **Learnings for future iterations:**
+  - The existing item-link smoke check counts `main td.nm a[href^="/items/"]` = 155, so the Item cell must keep `td.nm`.
+  - Sticky first column needs an opaque `var(--bg)` background on both th and td.
+---
+
+## 18 Oct 2026 - US-006
+- Item popups: `src/tips/tips.ts` is its own Vite entry (`vite.config.ts` input `tips`, non-SSR builds only, emitted as `assets/tips-<hash>.js`). `renderDocument` takes a `tipsScript` option and `scripts/prerender.mjs` finds the hashed file and adds the tag to every page, so the app script's strip rule is untouched. Event delegation on `document` for `a[href^="/items/"]`: 80 ms hover delay (only when `(hover: hover)`), follows the pointer, flips left or up near an edge; keyboard focus shows it under the link, blur or Escape hides it. Built with DOM text nodes from `items.json`, `equipText` and `noteText`. Styles are `.tip*` at the end of `app.css`. The dev entry imports the script too.
+- Build check: `prerender.mjs` sums the gzip size of the tips file and the chunks it imports and fails over 12 KB (now 7121 bytes). Broke it by setting the limit to 1 KB: build failed, restored.
+- Files: src/tips/tips.ts, vite.config.ts, src/entry-server.tsx, src/entry-client.tsx, scripts/prerender.mjs, src/styles/app.css, test/seo.test.ts, test/smoke.mjs, CLAUDE.md (the one SEO sentence).
+- Checks: typecheck ok, 2654 tests ok, build ok, smoke 54 of 54, reference 26 of 26. Broke the popup's flip-left (always `x + offset`): the 400 px smoke check failed, restored.
+- **Learnings for future iterations:**
+  - Two module scripts in `index.html` get merged by Vite into one bundle, hence the separate rollup input.
+  - The tips script shares a `slug-<hash>.js` chunk (items data) with the app; it is about 6 KB gzipped, so the popup costs about 7 KB.
+  - Smoke "no module script" checks now exclude `/assets/tips-`: use `script[type="module"]:not([src*="/assets/tips-"])`.
+  - The popup gets its icon in US-009 (40 px left of the name); `build()` in tips.ts is where it goes.
+---
+
+## 18 Oct 2026 - US-007
+- `scripts/extract-spec-data.mjs` now also extracts spec 14.5 to `src/data/wowhead.json` (141 entries); `src/data/index.ts` exports `WOWHEAD` and `wowheadUrl(item)`. Item pages show "View <name> on Wowhead" (new tab, noopener noreferrer) and the caveat sentence under "Where it comes from", only when the item has an entry. About sources list gained the Wowhead Forever line.
+- Files: scripts/extract-spec-data.mjs and .d.mts, src/data/{wowhead.json,index.ts,data.test.ts}, src/pages/{ItemPage,About}.tsx, test/smoke.mjs, README.md.
+- Checks: typecheck ok, 2658 tests ok, build ok, smoke 54 of 54. Reference not run (calculator untouched). Broke the URL (forever to classic): the new unit test and the item page smoke check both failed, restored.
+- **Learnings for future iterations:**
+  - `scripts/extract-spec-data.d.mts` types the extractor for TypeScript; add new keys there too.
+  - `WOWHEAD[item.name]` is the lookup; US-009's icon helper goes beside `wowheadUrl`.
+---
+
+## 18 Oct 2026 - US-008
+- Visible labels "Crit %" (beside Water Shield) and "Kept %" (beside the Spirit regen talent), small muted text above each box, greyed with the box when disabled. Accessible names unchanged (the label span is aria-hidden). Water Shield description now reads "Each heal crit returns 2% of max mana. Enter your heal crit chance; 5% is the default."
+- Files: src/calculator/RegenPanel.tsx, src/styles/app.css (`.pctf`), test/smoke.mjs.
+- Checks: typecheck ok, 2658 tests ok, build ok, smoke 55 of 55, reference 26 of 26. Broke the new smoke check by renaming "Kept %" to "Kept": it failed, restored.
+- **Learnings for future iterations:**
+  - docs/spec.md line 586 holds the old Water Shield wording in its HTML sample; the spec was left untouched (the story only changes the site's copy).
+  - `labelled()` in RegenPanel wraps a NumField with a label span; reuse it for any new boxed input in a toggle row.
+---
+
+## 18 Oct 2026 - US-009
+- Item icons: `itemIconSrc(item)` in `src/lib/itemIcon.ts` (the Wowhead icon from `wowhead.json`, else `/icons/inv_misc_questionmark.jpg`); `src/calculator/ItemIcon.tsx` renders the 20 px lazy `<img alt="">`; `ItemName` now renders icon plus link (custom items stay plain text, no icon) and is used by the best set, candidates, `/items`, `/bis` and slot page tables. The item page `h1` holds a 56 px icon (`.item-h1` flex). The popup shows a 40 px icon left of the name (`.tip-head`).
+- Files: src/lib/itemIcon.ts and test, src/calculator/{ItemIcon,ItemName}.tsx, src/pages/{Bis,SlotPage,ItemPage}.tsx, src/tips/tips.ts, src/styles/app.css, test/smoke.mjs.
+- Checks: typecheck ok, 2660 tests ok, build ok (popup script still under 12 KB gzipped), smoke 57 of 57, reference 26 of 26. Broke the helper (.jpg to .png): the unit tests and three smoke checks failed, restored.
+- **Learnings for future iterations:**
+  - `.iname` (inline-flex) holds icon and name so they never wrap apart; the sticky Item column on `/items` keeps both together.
+  - The tips script imports only `lib/itemIcon.ts` (wowhead.json), not `data/index.ts`, to keep its bundle small.
+---
+
+## 18 Oct 2026 - Delivering session, between and after the iterations
+- Between the two launches (Tom opened the environment to nether.wowhead.com and wow.zamimg.com):
+  spec 14.5 rewritten with 141 IDs and icon names, every one checked against Wowhead's Forever
+  tooltip data (dataEnv 16); `scripts/wowhead-icons.mjs` written and run (115 icons in
+  public/icons); US-007 adjusted to the new data shape and US-009 (icons) added. Also fixed the
+  Equip and Where headers' alignment on /items and the phone header spacing under the tagline.
+- Verified on the final Ralph commit: typecheck, 2,660 unit tests, 57 smoke checks, reference 26
+  of 26. Visual review in both themes at 1440 and 400 px, with a live popup.
+- Fixed in this session after review:
+  - the calculator's item links used the browser's default blue; `.iname a` now uses the accent
+    colour and has a focus outline;
+  - on phones the /items rows grew tall because Equip and Where squeezed into narrow columns;
+    Where stays on one line and Equip keeps a minimum width, so the table scrolls sideways instead;
+  - the social cards' art band started with a hard edge above the clouds; it now fades in.
+---

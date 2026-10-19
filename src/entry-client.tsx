@@ -16,6 +16,7 @@ if (import.meta.env.DEV) {
   const path = location.pathname.replace(/(.)\/$/, "$1");
   const route = routes.find((r) => r.path === path) ?? routes.find((r) => r.path === "/404")!;
   const paths = routes.filter((r) => !r.noindex).map((r) => r.path);
+  void import("./tips/tips");
   document.getElementById("main")!.replaceWith(root);
   createRoot(root).render(
     <Layout path={route.path} paths={paths}>

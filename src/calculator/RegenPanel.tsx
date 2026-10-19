@@ -23,6 +23,13 @@ export function RegenPanel({ state, set }: Props) {
   const isLine = state.smodel === "line";
   const round = (x: number, d: number) => Math.round(x * d) / d;
 
+  const labelled = (text: string, disabled: boolean, field: React.ReactNode) => (
+    <div className={disabled ? "pctf off" : "pctf"}>
+      <span aria-hidden="true">{text}</span>
+      {field}
+    </div>
+  );
+
   const toggle = (key: ToggleKey, title: string, desc: string, aria: string, extra?: React.ReactNode) => (
     <div className="tog">
       <div className="t">
@@ -46,18 +53,22 @@ export function RegenPanel({ state, set }: Props) {
         "Mindfulness for Shaman. Every caster has one; 3/3 keeps 50%.",
         "Spirit regen talent",
         <>
-          <NumField
-            id="pct"
-            className="pct"
-            ariaLabel="Share kept while casting, percent"
-            min={0}
-            max={100}
-            step={1}
-            list="pcts"
-            disabled={!state.talent}
-            value={state.pct}
-            onCommit={(v) => set({ pct: v })}
-          />
+          {labelled(
+            "Kept %",
+            !state.talent,
+            <NumField
+              id="pct"
+              className="pct"
+              ariaLabel="Share kept while casting, percent"
+              min={0}
+              max={100}
+              step={1}
+              list="pcts"
+              disabled={!state.talent}
+              value={state.pct}
+              onCommit={(v) => set({ pct: v })}
+            />,
+          )}
           <datalist id="pcts">
             <option value="17"></option>
             <option value="33"></option>
@@ -70,19 +81,23 @@ export function RegenPanel({ state, set }: Props) {
       {toggle(
         "ws",
         "Water Shield",
-        "Each heal crit returns 2% of max mana. Set your heal crit chance.",
+        "Each heal crit returns 2% of max mana. Enter your heal crit chance; 5% is the default.",
         "Water Shield",
-        <NumField
-          id="crit"
-          className="pct"
-          ariaLabel="Heal crit chance, percent"
-          min={0}
-          max={100}
-          step={0.5}
-          disabled={!state.ws}
-          value={state.crit}
-          onCommit={(v) => set({ crit: v })}
-        />,
+        labelled(
+          "Crit %",
+          !state.ws,
+          <NumField
+            id="crit"
+            className="pct"
+            ariaLabel="Heal crit chance, percent"
+            min={0}
+            max={100}
+            step={0.5}
+            disabled={!state.ws}
+            value={state.crit}
+            onCommit={(v) => set({ crit: v })}
+          />,
+        ),
       )}
 
       <details id="spiritbox">

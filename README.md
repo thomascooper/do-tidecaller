@@ -40,7 +40,7 @@ There is no lint script.
 `docs/spec.md` is the source of truth for every game fact. To change the data:
 
 1. Edit the JSON blocks in `docs/spec.md` (sections 11 and 12).
-2. Run `node scripts/extract-spec-data.mjs`. It rewrites `src/data/spells.json` and `src/data/items.json`.
+2. Run `node scripts/extract-spec-data.mjs`. It rewrites `src/data/spells.json`, `src/data/items.json` and `src/data/wowhead.json`.
 3. Run `npm test` (and `npm run reference` if the model or calculator changed).
 
 Do not add facts from anywhere else. The spec's section 7 numbers are the oracle: when a check

@@ -7,7 +7,8 @@ import { canonicalUrl, DATA_UPDATED, SITE_URL } from "../src/site";
 
 const STUB = `<!doctype html><html lang="en"><head><meta charset="utf-8" /><!--app-head--></head><body><!--app-header--><main id="main"><div id="root"><!--app-html--></div></main><!--app-footer--><script type="module" src="/src/entry-client.tsx"></script></body></html>`;
 
-const pages = routes.map((route) => ({ route, doc: parse(renderDocument(route, STUB)) }));
+const TIPS = "/assets/tips-test.js";
+const pages = routes.map((route) => ({ route, doc: parse(renderDocument(route, STUB, { tipsScript: TIPS })) }));
 
 const content = (doc: ReturnType<typeof parse>, selector: string) => doc.querySelector(selector)?.getAttribute("content");
 
@@ -73,8 +74,10 @@ describe.each(pages)("SEO for $route.path", ({ route, doc }) => {
     if (!route.noindex) expect(blocks.length).toBeGreaterThan(0);
     for (const b of blocks) expect(() => JSON.parse(b.text)).not.toThrow();
   });
-  it("keeps the app script only on pages that hydrate", () => {
-    expect(doc.querySelectorAll('script[type="module"]').length).toBe(route.hydrate ? 1 : 0);
+  it("keeps the app script only on pages that hydrate, and the item popup script on every page", () => {
+    const srcs = doc.querySelectorAll('script[type="module"]').map((s) => s.getAttribute("src"));
+    expect(srcs.filter((src) => src === TIPS).length).toBe(1);
+    expect(srcs.length).toBe(route.hydrate ? 2 : 1);
   });
 });
 
@@ -320,7 +323,9 @@ describe("sitemap, robots, icons and social images", () => {
     expect(existsSync(join(__dirname, "..", "public", route.ogImage)), route.ogImage).toBe(true);
   });
   it.each(pages)("$route.path links the icons and manifest", ({ doc }) => {
-    expect(doc.querySelector('link[rel="icon"]')?.getAttribute("href")).toBe("/favicon.svg");
+    const icons = doc.querySelectorAll('link[rel="icon"]');
+    expect(icons.map((l) => l.getAttribute("href"))).toEqual(["/favicon.ico", "/favicon.svg"]);
+    expect(icons[0].getAttribute("sizes")).toBe("48x48");
     expect(doc.querySelector('link[rel="apple-touch-icon"]')?.getAttribute("href")).toBe("/apple-touch-icon.png");
     expect(doc.querySelector('link[rel="manifest"]')?.getAttribute("href")).toBe("/site.webmanifest");
   });
@@ -330,7 +335,44 @@ describe("sitemap, robots, icons and social images", () => {
     expect(manifest.start_url).toBe("/");
     expect(manifest.display).toBe("standalone");
     for (const icon of manifest.icons) expect(existsSync(join(__dirname, "..", "public", icon.src))).toBe(true);
-    for (const f of ["favicon.svg", "apple-touch-icon.png"]) expect(existsSync(join(__dirname, "..", "public", f))).toBe(true);
+    expect(manifest.theme_color).toBe("#03060d");
+    expect(manifest.icons.map((i: { src: string }) => i.src)).toEqual(["/icon-192.png", "/icon-512.png", "/icon-maskable-512.png"]);
+    expect(manifest.icons[2].purpose).toBe("maskable");
+    for (const f of ["favicon.svg", "favicon.ico", "apple-touch-icon.png"]) expect(existsSync(join(__dirname, "..", "public", f))).toBe(true);
+  });
+});
+
+describe("icon files", () => {
+  const pub = (f: string) => readFileSync(join(__dirname, "..", "public", f));
+  const ihdr = (f: string) => {
+    const b = pub(f);
+    return [b.readUInt32BE(16), b.readUInt32BE(20)];
+  };
+  it.each([
+    ["apple-touch-icon.png", 180],
+    ["icon-192.png", 192],
+    ["icon-512.png", 512],
+    ["icon-maskable-512.png", 512],
+  ])("%s is %i px square", (f, size) => {
+    expect(ihdr(f)).toEqual([size, size]);
+  });
+  it.each(["home", "bis", "items", "guides", "about"])("og/%s.png is a 1200 x 630 card under 300 KB", (name) => {
+    expect(ihdr(`og/${name}.png`)).toEqual([1200, 630]);
+    expect(pub(`og/${name}.png`).length).toBeLessThan(300 * 1024);
+  });
+  it("favicon.ico holds the 16, 32 and 48 px images", () => {
+    const b = pub("favicon.ico");
+    expect([b.readUInt16LE(0), b.readUInt16LE(2), b.readUInt16LE(4)]).toEqual([0, 1, 3]);
+    expect([0, 1, 2].map((i) => b.readUInt8(6 + 16 * i))).toEqual([16, 32, 48]);
+    for (const i of [0, 1, 2]) {
+      const off = b.readUInt32LE(6 + 16 * i + 12);
+      expect(b.subarray(off + 1, off + 4).toString()).toBe("PNG");
+    }
+  });
+  it("favicon.svg is the totem badge", () => {
+    expect(pub("favicon.svg").toString()).toBe(
+      readFileSync(join(__dirname, "..", "tasks/ralph-runs/003-header-icon-item-popups/design/totem.svg"), "utf8"),
+    );
   });
 });
 

@@ -1,6 +1,10 @@
 import { Breadcrumbs } from "../components/Breadcrumbs";
+import { ItemIcon } from "../calculator/ItemIcon";
+import { ItemName } from "../calculator/ItemName";
+import { wowheadUrl } from "../data";
 import { fmt } from "../lib/format";
 import { itemInfo, itemsBySlot } from "../lib/itemPage";
+import { equipText, whereShort } from "../lib/itemFacts";
 import { itemPath } from "../lib/slug";
 import { STAT_LABELS } from "../lib/model";
 import type { StatKey } from "../lib/model";
@@ -50,10 +54,14 @@ export function ItemPage({ item }: { item: Item }) {
     { label: "Raid boss", score: info.raid, rank: info.rankRaid },
   ];
   const prof = profText(item);
+  const wowhead = wowheadUrl(item);
   return (
     <div className="wrap page wide">
       <Breadcrumbs trail={itemTrail(item)} />
-      <h1>{item.name}</h1>
+      <h1 className="item-h1">
+        <ItemIcon item={item} size={56} />
+        {item.name}
+      </h1>
       <p className="lead">
         {item.name} is {article(kind)} {kind} item{" "}
         {item.req > 0 ? `for level ${item.req} and up` : "with no level requirement"}. At Tidecaller&apos;s default settings it
@@ -118,6 +126,15 @@ export function ItemPage({ item }: { item: Item }) {
 
       <h2>Where it comes from</h2>
       <p>{item.source || "No source is listed."}</p>
+      {wowhead && (
+        <p>
+          <a href={wowhead} target="_blank" rel="noopener noreferrer">
+            View {item.name} on Wowhead
+          </a>
+          . Wowhead&rsquo;s numbers can differ from Tidecaller&rsquo;s, which come from the Forever beta client, build
+          1.60.1.
+        </p>
+      )}
 
       <h2>In this slot</h2>
       {index === 0 ? (
@@ -159,8 +176,10 @@ export function ItemsIndex() {
       <Breadcrumbs trail={ITEMS_TRAIL} />
       <h1>{itemsH1}</h1>
       <p className="lead">
-        Every item in the game data, grouped by slot. Scores are points of Healing for a Dungeon boss fight at the calculator
-        defaults. Open an item for its stats, who can use it and where it comes from.
+        Every item in the game data, grouped by slot. The columns are the required level (Lvl), Intellect (Int), Spirit (Spr),
+        Spell Power (SP), Healing (Heal), mana per 5 seconds (MP5), the equip effect, where it comes from and its score. A blank
+        cell means none. Scores are points of Healing for a Dungeon boss fight at the calculator defaults. Open an item for its
+        full stats and who can use it.
       </p>
       {groups.map((g) => (
         <section key={g.slot}>
@@ -168,24 +187,42 @@ export function ItemsIndex() {
             <a href={slotPath(g.slot)}>{g.slot}</a>
           </h2>
           <div className="scroll">
-            <table>
+            <table className="items">
               <thead>
                 <tr>
                   <th>Item</th>
-                  <th>Dungeon</th>
-                  <th>Faction</th>
+                  <th><abbr title="Required level">Lvl</abbr></th>
+                  <th><abbr title="Intellect">Int</abbr></th>
+                  <th><abbr title="Spirit">Spr</abbr></th>
+                  <th><abbr title="Spell Power">SP</abbr></th>
+                  <th><abbr title="Healing">Heal</abbr></th>
+                  <th><abbr title="Mana per 5 seconds">MP5</abbr></th>
+                  <th className="src">Equip</th>
+                  <th className="src">Where</th>
+                  <th><abbr title="Dungeon boss score in points of Healing">Score</abbr></th>
                 </tr>
               </thead>
               <tbody>
-                {g.rows.map((r) => (
-                  <tr key={r.item.id}>
-                    <td className="nm">
-                      <a href={itemPath(r.item)}>{r.item.name}</a>
-                    </td>
-                    <td className="score">{fmt(r.boss, 1)}</td>
-                    <td>{r.item.faction}</td>
-                  </tr>
-                ))}
+                {g.rows.map((r) => {
+                  const i = r.item;
+                  return (
+                    <tr key={i.id}>
+                      <td className="nm">
+                        <ItemName item={i} />
+                        {i.faction !== "Both" && <span className="tag">{i.faction}</span>}
+                      </td>
+                      <td>{i.req || ""}</td>
+                      <td>{i.int || ""}</td>
+                      <td>{i.spi || ""}</td>
+                      <td>{i.sp || ""}</td>
+                      <td>{i.heal || ""}</td>
+                      <td>{i.mp5 || ""}</td>
+                      <td className="src eq">{equipText(i)}</td>
+                      <td className="src wh" title={i.source}>{whereShort(i)}</td>
+                      <td className="score">{fmt(r.boss, 1)}</td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>

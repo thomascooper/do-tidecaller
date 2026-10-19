@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
-import { ITEMS, PROFESSIONS, SLOTS, SPELLS, itemBySlug } from "./index";
+import { ITEMS, PROFESSIONS, SLOTS, SPELLS, WOWHEAD, itemBySlug, wowheadUrl } from "./index";
 import { SLOT_SLUGS, slotFromSlug, slugify } from "../lib/slug";
 import { extract } from "../../scripts/extract-spec-data.mjs";
 
@@ -94,10 +94,40 @@ describe("slugs", () => {
 describe("extractor", () => {
   it("produces exactly the spec's JSON", () => {
     const spec = readFileSync(resolve(__dirname, "../../docs/spec.md"), "utf8");
-    const { spells, items } = extract(spec);
+    const { spells, items, wowhead } = extract(spec);
     const onDisk = (f: string) => JSON.parse(readFileSync(resolve(__dirname, f), "utf8"));
     expect(onDisk("spells.json")).toEqual(spells);
     expect(onDisk("items.json")).toEqual(items);
+    expect(onDisk("wowhead.json")).toEqual(wowhead);
     expect(items).toHaveLength(155);
+  });
+});
+
+describe("wowhead links", () => {
+  const names = new Set(ITEMS.map((i) => i.name));
+  const entries = Object.entries(WOWHEAD);
+
+  it("has 141 entries, each for an item in items.json", () => {
+    expect(entries).toHaveLength(141);
+    for (const [name] of entries) expect(names.has(name), name).toBe(true);
+  });
+
+  it("has positive integer ids and no id shared by two items", () => {
+    for (const [name, e] of entries) {
+      expect(Number.isInteger(e.id) && e.id > 0, name).toBe(true);
+    }
+    expect(new Set(entries.map(([, e]) => e.id)).size).toBe(entries.length);
+  });
+
+  it("holds the known entries", () => {
+    expect(WOWHEAD["Holy Shroud"]).toEqual({ id: 2721, icon: "inv_helmet_16" });
+    expect(WOWHEAD["Tidebringer's Claw"].id).toBe(280605);
+    expect(WOWHEAD["Battle Healer's Cloak"].id).toBe(19529);
+    expect(WOWHEAD["Red Wool Cloak"]).toBeUndefined();
+  });
+
+  it("builds the Forever link from the id", () => {
+    expect(wowheadUrl(itemBySlug("holy-shroud")!)).toBe("https://www.wowhead.com/forever/item=2721");
+    expect(wowheadUrl(itemBySlug("red-wool-cloak")!)).toBeUndefined();
   });
 });
