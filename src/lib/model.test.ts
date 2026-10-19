@@ -77,7 +77,16 @@ describe("priorityLine", () => {
   };
 
   it("reads as the spec at Dungeon boss defaults", () => {
-    expect(text(at("boss"))).toBe("MP5 > Intellect > Healing = Spell Power > Spirit");
+    expect(text(at("boss"))).toBe("MP5 > Intellect > Spell Power = Healing > Spirit");
+  });
+
+  it("lists Spell Power right before Healing, joined by =, at every preset (spec 14.7)", () => {
+    for (const preset of ["raid", "boss", "trash"] as const) {
+      const p = priorityLine(compute(at(preset)).weights);
+      const i = p.keys.indexOf("sp");
+      expect(p.keys[i + 1]).toBe("heal");
+      expect(p.ops[i]).toBe("=");
+    }
   });
 
   it("puts Stamina first when its weight is 5", () => {
@@ -378,6 +387,6 @@ describe("the defaults' numbers (spec section 14.3)", () => {
   it("the Dungeon boss priority line", () => {
     const p = priorityLine(weightsOf(at("boss", {}, DEFAULTS)));
     const line = p.keys.map((k, i) => (i ? ` ${p.ops[i - 1]} ` : "") + STAT_LABELS[k]).join("");
-    expect(line).toBe("MP5 > Intellect > Healing = Spell Power = Spirit");
+    expect(line).toBe("MP5 > Intellect > Spell Power = Healing = Spirit");
   });
 });

@@ -299,7 +299,7 @@ export interface PriorityLine {
 }
 
 export function priorityLine(W: Weights): PriorityLine {
-  const order = (["mp5", "int", "spi", "heal", "sp", "sta"] as StatKey[]).filter(
+  const order = (["mp5", "int", "spi", "sp", "heal", "sta"] as StatKey[]).filter(
     (k) => k !== "sta" || W.sta > 0,
   );
   const ok = order.every((k) => isFinite(W[k]));

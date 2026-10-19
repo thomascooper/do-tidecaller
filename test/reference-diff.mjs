@@ -75,6 +75,8 @@ try {
     const appPayload = JSON.stringify({ state: { pool: 2223, ...state, manaAuto: false }, items: items ?? [] });
     const a = await snapshot(REF, payload);
     const b = await snapshot(base, appPayload);
+    // Spec 14.7: the app lists Spell Power before Healing; section 13's reference still uses the old tie order.
+    a.verdict = a.verdict.replace("Healing=Spell Power", "Spell Power=Healing");
     const diffs = [];
     for (const k of Object.keys(a)) {
       if (JSON.stringify(a[k]) === JSON.stringify(b[k])) continue;

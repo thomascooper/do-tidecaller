@@ -158,7 +158,7 @@ try {
   });
   await check("stat weights: verdict, bars and readouts at defaults", async () => {
     await page.getByRole("button", { name: "Dungeon boss" }).click();
-    eq((await page.locator("#verdict").innerText()).replace(/\s+/g, " "), "MP5 > Intellect > Healing = Spell Power = Spirit", "verdict");
+    eq((await page.locator("#verdict").innerText()).replace(/\s+/g, " "), "MP5 > Intellect > Spell Power = Healing = Spirit", "verdict");
     eq(await page.locator('.bar[data-stat="mp5"] .v').innerText(), "2.84", "MP5 bar");
     eq(await page.locator(".bar").count(), 5, "bars without Stamina");
     eq(await page.locator("#wnote").innerText(), "1 Healing = 1.00", "note");

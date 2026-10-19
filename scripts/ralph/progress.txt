@@ -47,3 +47,11 @@ Started: run 004 (item level and armor), 19 Oct 2026
 - **Learnings for future iterations:**
   - `tips.ts` now imports `itemLevel`/`itemArmor` from `lib/itemIcon.ts`, which adds `itemLevels.json` to the popup bundle (about 1.4 KB gzipped).
 ---
+
+## 19 Oct 2026 - US-004
+- `priorityLine` base order is now mp5, int, spi, sp, heal (spec 14.7); weight bars unchanged. Tests, the smoke `#verdict` check and the reference diff follow 14.7 (the diff swaps "Healing=Spell Power" in the reference's line, with a comment citing 14.7). No page copy quoted the old order in `src/`; the spec's own section 1 quote is superseded by 14.7 and left untouched.
+- Files: src/lib/model.ts, src/lib/model.test.ts, test/smoke.mjs, test/reference-diff.mjs
+- Checks: typecheck ok, npm test 2666 passed, build ok, smoke 57 passed, reference 26 of 26. Broke the base order (heal before sp): the existing boss, defaults and new three-preset tests failed, restored.
+- **Learnings for future iterations:**
+  - Ties rely on the stable sort of the base order; Healing and Spell Power always weigh the same, so the base order alone decides which comes first.
+---
