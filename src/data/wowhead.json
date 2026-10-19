@@ -11,6 +11,10 @@
     "id": 7691,
     "icon": "inv_helmet_28"
   },
+  "Wild Headdress": {
+    "id": 270067,
+    "icon": "inv_belt_25"
+  },
   "Sorrow's Shroud": {
     "id": 284401,
     "icon": "inv_helmet_30"
@@ -26,6 +30,10 @@
   "Kaleidoscope Chain": {
     "id": 13084,
     "icon": "inv_jewelry_amulet_07"
+  },
+  "Archmagister's Faceted Pendant": {
+    "id": 273049,
+    "icon": "inv_misc_necklacea8"
   },
   "Crystal Starfire Medallion": {
     "id": 5003,
@@ -103,6 +111,10 @@
     "id": 6901,
     "icon": "inv_misc_monsterscales_03"
   },
+  "Tattered Kirin Tor Cloak": {
+    "id": 286994,
+    "icon": "inv_misc_cape_05"
+  },
   "Battle Healer's Cloak": {
     "id": 19529,
     "icon": "inv_misc_cape_18"
@@ -175,6 +187,10 @@
     "id": 271740,
     "icon": "inv_bracer_10"
   },
+  "Graveweave Bindings": {
+    "id": 273036,
+    "icon": "inv_bracer_10"
+  },
   "Bridgebreaker Bindings": {
     "id": 273808,
     "icon": "inv_bracer_07"
@@ -242,6 +258,10 @@
   "Belt of Arugal": {
     "id": 6392,
     "icon": "inv_belt_10"
+  },
+  "Budding Leaf Belt": {
+    "id": 284382,
+    "icon": "inv_belt_03"
   },
   "Pristine Sash": {
     "id": 253925,
@@ -318,6 +338,14 @@
   "Ladimore Heirloom Ring": {
     "id": 270051,
     "icon": "inv_jewelry_ring_08"
+  },
+  "Solid Gold Band": {
+    "id": 279845,
+    "icon": "inv_jewelry_ring_03"
+  },
+  "Runemender's Seal": {
+    "id": 273031,
+    "icon": "inv_jewelry_ring_28"
   },
   "Snake Hoop": {
     "id": 6750,
@@ -411,6 +439,10 @@
     "id": 249395,
     "icon": "inv_misc_orb_04"
   },
+  "Geomancer Headdress": {
+    "id": 274155,
+    "icon": "inv_helmet_14"
+  },
   "Pristine Circlet": {
     "id": 253949,
     "icon": "inv_crown_01"
@@ -422,6 +454,10 @@
   "Whisperwind Headdress": {
     "id": 6688,
     "icon": "inv_helmet_17"
+  },
+  "Guardian's Emblem": {
+    "id": 286995,
+    "icon": "spell_arcane_arcaneresilience"
   },
   "Thermaplugg Medal of Honor": {
     "id": 274068,
@@ -495,9 +531,17 @@
     "id": 273289,
     "icon": "inv_pants_09"
   },
+  "Kodohide Legguards": {
+    "id": 285338,
+    "icon": "inv_pants_12"
+  },
   "Stormrider's Leather Pants": {
     "id": 252502,
     "icon": "inv_pants_10"
+  },
+  "Roused Nature Footwraps": {
+    "id": 286991,
+    "icon": "inv_boots_09"
   },
   "Black Whelp Slippers": {
     "id": 252424,

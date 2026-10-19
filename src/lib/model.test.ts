@@ -11,6 +11,9 @@ import {
   knownSpells,
   manaFromInt,
   SHAMAN_BASE_MANA,
+  calcCrit,
+  effectiveCrit,
+  intPerCrit,
   priorityLine,
   shareKept,
   spellCalc,
@@ -22,7 +25,10 @@ import {
 import { fmt } from "./format";
 
 /** The spec's original character (section 7): max mana typed in as 2223, so the math is checked on its own. */
-const ORIG: State = { ...DEFAULTS, manaAuto: false, pool: 2223 };
+const ORIG: State = { ...DEFAULTS, manaAuto: false, pool: 2223, critAuto: false, crit: 5, critStat: false };
+
+/** Section 14.3's defaults before crit (spec 14.8): crit typed as 5 and not valued as a stat. */
+const NO_CRIT: State = { ...DEFAULTS, critAuto: false, crit: 5, critStat: false };
 
 function at(preset: PresetId, over: Partial<State> = {}, base: State = ORIG): State {
   const { t, f } = PRESETS[preset];
@@ -77,7 +83,16 @@ describe("priorityLine", () => {
   };
 
   it("reads as the spec at Dungeon boss defaults", () => {
-    expect(text(at("boss"))).toBe("MP5 > Intellect > Healing = Spell Power > Spirit");
+    expect(text(at("boss"))).toBe("MP5 > Intellect > Spell Power = Healing > Spirit");
+  });
+
+  it("lists Spell Power right before Healing, joined by =, at every preset (spec 14.7)", () => {
+    for (const preset of ["raid", "boss", "trash"] as const) {
+      const p = priorityLine(compute(at(preset)).weights);
+      const i = p.keys.indexOf("sp");
+      expect(p.keys[i + 1]).toBe("heal");
+      expect(p.ops[i]).toBe("=");
+    }
   });
 
   it("puts Stamina first when its weight is 5", () => {
@@ -328,7 +343,7 @@ describe("the defaults' numbers (spec section 14.3)", () => {
   };
   for (const id of Object.keys(NEW) as PresetId[]) {
     it(`matches at ${PRESETS[id].label}`, () => {
-      const st = at(id, {}, DEFAULTS);
+      const st = at(id, {}, NO_CRIT);
       const r = compute(st);
       const e = NEW[id];
       expect(r.E).toBeCloseTo(e.E, 1);
@@ -344,7 +359,7 @@ describe("the defaults' numbers (spec section 14.3)", () => {
   }
 
   it("Dungeon boss best set, pick by pick", () => {
-    const s = at("boss", {}, DEFAULTS);
+    const s = at("boss", {}, NO_CRIT);
     const set = bestSet(ITEMS, weightsOf(s), s);
     const EXPECTED: [string, number][] = [
       ["Holy Shroud", 38.87],
@@ -376,8 +391,142 @@ describe("the defaults' numbers (spec section 14.3)", () => {
   });
 
   it("the Dungeon boss priority line", () => {
-    const p = priorityLine(weightsOf(at("boss", {}, DEFAULTS)));
+    const p = priorityLine(weightsOf(at("boss", {}, NO_CRIT)));
     const line = p.keys.map((k, i) => (i ? ` ${p.ops[i - 1]} ` : "") + STAT_LABELS[k]).join("");
-    expect(line).toBe("MP5 > Intellect > Healing = Spell Power = Spirit");
+    expect(line).toBe("MP5 > Intellect > Spell Power = Healing = Spirit");
+  });
+});
+
+describe("crit chance and crit as a stat (spec 14.8)", () => {
+  const line = (st: State) => {
+    const p = priorityLine(weightsOf(st));
+    return p.keys.map((k, i) => (i ? ` ${p.ops[i - 1]} ` : "") + STAT_LABELS[k]).join("");
+  };
+
+  it("intPerCrit is exact at the documented levels and estimated between and below them", () => {
+    for (const [lv, v] of [[25, 23.697], [40, 38.168], [50, 48.077], [60, 59.172]] as const) {
+      expect(intPerCrit(lv)).toEqual({ value: v, estimated: false });
+    }
+    expect(intPerCrit(30).value).toBeCloseTo(28.52, 2);
+    expect(intPerCrit(30).estimated).toBe(true);
+    expect(intPerCrit(24).value).toBeCloseTo(22.749, 3);
+    expect(intPerCrit(24).estimated).toBe(true);
+    expect(intPerCrit(99).value).toBe(59.172);
+  });
+
+  it("the defaults' crit chance is 6.332, from 2.3 base and 115 Intellect", () => {
+    const c = calcCrit(DEFAULTS);
+    expect(c.base).toBe(2.3);
+    expect(c.fromInt).toBeCloseTo(4.032, 3);
+    expect(c.total).toBeCloseTo(6.332, 3);
+    expect(c.estimated).toBe(true);
+    expect(effectiveCrit(DEFAULTS)).toBeCloseTo(6.332, 3);
+  });
+
+  it("level 24 with 40 Intellect is 4.058, and critExtra adds to it", () => {
+    expect(effectiveCrit({ ...DEFAULTS, level: 24, int: 40 })).toBeCloseTo(4.058, 3);
+    expect(effectiveCrit({ ...DEFAULTS, critExtra: 5 })).toBeCloseTo(11.332, 3);
+  });
+
+  it("a typed crit is used only while critAuto is false", () => {
+    expect(effectiveCrit({ ...DEFAULTS, crit: 10 })).toBeCloseTo(6.332, 3);
+    expect(effectiveCrit({ ...DEFAULTS, crit: 10, critAuto: false })).toBe(10);
+  });
+
+  const NEW: Record<PresetId, { E: number; X: number; mp5: number; int: number; spi: number; casts: number; h: number; a: number }> = {
+    trash: { E: 3430.5, X: 3.226, mp5: 2.258, int: 2.06, spi: 0.919, casts: 17.38, h: 452.21, a: 453.4 },
+    boss: { E: 3636.8, X: 4.057, mp5: 2.84, int: 1.953, spi: 0.978, casts: 18.43, h: 448.15, a: 449.18 },
+    raid: { E: 5634.5, X: 6.546, mp5: 4.582, int: 1.324, spi: 1.434, casts: 28.55, h: 452.36, a: 444.79 },
+  };
+  for (const id of Object.keys(NEW) as PresetId[]) {
+    it(`matches at ${PRESETS[id].label}`, () => {
+      const st = at(id, {}, DEFAULTS);
+      const r = compute(st);
+      const e = NEW[id];
+      expect(r.E).toBeCloseTo(e.E, 1);
+      expect(r.X).toBeCloseTo(e.X, 3);
+      expect(r.weights.mp5).toBeCloseTo(e.mp5, 3);
+      expect(r.weights.int).toBeCloseTo(e.int, 3);
+      expect(r.weights.spi).toBeCloseTo(e.spi, 3);
+      expect(r.weights.crit).toBeCloseTo(3.9, 3);
+      expect(r.critHeal).toBeCloseTo(2.979, 3);
+      expect(r.critWS).toBeCloseTo(1.315, 3);
+      expect(r.wsBack).toBeCloseTo(2.672, 3);
+      expect(r.casts).toBeCloseTo(e.casts, 2);
+      expect(bestSet(ITEMS, r.weights, st).total).toBeCloseTo(e.h, 2);
+      const al = { ...st, faction: "Alliance" as const };
+      expect(bestSet(ITEMS, compute(al).weights, al).total).toBeCloseTo(e.a, 2);
+    });
+  }
+
+  it("Dungeon boss best set, pick by pick", () => {
+    const s = at("boss", {}, DEFAULTS);
+    const set = bestSet(ITEMS, weightsOf(s), s);
+    const EXPECTED: [string, number][] = [
+      ["Holy Shroud", 38.87],
+      ["Scorn's Icy Choker", 18.72],
+      ["Death Speaker Mantle", 27.48],
+      ["Darkspear Raider's Cloak", 19.54],
+      ["Death Speaker Robes", 41.48],
+      ["Mindthrust Bracers", 18.28],
+      ["Gloves of Old", 21.5],
+      ["Blightleaf Rope", 26.53],
+      ["Violet Sorcerer's Leggings", 42.28],
+      ["Acidic Walkers", 24.54],
+      ["Philanthropist's Ring", 19.77],
+      ["Sea Giant's Toe Ring", 18.0],
+      ["Roogug's Severed Head", 5.87],
+      ["Worgenbane Talisman", 5.68],
+      ["Tidebringer's Claw", 93.8],
+      ["Forcestone Buckler", 25.82],
+    ];
+    expect(set.rows).toHaveLength(EXPECTED.length);
+    EXPECTED.forEach(([name, sc], i) => {
+      expect(set.rows[i].item?.name).toBe(name);
+      expect(set.rows[i].score).toBeCloseTo(sc, 2);
+    });
+    expect(set.pair).toBeCloseTo(119.62, 2);
+    expect(set.two).toBeCloseTo(85.64, 2);
+    expect(set.twoName).toBe("Wind Spirit Staff");
+    expect(set.pair - set.two).toBeCloseTo(33.98, 2);
+    expect(set.weaponNote).toBe("Main hand and off hand beat the best two-hander by 34.0");
+  });
+
+  it("the three priority lines", () => {
+    expect(line(at("trash", {}, DEFAULTS))).toBe("MP5 > Intellect > Spell Power = Healing > Spirit");
+    expect(line(at("boss", {}, DEFAULTS))).toBe("MP5 > Intellect > Spell Power = Healing = Spirit");
+    expect(line(at("raid", {}, DEFAULTS))).toBe("MP5 > Spirit > Intellect > Spell Power = Healing");
+  });
+
+  it("Tom's example: 10 Intellect and 5 MP5 with 33 armor versus 1% crit", () => {
+    const W = weightsOf(at("boss", {}, DEFAULTS));
+    const mk = (extra: Partial<Item>): Item => ({
+      id: "x", slug: "x", name: "Example", slot: "Neck", req: 0, heal: 0, sp: 0, mp5: 5, int: 10, spi: 0, sta: 0,
+      source: "", faction: "Both", armor: "-", ...extra,
+    });
+    expect(score(mk({}), W)).toBeCloseTo(33.73, 2);
+    // 1% crit is carried by an item named in the crit list
+    expect(score(mk({ name: "Tidebringer's Claw", mp5: 5, int: 10 }), W) - score(mk({}), W)).toBeCloseTo(2 * W.crit, 6);
+    expect(score(mk({}), W) + W.crit).toBeCloseTo(37.63, 2);
+  });
+
+  it("Water Shield off, a typed crit of 10 and critExtra 5", () => {
+    const off = compute(at("boss", { ws: false }, DEFAULTS));
+    expect(off.weights.crit).toBeCloseTo(2.979, 3);
+    expect(off.weights.int).toBeCloseTo(1.879, 3);
+    const typed = compute(at("boss", { critAuto: false, crit: 10 }, DEFAULTS));
+    expect(typed.weights.crit).toBeCloseTo(3.855, 3);
+    expect(typed.weights.int).toBeCloseTo(1.976, 3);
+    expect(typed.wsBack).toBeCloseTo(4.22, 3);
+    const extra = compute(at("boss", { critExtra: 5 }, DEFAULTS));
+    expect(extra.crit).toBeCloseTo(11.332, 3);
+    expect(extra.weights.crit).toBeCloseTo(3.839, 3);
+  });
+
+  it("critStat false values crit at 0 and leaves Intellect alone", () => {
+    const r = compute(at("boss", { critStat: false }, DEFAULTS));
+    expect(r.weights.crit).toBe(0);
+    expect(r.weights.int).toBeCloseTo(r.wf * r.raw.int, 9);
+    expect(compute(at("boss", {}, DEFAULTS)).weights.int).toBeGreaterThan(r.weights.int);
   });
 });

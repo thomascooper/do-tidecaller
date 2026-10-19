@@ -1,10 +1,11 @@
 import { ItemName } from "./ItemName";
 import type { ReactNode } from "react";
 import { ITEMS, PROFESSIONS } from "../data";
-import { bestSet, sourceNote } from "../lib/model";
+import { bestSet, calcCrit, effectivePool, sourceNote } from "../lib/model";
 import type { State, Weights } from "../lib/model";
 import type { Item } from "../lib/types";
 import { fmt } from "../lib/format";
+import { CharacterSheet } from "./CharacterSheet";
 
 interface Props {
   state: State;
@@ -63,6 +64,15 @@ export function BestSet({ state, items, weights, set, children }: Props) {
           Show gear you can't use
         </label>
       </div>
+      <CharacterSheet
+        set={best}
+        level={state.level}
+        faction={state.faction}
+        heal={state.heal}
+        maxMana={effectivePool(state)}
+        crit={calcCrit(state).total}
+        relic={state.icon}
+      />
       <div className="scroll">
         <table id="bestTable">
           <thead>

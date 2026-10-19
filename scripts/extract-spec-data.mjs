@@ -1,4 +1,4 @@
-// Extracts the spells, items and Wowhead JSON blocks from docs/spec.md into src/data/.
+// Extracts the spells, items, Wowhead, item level, item crit and quality JSON blocks from docs/spec.md into src/data/.
 // Re-run after a spec update: node scripts/extract-spec-data.mjs
 import { readFileSync, writeFileSync, mkdirSync } from "node:fs";
 import { dirname, resolve } from "node:path";
@@ -22,15 +22,21 @@ export function extract(spec) {
     spells: jsonBlockUnder(spec, "## 11. Data: spells.json"),
     items: jsonBlockUnder(spec, "## 12. Data: items.json (155 items)"),
     wowhead: jsonBlockUnder(spec, "### 14.5 Wowhead item IDs and icons (links and art only)"),
+    itemLevels: jsonBlockUnder(spec, "### 14.6 Item level and armor (cached from Wowhead's Forever data)"),
+    itemCrit: jsonBlockUnder(spec, "### 14.8 Crit chance, worked out, and crit as a stat"),
+    quality: jsonBlockUnder(spec, "### 14.9 Item quality and the relic"),
   };
 }
 
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
   const spec = readFileSync(resolve(root, "docs/spec.md"), "utf8");
-  const { spells, items, wowhead } = extract(spec);
+  const { spells, items, wowhead, itemLevels, itemCrit, quality } = extract(spec);
   mkdirSync(resolve(root, "src/data"), { recursive: true });
   writeFileSync(resolve(root, "src/data/spells.json"), JSON.stringify(spells, null, 2) + "\n");
   writeFileSync(resolve(root, "src/data/items.json"), JSON.stringify(items, null, 2) + "\n");
   writeFileSync(resolve(root, "src/data/wowhead.json"), JSON.stringify(wowhead, null, 2) + "\n");
-  console.log(`wowhead: ${Object.keys(wowhead).length}, spells: ${spells.length}, items: ${items.length}`);
+  writeFileSync(resolve(root, "src/data/itemLevels.json"), JSON.stringify(itemLevels, null, 2) + "\n");
+  writeFileSync(resolve(root, "src/data/itemCrit.json"), JSON.stringify(itemCrit, null, 2) + "\n");
+  writeFileSync(resolve(root, "src/data/quality.json"), JSON.stringify(quality, null, 2) + "\n");
+  console.log(`item levels: ${Object.keys(itemLevels).length}, wowhead: ${Object.keys(wowhead).length}, spells: ${spells.length}, items: ${items.length}`);
 }

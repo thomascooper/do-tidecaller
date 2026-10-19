@@ -44,7 +44,8 @@ function extract() {
   return {
     // The reference spaces the operators with CSS padding, the app with real spaces.
     verdict: t("#verdict").replace(/\s*([>=])\s*/g, "$1"),
-    regime: t("#regime"), bars: all("#bars .bar"), conv: all("#conv .kv"), ranks: rows("#ranks tbody tr"),
+    regime: t("#regime"), // Spec 14.8 renames the Intellect bar's note (crit now counts); the reference keeps the old one.
+    bars: all("#bars .bar").map((b) => b.replace("pool, Water Shield and crit", "pool and Water Shield")), conv: all("#conv .kv"), ranks: rows("#ranks tbody tr"),
     best: rows("#bestTable tbody tr"), total: t("#bestTotal"), weapon: t("#bestWeapon"), items: rows("#itemTable tbody tr"), calres: t("#calres"),
   };
 }
@@ -72,9 +73,13 @@ try {
     const payload = JSON.stringify({ state, items: items ?? [] });
     // The reference has no manaAuto and always uses its own pool (2223 unless a scenario sets one), so the app
     // is pinned to a typed pool of the same value instead of calculating max mana from level and Intellect.
-    const appPayload = JSON.stringify({ state: { pool: 2223, ...state, manaAuto: false }, items: items ?? [] });
+    // Likewise the reference has no calculated crit and no crit stat (spec 14.8): the app runs on the scenario's
+    // typed crit (5 when it sets none) with crit left out of the weights.
+    const appPayload = JSON.stringify({ state: { pool: 2223, ...state, manaAuto: false, critAuto: false, critStat: false }, items: items ?? [] });
     const a = await snapshot(REF, payload);
     const b = await snapshot(base, appPayload);
+    // Spec 14.7: the app lists Spell Power before Healing; section 13's reference still uses the old tie order.
+    a.verdict = a.verdict.replace("Healing=Spell Power", "Spell Power=Healing");
     const diffs = [];
     for (const k of Object.keys(a)) {
       if (JSON.stringify(a[k]) === JSON.stringify(b[k])) continue;

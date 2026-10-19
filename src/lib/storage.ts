@@ -90,6 +90,10 @@ export function mergeState(raw: unknown): State {
   if (!("manaAuto" in raw) && typeof raw.pool === "number" && Number.isFinite(raw.pool) && raw.pool !== 2223) {
     state.manaAuto = false;
   }
+  // Older saves and links have no critAuto: a typed crit other than the old default 5 is kept as typed.
+  if (!("critAuto" in raw) && typeof raw.crit === "number" && Number.isFinite(raw.crit) && raw.crit !== 5) {
+    state.critAuto = false;
+  }
   return state;
 }
 

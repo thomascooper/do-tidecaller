@@ -3,7 +3,10 @@ import { DEFAULTS } from "./model";
 import { setDiff, siteSet, siteWeights } from "./bis";
 
 /** The spec's original character (section 7): max mana typed in as 2223. */
-const ORIG = { ...DEFAULTS, manaAuto: false, pool: 2223 };
+const ORIG = { ...DEFAULTS, manaAuto: false, pool: 2223, critAuto: false, crit: 5, critStat: false };
+
+/** Section 14.3's defaults before crit became a stat (spec 14.8). */
+const NO_CRIT = { critAuto: false, crit: 5, critStat: false };
 
 describe("site best sets", () => {
   it("Horde at the Dungeon boss matches spec section 7", () => {
@@ -13,9 +16,14 @@ describe("site best sets", () => {
     expect(set.useTwo).toBe(false);
   });
 
-  it("the defaults (level 30, 115 Intellect, 2,110 mana) match spec section 14.3", () => {
-    expect(siteSet().total).toBeCloseTo(428.41, 2);
-    expect(siteSet({ faction: "Alliance" }).total).toBeCloseTo(429.74, 2);
+  it("the defaults without crit (level 30, 115 Intellect, 2,110 mana) match spec section 14.3", () => {
+    expect(siteSet({ over: NO_CRIT }).total).toBeCloseTo(428.41, 2);
+    expect(siteSet({ over: NO_CRIT, faction: "Alliance" }).total).toBeCloseTo(429.74, 2);
+  });
+
+  it("the defaults (crit calculated and valued) match spec section 14.8", () => {
+    expect(siteSet().total).toBeCloseTo(448.15, 2);
+    expect(siteSet({ faction: "Alliance" }).total).toBeCloseTo(449.18, 2);
   });
 
   it("Alliance gets its own off hand and no Horde-only item", () => {

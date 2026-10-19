@@ -94,11 +94,14 @@ describe("slugs", () => {
 describe("extractor", () => {
   it("produces exactly the spec's JSON", () => {
     const spec = readFileSync(resolve(__dirname, "../../docs/spec.md"), "utf8");
-    const { spells, items, wowhead } = extract(spec);
+    const { spells, items, wowhead, itemLevels, itemCrit, quality } = extract(spec);
     const onDisk = (f: string) => JSON.parse(readFileSync(resolve(__dirname, f), "utf8"));
     expect(onDisk("spells.json")).toEqual(spells);
     expect(onDisk("items.json")).toEqual(items);
     expect(onDisk("wowhead.json")).toEqual(wowhead);
+    expect(onDisk("itemLevels.json")).toEqual(itemLevels);
+    expect(onDisk("itemCrit.json")).toEqual(itemCrit);
+    expect(onDisk("quality.json")).toEqual(quality);
     expect(items).toHaveLength(155);
   });
 });
@@ -107,8 +110,8 @@ describe("wowhead links", () => {
   const names = new Set(ITEMS.map((i) => i.name));
   const entries = Object.entries(WOWHEAD);
 
-  it("has 141 entries, each for an item in items.json", () => {
-    expect(entries).toHaveLength(141);
+  it("has 152 entries, each for an item in items.json", () => {
+    expect(entries).toHaveLength(152);
     for (const [name] of entries) expect(names.has(name), name).toBe(true);
   });
 

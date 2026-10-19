@@ -81,23 +81,8 @@ export function RegenPanel({ state, set }: Props) {
       {toggle(
         "ws",
         "Water Shield",
-        "Each heal crit returns 2% of max mana. Enter your heal crit chance; 5% is the default.",
+        "Each heal crit returns 2% of max mana. Uses your crit chance from the Character panel.",
         "Water Shield",
-        labelled(
-          "Crit %",
-          !state.ws,
-          <NumField
-            id="crit"
-            className="pct"
-            ariaLabel="Heal crit chance, percent"
-            min={0}
-            max={100}
-            step={0.5}
-            disabled={!state.ws}
-            value={state.crit}
-            onCommit={(v) => set({ crit: v })}
-          />,
-        ),
       )}
 
       <details id="spiritbox">

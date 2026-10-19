@@ -158,11 +158,11 @@ try {
   });
   await check("stat weights: verdict, bars and readouts at defaults", async () => {
     await page.getByRole("button", { name: "Dungeon boss" }).click();
-    eq((await page.locator("#verdict").innerText()).replace(/\s+/g, " "), "MP5 > Intellect > Healing = Spell Power = Spirit", "verdict");
+    eq((await page.locator("#verdict").innerText()).replace(/\s+/g, " "), "MP5 > Intellect > Spell Power = Healing = Spirit", "verdict");
     eq(await page.locator('.bar[data-stat="mp5"] .v').innerText(), "2.84", "MP5 bar");
     eq(await page.locator(".bar").count(), 5, "bars without Stamina");
     eq(await page.locator("#wnote").innerText(), "1 Healing = 1.00", "note");
-    eq(await page.locator(".kv").count(), 7, "readouts");
+    eq(await page.locator(".kv").count(), 8, "readouts");
     eq(await page.locator(".kv", { hasText: "Mana for the fight" }).locator(".v").innerText(), "3,637 18.4 casts", "mana for the fight");
   });
   await check("stat weights: Raid boss MP5 reads 4.58", async () => {
@@ -224,15 +224,53 @@ try {
     await page.waitForSelector("#pool");
     eq(await page.locator("#pool").inputValue(), "2110", "calculated survives reload");
   });
+  await check("crit chance: working line, Intellect, typed number, Use calculated, gear bonus, reload (spec 14.8)", async () => {
+    await page.getByRole("button", { name: "Dungeon boss" }).click();
+    const work = () => page.locator("#critWork").innerText().then((t) => t.replace(/\s+/g, " "));
+    const readout = () => page.locator("#conv").innerText().then((t) => t.replace(/\s+/g, " "));
+    eq(await page.locator("#crit").inputValue(), "6.3", "calculated crit");
+    eq(await work(), "Base 2.3% + 4.03% from 115 Intellect (28.5 per 1%) CHECK (estimated) + 0% from gear and talents = 6.33%.", "working at defaults");
+    eq(await page.locator("#critWork .tag").count(), 1, "level 30 is estimated");
+    eq((await readout()).includes("1% crit 3.90 points of Healing (heals 2.98, Water Shield 0.92)"), true, "crit readout");
+    const intW = () => page.locator('.bar[data-stat="int"] .v').innerText();
+    const intBefore = await intW();
+    await page.locator("#int").fill("40");
+    await page.locator("#int").blur();
+    eq(await page.locator("#crit").inputValue(), "3.7", "crit at Intellect 40");
+    eq((await intW()) !== intBefore, true, "Intellect weight moved");
+    await page.locator("#int").fill("115");
+    await page.locator("#int").blur();
+    await page.locator("#crit").fill("10");
+    await page.locator("#crit").blur();
+    eq(await work(), "Using your number. Use calculated (6.3%)", "override working");
+    eq((await readout()).includes("1% crit 3.85 points of Healing"), true, "crit readout at 10%");
+    await page.reload();
+    await page.waitForSelector("#crit");
+    eq(await page.locator("#crit").inputValue(), "10", "override survives reload");
+    await page.getByRole("button", { name: /Use calculated/ }).click();
+    eq(await page.locator("#crit").inputValue(), "6.3", "back to calculated");
+    await page.locator("#critExtra").fill("2");
+    await page.locator("#critExtra").blur();
+    eq(await page.locator("#crit").inputValue(), "8.3", "gear and talents add");
+    await page.reload();
+    await page.waitForSelector("#crit");
+    eq(await page.locator("#crit").inputValue(), "8.3", "calculated choice survives reload");
+    await page.locator("#critExtra").fill("0");
+    await page.locator("#critExtra").blur();
+    eq(await page.locator("#crit").getAttribute("id"), "crit", "box present");
+    eq(await page.locator("#crit").evaluate((el) => !!el.labels?.length), true, "crit has a label");
+  });
   await check("stat weights: Stamina bar appears only with a Stamina weight", async () => {
     await page.locator("#stw").fill("5");
     eq(await page.locator('.bar[data-stat="sta"]').count(), 1, "stamina bar");
     eq((await page.locator("#verdict").innerText()).startsWith("Stamina"), true, "Stamina first");
     await page.locator("#stw").fill("0");
   });
-  await check("stat weights: with the run-out slider at 0 every mana stat is 0.00", async () => {
+  await check("stat weights: with the run-out slider at 0 the mana stats are 0.00 and Intellect keeps only its crit (0.10)", async () => {
     await page.locator("#w").fill("0");
-    for (const k of ["mp5", "int", "spi"]) eq(await page.locator(`.bar[data-stat="${k}"] .v`).innerText(), "0.00", k);
+    for (const k of ["mp5", "spi"]) eq(await page.locator(`.bar[data-stat="${k}"] .v`).innerText(), "0.00", k);
+    // spec 14.8: the healing part of crit does not depend on mana, so Intellect is worth 2.979 / 28.52 for its crit
+    eq(await page.locator('.bar[data-stat="int"] .v').innerText(), "0.10", "int");
     eq(await page.locator("#regime").innerText(), "You set mana as never running out, so only Healing and Spell Power count.", "regime");
     await page.locator("#w").fill("100");
   });
@@ -250,18 +288,19 @@ try {
     await page.locator("#talent").setChecked(true, { force: true });
     eq(await page.locator("#pct").isDisabled(), false, "pct enabled again");
     await page.locator("#ws").setChecked(false, { force: true });
-    eq(await page.locator("#crit").isDisabled(), true, "crit disabled");
+    eq(await page.locator("#crit").isDisabled(), false, "crit stays enabled: it also buys healing");
     await page.locator("#ws").setChecked(true, { force: true });
   });
-  await check("regen: the boxes beside Water Shield and the talent are labelled", async () => {
-    for (const [id, text] of [["#crit", "Crit %"], ["#pct", "Kept %"]]) {
+  await check("regen: the box beside the talent is labelled and Water Shield has no number box", async () => {
+    eq(await page.locator("#ws").count(), 1, "Water Shield switch");
+    eq(await page.locator("#crit").evaluate((el) => !!el.closest("#h-reg, section[aria-labelledby=h-reg]")), false, "crit box is not in the regen panel");
+    for (const [id, text] of [["#pct", "Kept %"]]) {
       const box = await page.locator(id).boundingBox();
       const lab = await page.getByText(text, { exact: true }).first().boundingBox();
       if (!box || !lab) throw new Error(`${text} or ${id} not visible`);
       const dist = Math.hypot(box.x - lab.x, box.y - lab.y);
       if (dist > 60) throw new Error(`${text} is ${Math.round(dist)} px from ${id}`);
     }
-    eq(await page.locator("#crit").getAttribute("aria-label"), "Heal crit chance, percent", "crit name");
     eq(await page.locator("#pct").getAttribute("aria-label"), "Share kept while casting, percent", "pct name");
   });
   await check("calibration: levels-off fit, restore defaults, casting share", async () => {
@@ -327,12 +366,12 @@ try {
     await page.evaluate(() => window.localStorage.clear());
     await page.reload();
     await page.waitForSelector("#bestTotal");
-    eq(await page.locator("#bestTotal").textContent(), "428.4", "total");
+    eq(await page.locator("#bestTotal").textContent(), "448.1", "total");
     const rows = await picks();
     eq(rows.length, 16, "rows");
     eq(rows.includes("Main hand: Tidebringer's Claw"), true, "main hand");
     eq(rows.includes("Off hand: Forcestone Buckler"), true, "off hand");
-    eq(await page.locator("#bestWeapon").textContent(), "Main hand and off hand beat the best two-hander by 26.2", "weapon note");
+    eq(await page.locator("#bestWeapon").textContent(), "Main hand and off hand beat the best two-hander by 34.0", "weapon note");
     eq(await page.locator("#maxlvl").count(), 0, "no separate gear level input");
   });
   await check("best set: hovering an item name shows the item popup", async () => {
@@ -348,6 +387,33 @@ try {
     await page.waitForFunction((el) => el.complete && el.naturalWidth > 0, await img.elementHandle());
     eq(/\/icons\/[a-z0-9_]+\.jpg$/.test(await img.getAttribute("src")), true, "icon src");
     eq(await img.getAttribute("width"), "20", "icon width");
+  });
+  await check("best set: the character sheet shows 19 slots with Head, Hands, weapons, relic and the set score", async () => {
+    const sheet = page.locator("#sheet");
+    const slots = await sheet.locator("li.slot").evaluateAll((lis) => lis.map((li) => li.getAttribute("data-slot")));
+    eq(slots.join(","), "Head,Neck,Shoulder,Back,Chest,Shirt,Tabard,Wrist,Hands,Waist,Legs,Feet,Finger,Finger,Trinket,Trinket,Main hand,Off hand,Relic", "slot order");
+    const text = async (slot, n = 0) => (await sheet.locator(`li.slot[data-slot="${slot}"]`).nth(n).innerText()).replace(/\s+/g, " ").trim();
+    eq(await text("Head"), "Holy Shroud Head · 38.9", "head");
+    eq(await sheet.locator('li.slot[data-slot="Head"] img').getAttribute("src").then((x) => /\/icons\/[a-z0-9_]+\.jpg$/.test(x)), true, "head icon");
+    eq((await sheet.locator("ul.right li.slot").first().getAttribute("data-slot")), "Hands", "right column starts at Hands");
+    eq(await text("Main hand"), "Tidebringer's Claw Main hand · 93.8", "main hand");
+    eq((await text("Off hand")).startsWith("Forcestone Buckler"), true, "off hand");
+    eq(await text("Shirt"), "Shirt Empty", "shirt");
+    eq(await text("Relic"), "Relic Relic: turn on Polished Driftwood Icon", "relic off");
+    eq((await sheet.locator(".who").innerText()).replace(/\s+/g, " ").includes("Level 30 Shaman, Horde"), true, "who");
+    eq((await sheet.locator(".who .set-score").innerText()).trim(), "448.1", "set score");
+    await page.locator("#icon").check();
+    eq(await text("Relic"), "Polished Driftwood Icon Relic", "relic on");
+    await page.locator("#icon").uncheck();
+    await sheet.locator('li.slot[data-slot="Head"] a.nm').hover();
+    await page.locator('[role="tooltip"]').waitFor({ state: "visible" });
+    await page.mouse.move(5, 5);
+    await page.locator('[role="tooltip"]').waitFor({ state: "detached" });
+    const vp = page.viewportSize();
+    await page.setViewportSize({ width: 400, height: 800 });
+    const wide = await page.evaluate(() => document.documentElement.scrollWidth > document.documentElement.clientWidth);
+    await page.setViewportSize(vp);
+    eq(wide, false, "no sideways scroll at 400 px");
   });
   await check("best set: Alliance replaces the Horde-only off hand, Tailoring changes picks", async () => {
     await page.locator("#faction").selectOption("Alliance");
@@ -469,21 +535,38 @@ try {
     eq((await sp.locator("main p.lead").innerText()).replace(/\s+/g, " ").includes("level 30 with 115 Intellect, 2,110 mana"), true, "bis intro");
     await sp.goto(BASE + "/about");
     const about = (await sp.locator("main").innerText()).replace(/\s+/g, " ");
-    eq(about.includes("A naked level 24 Shaman in the beta matches them exactly (796 mana at 40 Intellect)"), true, "about unconfirmed");
+    eq(about.includes("Naked level 24 and 25 Shamans in the beta match them (796 mana at 40 Intellect at level 24)"), true, "about unconfirmed");
     eq(about.includes("Wowpedia and Vanilla WoW Archive"), true, "about sources");
     await sp.goto(BASE + "/guides/stat-weights");
     eq((await sp.locator("main").innerText()).includes("base mana for your level plus the mana from your Intellect"), true, "guide paragraph");
+    eq((await sp.locator("main").innerText()).includes("What 1% crit is worth"), true, "guide crit section");
+    eq(about.includes("base_stats.go") && about.includes("Crit chance: the 2.3% base"), true, "about crit sources");
   });
-  await check("/bis shows Holy Shroud 38.9 and a Horde total of 428.4 and has no module script", async () => {
+  await check("/bis shows Holy Shroud 38.9 and a Horde total of 448.1 and has no module script", async () => {
     const res = await sp.goto(BASE + "/bis");
     eq(res.status(), 200, "status");
     eq(await sp.locator("h1").innerText(), "Resto Shaman best in slot, level 30", "h1");
     eq(await sp.locator('script[type="module"]:not([src*="/assets/tips-"])').count(), 0, "module scripts");
     const head = sp.locator("#hordeSet tbody tr").first();
     eq((await head.innerText()).replace(/\s+/g, " ").startsWith("Head Holy Shroud 38.9"), true, "head row");
-    eq(await sp.locator("#hordeSet tfoot .score").innerText(), "428.4", "Horde total");
+    eq(await sp.locator("#hordeSet tfoot .score").innerText(), "448.1", "Horde total");
     eq(await sp.locator("main h2", { hasText: "Does it change for other fights?" }).count(), 1, "fights section");
     eq(await sp.locator("main h2", { hasText: "Crafter upgrades" }).count(), 1, "crafter section");
+  });
+  await check("/bis shows the character sheet: Head Holy Shroud, Main hand Tidebringer's Claw, the Horde total, no sideways scroll", async () => {
+    await sp.goto(BASE + "/bis");
+    const sheet = sp.locator("#sheet");
+    const text = async (slot) => (await sheet.locator(`li.slot[data-slot="${slot}"]`).first().innerText()).replace(/\s+/g, " ").trim();
+    eq((await text("Head")).startsWith("Holy Shroud"), true, "head");
+    eq((await text("Main hand")).startsWith("Tidebringer's Claw"), true, "main hand");
+    eq(await text("Relic"), "Relic Relic", "relic slot with no item");
+    eq((await sheet.locator(".who .set-score").innerText()).trim(), await sp.locator("#hordeSet tfoot .score").innerText(), "set score is the Horde total");
+    eq(await sp.locator("h1").count(), 1, "one h1");
+    const vp = sp.viewportSize();
+    await sp.setViewportSize({ width: 400, height: 800 });
+    const wide = await sp.evaluate(() => document.documentElement.scrollWidth > document.documentElement.clientWidth);
+    await sp.setViewportSize(vp);
+    eq(wide, false, "no sideways scroll at 400 px");
   });
   await check("every slot page returns 200; /bis/head lists Holy Shroud first at 38.9; /bis/main-hand names Tidebringer's Claw", async () => {
     for (const slug of "head neck shoulder back chest wrist hands waist legs feet finger trinket main-hand off-hand two-hand".split(" ")) {
@@ -509,8 +592,14 @@ try {
     const text = await sp.locator("main").innerText();
     eq(text.includes("38.9"), true, "38.9");
     eq(text.includes("1 of 11 Head items"), true, "rank");
+    const stat = async (name) => (await sp.locator("#itemStats tr", { has: sp.locator(`td:text-is("${name}")`) }).locator("td").nth(1).allInnerTexts())[0];
+    eq(await stat("Item level"), "32", "Holy Shroud item level row");
+    eq(await stat("Armor"), "40", "Holy Shroud armor row");
     eq(await sp.locator('main a[href="https://www.wowhead.com/forever/item=2721"]').innerText(), "View Holy Shroud on Wowhead", "wowhead link");
     eq(await sp.locator('main a[href="https://www.wowhead.com/forever/item=2721"]').getAttribute("rel"), "noopener noreferrer", "wowhead rel");
+    await sp.goto(BASE + "/items/reedknot-ring");
+    eq(await sp.locator('#itemStats td.nm:text-is("Item level")').count(), 1, "Reedknot Ring item level row");
+    eq(await sp.locator('#itemStats td.nm:text-is("Armor")').count(), 0, "Reedknot Ring has no armor row");
     await sp.goto(BASE + "/items/red-wool-cloak");
     eq(await sp.locator('main a[href*="wowhead.com"]').count(), 0, "no wowhead link without an entry");
     await sp.goto(BASE + "/items/holy-shroud");
@@ -522,10 +611,12 @@ try {
   await check("/items shows the stat columns: Head header row, Holy Shroud row, Tidebringer's Claw equip, no sideways scroll at 400 px", async () => {
     await sp.goto(BASE + "/items");
     const head = (await sp.locator("main table").first().locator("thead th").allInnerTexts()).map((t) => t.trim());
-    eq(head.join("|"), "Item|Lvl|Int|Spr|SP|Heal|MP5|Equip|Where|Score", "header row");
+    eq(head.join("|"), "Item|Lvl|iLvl|AC|Int|Spr|SP|Heal|MP5|Equip|Where|Score", "header row");
     const cells = (await sp.locator("main tr", { has: sp.locator('a[href="/items/holy-shroud"]') }).locator("td").allInnerTexts()).map((t) => t.trim());
-    eq([cells[1], cells[2], cells[3], cells[4], cells[5], cells[6], cells[8], cells[9]].join("|"), "27||6||33||World drop|38.9", "Holy Shroud row");
-    const eqp = await sp.locator("main tr", { has: sp.locator('a[href="/items/tidebringers-claw"]') }).locator("td").nth(7).innerText();
+    eq([cells[1], cells[2], cells[3], cells[4], cells[5], cells[6], cells[7], cells[8], cells[10], cells[11]].join("|"), "27|32|40||6||33||World drop|38.9", "Holy Shroud row");
+    const neck = (await sp.locator("main tr", { has: sp.locator('a[href="/items/kaleidoscope-chain"]') }).locator("td").allInnerTexts()).map((t) => t.trim());
+    eq(neck[2] + "|" + neck[3], "35|", "Kaleidoscope Chain (neck) iLvl and blank AC");
+    const eqp = await sp.locator("main tr", { has: sp.locator('a[href="/items/tidebringers-claw"]') }).locator("td").nth(9).innerText();
     eq(eqp.trim(), "+2% crit on Healing Wave and Lesser Healing Wave", "Tidebringer's Claw equip");
     const vp = sp.viewportSize();
     await sp.setViewportSize({ width: 400, height: 800 });
@@ -553,6 +644,19 @@ try {
     await sp.setViewportSize(vp);
     eq(wide, false, "page scrolls sideways at 400 px");
   });
+  await check("rarity colours: the Holy Shroud popup name is the rare text colour, icon borders on /items are uncommon green and neutral grey", async () => {
+    await sp.goto(BASE + "/items");
+    const tip = sp.locator('[role="tooltip"]');
+    await sp.locator('main td.nm a[href="/items/holy-shroud"]').hover();
+    await tip.waitFor({ state: "visible" });
+    eq(await tip.locator(".tip-name").evaluate((e) => getComputedStyle(e).color), "rgb(61, 156, 255)", "rare popup name colour");
+    eq(await tip.locator("img.icon").evaluate((e) => getComputedStyle(e).borderTopColor), "rgb(0, 112, 221)", "rare popup icon border");
+    await sp.mouse.move(5, 5);
+    await tip.waitFor({ state: "detached" });
+    const border = (slug) => sp.locator(`main td.nm:has(a[href="/items/${slug}"]) img.icon`).evaluate((e) => getComputedStyle(e).borderTopColor);
+    eq(await border("sea-giants-toe-ring"), "rgb(30, 255, 0)", "uncommon icon border");
+    eq(await border("red-wool-cloak"), "rgb(125, 138, 136)", "no-quality icon border");
+  });
   await check("item popups on /items: hover shows and hides, keyboard focus shows and Escape hides, a link at the right edge stays inside a 400 px viewport", async () => {
     await sp.goto(BASE + "/items");
     const link = sp.locator('main td.nm a[href="/items/holy-shroud"]');
@@ -560,7 +664,7 @@ try {
     await link.hover();
     await tip.waitFor({ state: "visible" });
     const text = (await tip.innerText()).replace(/\s+/g, " ");
-    for (const want of ["Holy Shroud", "+33 Healing", "+6 Spirit", "Requires level 27", "World drop / auction house"])
+    for (const want of ["Holy Shroud", "Item Level 32", "40 Armor", "+33 Healing", "+6 Spirit", "Requires level 27", "World drop / auction house"])
       eq(text.includes(want), true, `popup has ${want}`);
     const tipIcon = tip.locator("img.icon");
     eq((await tipIcon.getAttribute("src")).endsWith("/icons/inv_helmet_16.jpg") && (await tipIcon.getAttribute("width")) === "40", true, "popup icon");

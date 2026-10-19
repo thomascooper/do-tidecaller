@@ -1,0 +1,98 @@
+# Ralph Progress Log
+Started: run 005 (crit stat, rarity, character sheet), 19 Oct 2026
+---
+
+## Codebase Patterns
+(Carried over from runs 001 and 002; their full logs are in tasks/ralph-runs/.)
+- All math is pure functions in `src/lib/model.ts` taking `state` first; code reads `effectivePool(state)`, never `state.pool`.
+- New State keys need a DEFAULTS entry: `mergeState` (storage and share) filters by DEFAULTS keys and type.
+- Every page is in the route table `src/routes.tsx`, which feeds the prerender (`scripts/prerender.mjs`), the sitemap and the SEO tests (`test/seo.test.ts`).
+- The header and footer are rendered by `SiteHeader.tsx` / `SiteFooter.tsx` into the prerender template around `#root`; `Layout.tsx` is the same tree for dev.
+- Head tags (icons, theme-color, manifest) are written by `src/seo/head.ts`.
+- `scripts/og.mjs` is run by hand (not by the build) with playwright-core and writes the social cards and PNG icons into `public/`; commit what it writes.
+- `src/data/items.json` and `spells.json` are extracted verbatim from `docs/spec.md` by `scripts/extract-spec-data.mjs`; a test checks they equal the spec. Never hand-edit them.
+- Item names on the calculator are rendered by `src/calculator/ItemName.tsx` (a link to `/items/<slug>`); content pages use `itemPath(item)`.
+- Smoke checks go beside the checks for the same page in `test/smoke.mjs`. Normalize whitespace in text checks: JSX line breaks collapse in rendered text.
+- Smoke can read `src/data/items.json` via readFileSync for item facts.
+- `fmt(x, 0)` already adds thousands separators.
+- (Run 003) The item popup is `src/tips/tips.ts`, its own Vite entry (`vite.config.ts`), added to every page by `scripts/prerender.mjs`, which also fails the build over 12 KB gzipped. It imports only `lib/itemIcon.ts`-style small modules, never `data/index.ts`.
+- (Run 003) Wowhead data: spec 14.5 is extracted to `src/data/wowhead.json` by `scripts/extract-spec-data.mjs` (types in `scripts/extract-spec-data.d.mts`); `itemIconSrc(item)` lives in `src/lib/itemIcon.ts`. `scripts/wowhead-icons.mjs` needs network access Ralph iterations do not have: never run it in an iteration.
+- (Run 003) `.tag` is the Horde/Alliance/Check badge class; the header block is `.tagline`.
+- (Run 003) `/items` tables: `table.items`, Item cell `td.nm` (a smoke check counts 155 of them), text columns `td.src` with `.eq` and `.wh`, sticky first column with an opaque `var(--bg)`.
+- (Run 003) Smoke "no module script" checks exclude the popup: `script[type="module"]:not([src*="/assets/tips-"])`.
+- (Run 004) `src/lib/itemIcon.ts` holds the small per-item lookups the popup script can import (`itemIconSrc`, `itemLevel`, `itemArmor`); new per-item helpers go there, never in `data/index.ts`.
+- (Run 004) The reference comparison normalises the reference's priority line (spec 14.7) in `test/reference-diff.mjs`; app-side state overrides for scenarios live there too.
+- (Run 004) A story added to the PRD must also be in prd.json: the delivering session regenerates prd.json from prd.md.
+---
+
+## 19 Oct 2026 - US-001
+- Crit chance and crit as a stat (spec 14.8): `State` gains `critAuto`, `critExtra`, `critStat`; `model.ts` exports `INT_PER_CRIT`, `intPerCrit`, `calcCrit`, `effectiveCrit`, `CRIT_MULT`; `compute()` uses the effective crit for Water Shield and returns `crit`, `critHeal`, `critWS`, `weights.crit`; `weights.int` includes the crit term. `Weights` is now `Record<StatKey, number> & { crit }` so crit stays out of the priority line.
+- Item crit: extractor writes `src/data/itemCrit.json` (14.8's block), `ITEM_CRIT` in `data/index.ts`, `score()` adds `crit * weights.crit` (never for user items).
+- `storage.ts` migration (typed crit other than 5 without `critAuto` stays typed); `share.ts` drops a stale `crit` while `critAuto` (like `pool`). The Water Shield box still exists: it shows the effective crit and typing sets `crit` and `critAuto: false` (US-002 moves it).
+- `test/reference-diff.mjs` adds `critAuto: false, critStat: false` to the app state.
+- Smoke re-pinned: total 448.1, weapon margin 34.0, and the run-out slider at 0 leaves Intellect at 0.10 (the healing part of crit does not depend on mana, 14.8).
+- Checks: typecheck, vitest 2681, build, smoke 57/57, reference 26/26. Broke CRIT_MULT (1.6) and the migration (`!== 6`): 8 new tests failed, restored.
+- **Learnings for future iterations:**
+  - Section 7 and 14.3 tests use `ORIG`/`NO_CRIT` (critAuto false, crit 5, critStat false) in `model.test.ts` and `bis.test.ts`; new 14.8 tests use plain `DEFAULTS`.
+  - 14.8 prints values truncated to 3 places (28.520 for 28.5207): assert level 30 with 2 places.
+  - With the run-out slider at 0, Intellect is not 0 any more: crit's healing part is not scaled by the mana weight.
+---
+
+## 19 Oct 2026 - US-002
+- Character panel: `#crit` (Crit chance, %, effective value, typing sets `crit` and `critAuto: false`) and `#critExtra` (Crit from gear and talents, %), with the working line `#critWork` (Check tag and "(estimated)" when `intPerCrit` is estimated; "Using your number." with a Use calculated button otherwise) and a hint naming Tidebringer's Claw. The Water Shield row lost its box and reads the new description; the talent row keeps "Kept %".
+- Stat weights: Intellect note "pool, Water Shield and crit" (Water Shield on); a "1% crit" readout (weights.crit, with heals and Water Shield parts) shown only while `critStat` is on, so the reference comparison (critStat false) sees the same 7 readouts as the reference.
+- Smoke: new crit check beside the max mana checks; readouts count 7 to 8; the old Water Shield "Crit %" label and disabled checks replaced. `test/reference-diff.mjs` maps the new Intellect note back to the reference's wording.
+- Checks: typecheck, vitest 2681, build, smoke 58/58, reference 26/26. New smoke check was seen failing on first run (spacing and CHECK casing), not broken on purpose.
+- **Learnings for future iterations:**
+  - `.tag` text is uppercased by CSS, so `innerText` reads "CHECK".
+  - Anything new on the calculator page that the reference lacks must be hidden under `critStat` false or normalised in `extract()` in `test/reference-diff.mjs`.
+---
+
+## 19 Oct 2026 - US-003
+- Unconfirmed paragraph (Footer.tsx) and About list add base crit 2.3%, the Intellect-per-crit table (levels between rows estimated) and the 150% crit heal; About sources name the wowsims base_stats.go. The stat weights guide gains "What 1% crit is worth" (numbers computed from the model at Dungeon boss, so they follow 14.8). Every "naked level 24 ... matches" sentence now says levels 24 and 25.
+- Files: src/calculator/Footer.tsx, Calculator.tsx, src/lib/model.ts (comment), src/pages/About.tsx, Guides.tsx, test/smoke.mjs.
+- Checks: typecheck, vitest 2681, build, smoke 58/58. Broke the guide heading ("is worth" to "costs"): the smoke check failed, restored.
+- **Learnings for future iterations:**
+  - Guide numbers are computed from `compute()` in the page component, so they cannot drift from the model.
+  - The smoke check for the max mana wording lives in the "/bis, /about and the stat weights guide say where max mana comes from" check.
+---
+
+## 19 Oct 2026 - US-004
+- Rarity (spec 14.9): extractor writes `src/data/quality.json` (items and relic); `itemQuality(item)` and `RELIC` live in `src/lib/itemIcon.ts` (the popup script imports them). CSS tokens `--q0..5`, `--q-none` (borders) and `--qt0..5`, `--qt-none` (text; rare text is the lighter #3d9cff) in `:root`, theme independent. `ItemIcon` and the popup icon carry `data-q`; `img.icon[data-q]` sets the 1 px border colour; `.tip-name[data-q]` sets the popup name colour. Table item links keep the accent colour.
+- Files: scripts/extract-spec-data.mjs/.d.mts, src/data/quality.json, data.test.ts, itemIcon.ts/.test.ts, ItemIcon.tsx, tips/tips.ts, styles/app.css, test/smoke.mjs.
+- Checks: typecheck, vitest 2684, build, smoke 59/59, reference 26/26. Broke `--q2` (one digit off): the new smoke check failed, restored.
+- **Learnings for future iterations:**
+  - US-005's sheet should use `data-q` / the `--q*` and `--qt*` tokens, and `RELIC.quality` for the relic slot.
+  - Popup size stays small: tips.ts only imports `itemIcon.ts`, which now also pulls the 152-entry quality.json.
+---
+
+## 19 Oct 2026 - US-005
+- `CharacterSheet` (src/calculator/CharacterSheet.tsx) renders a `BestSet` as 19 slots (left, right, bottom in the WoW order), each with a quality-bordered icon, the name as an item link (popup works), slot name and score. Shirt and Tabard are empty; a two-hander sits in Main hand with Off hand reading "Two-hand"; the relic slot shows Polished Driftwood Icon only while `state.icon` is on. Centre art is `public/art/totem-figure.svg`; the level, faction and healing, max mana and crit line are live. Placed above the table in `BestSet.tsx`. CSS (`.doll`) is at the end of app.css, always dark, with the 760 px phone layout.
+- Props are generic (`heal`, `maxMana`, `crit` optional) so US-006 can reuse it on /bis.
+- Checks: typecheck, vitest 2684, build, smoke 60/60, reference 26/26. The new smoke check failed once on a missing `vp` variable, then passed.
+- **Learnings for future iterations:**
+  - There are two `.set-score` elements (centre and phone); the phone one is hidden above 760 px, so read it through `.who`.
+  - Items with no quality use the class `qn` (neutral text and grey border); `q1` is real common (white).
+---
+
+## 19 Oct 2026 - US-006
+- `/bis` renders `CharacterSheet` for the Horde set above its table (prerendered, no app JavaScript), default character at the Dungeon boss settings. New optional `relicNote` prop: /bis passes "Relic" for the empty relic slot; the calculator keeps "Relic: turn on Polished Driftwood Icon".
+- Files: src/pages/Bis.tsx, src/calculator/CharacterSheet.tsx, test/smoke.mjs.
+- Checks: typecheck, vitest 2684, build, smoke 61/61. Reference not rerun (calculator and model unchanged). Broke the relic note on /bis ("Relic!"): the new smoke check failed, restored.
+- **Learnings for future iterations:**
+  - The sheet's set score on /bis is read through `.who .set-score`, as on the calculator.
+---
+
+## 19 Oct 2026 - Delivering session
+- Before the run: spec 14.8 (crit) and 14.9 (quality, relic) written, with every number computed by an
+  independent Python port of the model that also reproduces sections 7 and 14.3; Tom's level 25
+  level-up recorded in 14.4 (base mana at 25 confirmed); `scripts/wowhead-icons.mjs --quality`.
+- Verified on the final commit: typecheck, 2,684 unit tests, 61 smoke checks, reference 26 of 26.
+- Cross-check: the app's compute() and bestSet() against the independent port on 300 random states
+  (levels 10 to 60, typed and calculated crit and mana, Water Shield on and off, both factions, line
+  and curve Spirit): MP5, Intellect, Spirit and Crit weights, crit chance and the best set total all
+  agree within 0.01%. The app stores Intellect per 1% crit as 14.8's rounded column (23.697 for
+  1/0.0422), which moves crit by about 0.0001%.
+- Visual review: Character panel crit field and working line, the crit readout, the character sheet
+  on / (light, 1440) and at 400 px (dark), its popup, and /bis (dark). Nothing needed fixing.
+---
