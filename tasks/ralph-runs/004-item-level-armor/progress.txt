@@ -55,3 +55,16 @@ Started: run 004 (item level and armor), 19 Oct 2026
 - **Learnings for future iterations:**
   - Ties rely on the stable sort of the base order; Healing and Spell Power always weigh the same, so the base order alone decides which comes first.
 ---
+
+## 19 Oct 2026 - Delivering session
+- Before the run: spec 14.5 gained 11 Wowhead IDs (found by reading Wowhead's Forever tooltip data
+  for IDs near other new Forever items, each matching section 12 exactly), 14.6 holds item level and
+  armor for all 152 entries, 14.7 records Tom's ruling on Spell Power before Healing.
+  `scripts/wowhead-icons.mjs` gained `--levels` and checks 14.6 in `--check`.
+- US-004 was missing from prd.json on the first launch (it was added to the PRD after the JSON was
+  generated); added and run as a second launch.
+- Verified on the final commit: typecheck, 2,666 unit tests, 57 smoke checks, reference 26 of 26.
+  Visual review: /items with iLvl and AC and the popup (Item Level 32, 40 Armor), the calculator's
+  priority line "MP5 > Intellect > Spell Power = Healing = Spirit", the item page in dark theme.
+  Nothing needed fixing.
+---
