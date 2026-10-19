@@ -553,6 +553,21 @@ try {
     eq(await sp.locator("main h2", { hasText: "Does it change for other fights?" }).count(), 1, "fights section");
     eq(await sp.locator("main h2", { hasText: "Crafter upgrades" }).count(), 1, "crafter section");
   });
+  await check("/bis shows the character sheet: Head Holy Shroud, Main hand Tidebringer's Claw, the Horde total, no sideways scroll", async () => {
+    await sp.goto(BASE + "/bis");
+    const sheet = sp.locator("#sheet");
+    const text = async (slot) => (await sheet.locator(`li.slot[data-slot="${slot}"]`).first().innerText()).replace(/\s+/g, " ").trim();
+    eq((await text("Head")).startsWith("Holy Shroud"), true, "head");
+    eq((await text("Main hand")).startsWith("Tidebringer's Claw"), true, "main hand");
+    eq(await text("Relic"), "Relic Relic", "relic slot with no item");
+    eq((await sheet.locator(".who .set-score").innerText()).trim(), await sp.locator("#hordeSet tfoot .score").innerText(), "set score is the Horde total");
+    eq(await sp.locator("h1").count(), 1, "one h1");
+    const vp = sp.viewportSize();
+    await sp.setViewportSize({ width: 400, height: 800 });
+    const wide = await sp.evaluate(() => document.documentElement.scrollWidth > document.documentElement.clientWidth);
+    await sp.setViewportSize(vp);
+    eq(wide, false, "no sideways scroll at 400 px");
+  });
   await check("every slot page returns 200; /bis/head lists Holy Shroud first at 38.9; /bis/main-hand names Tidebringer's Claw", async () => {
     for (const slug of "head neck shoulder back chest wrist hands waist legs feet finger trinket main-hand off-hand two-hand".split(" ")) {
       const res = await sp.goto(BASE + "/bis/" + slug);

@@ -74,3 +74,11 @@ Started: run 005 (crit stat, rarity, character sheet), 19 Oct 2026
   - There are two `.set-score` elements (centre and phone); the phone one is hidden above 760 px, so read it through `.who`.
   - Items with no quality use the class `qn` (neutral text and grey border); `q1` is real common (white).
 ---
+
+## 19 Oct 2026 - US-006
+- `/bis` renders `CharacterSheet` for the Horde set above its table (prerendered, no app JavaScript), default character at the Dungeon boss settings. New optional `relicNote` prop: /bis passes "Relic" for the empty relic slot; the calculator keeps "Relic: turn on Polished Driftwood Icon".
+- Files: src/pages/Bis.tsx, src/calculator/CharacterSheet.tsx, test/smoke.mjs.
+- Checks: typecheck, vitest 2684, build, smoke 61/61. Reference not rerun (calculator and model unchanged). Broke the relic note on /bis ("Relic!"): the new smoke check failed, restored.
+- **Learnings for future iterations:**
+  - The sheet's set score on /bis is read through `.who .set-score`, as on the calculator.
+---

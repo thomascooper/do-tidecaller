@@ -1,7 +1,8 @@
 import { Breadcrumbs } from "../components/Breadcrumbs";
+import { CharacterSheet } from "../calculator/CharacterSheet";
 import { ItemName } from "../calculator/ItemName";
 import { fmt } from "../lib/format";
-import { DEFAULTS, effectivePool, PRESETS, sourceNote } from "../lib/model";
+import { calcCrit, DEFAULTS, effectivePool, PRESETS, sourceNote } from "../lib/model";
 import type { BestSet } from "../lib/model";
 import { gainText, PROFESSION_LIST, setDiff, siteSet, siteWeights } from "../lib/bis";
 import { SLOTS } from "../data";
@@ -81,6 +82,16 @@ export function Bis() {
       </p>
 
       <h2>Horde best set</h2>
+      <CharacterSheet
+        set={horde}
+        level={DEFAULTS.level}
+        faction="Horde"
+        heal={DEFAULTS.heal}
+        maxMana={effectivePool(DEFAULTS)}
+        crit={calcCrit(DEFAULTS).total}
+        relic={DEFAULTS.icon}
+        relicNote="Relic"
+      />
       <SetTable id="hordeSet" set={horde} />
 
       <h2>Alliance best set</h2>

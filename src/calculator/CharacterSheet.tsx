@@ -20,6 +20,8 @@ interface Props {
   crit?: number;
   /** Whether the Polished Driftwood Icon relic is on. */
   relic: boolean;
+  /** What the empty relic slot says; the calculator tells the visitor how to turn the Icon on. */
+  relicNote?: string;
 }
 
 interface Cell {
@@ -30,7 +32,7 @@ interface Cell {
   relic?: boolean;
 }
 
-function cells(set: BestSet, relic: boolean): Cell[] {
+function cells(set: BestSet, relic: boolean, relicNote: string): Cell[] {
   const used = { Finger: 0, Trinket: 0 };
   const rows = set.rows;
   const find = (slot: string, nth = 0) => rows.filter((r) => r.slot === slot)[nth];
@@ -38,7 +40,7 @@ function cells(set: BestSet, relic: boolean): Cell[] {
   return slots.map((slot): Cell => {
     if (slot === "Shirt" || slot === "Tabard") return { label: slot, note: "Empty" };
     if (slot === "Relic") {
-      return relic ? { label: slot, relic: true } : { label: slot, note: "Relic: turn on Polished Driftwood Icon" };
+      return relic ? { label: slot, relic: true } : { label: slot, note: relicNote };
     }
     let row;
     if (slot === "Finger" || slot === "Trinket") row = find(slot, used[slot]++);
@@ -95,8 +97,8 @@ function Slot({ cell, side }: { cell: Cell; side: "l" | "r" | "b" }) {
 }
 
 /** The best set laid out like the game's character sheet. Always dark, like the game's frame. */
-export function CharacterSheet({ set, level, faction, heal, maxMana, crit, relic }: Props) {
-  const all = cells(set, relic);
+export function CharacterSheet({ set, level, faction, heal, maxMana, crit, relic, relicNote = "Relic: turn on Polished Driftwood Icon" }: Props) {
+  const all = cells(set, relic, relicNote);
   const left = all.slice(0, 8);
   const right = all.slice(8, 16);
   const bottom = all.slice(16);
