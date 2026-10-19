@@ -1,0 +1,97 @@
+{
+  "project": "Tidecaller",
+  "branchName": "claude/sweet-hypatia-53cceb",
+  "description": "Run 006: a 3D character wearing the best set on the calculator's character sheet and on /bis, using Wowhead's model viewer with the model files relayed through our own domain (vercel.json rewrite), races and item model numbers from docs/spec.md SECTION 14.10. FULL PRD: tasks/ralph-runs/006-3d-character/prd.md (read its Research findings: the exact viewer call, globals and test stub are there). Tests never reach Wowhead: the smoke suite stubs the viewer script and the customization files. Run 005's PRD and progress log describe the character sheet you extend.",
+  "userStories": [
+    {
+      "id": "US-001",
+      "title": "Model data from the spec",
+      "description": "As a developer, I want the races and item model numbers beside the other item data, so both pages can build the viewer's item list.",
+      "acceptanceCriteria": [
+        "Read `docs/spec.md` section 14.10 and this PRD's research findings first",
+        "`scripts/extract-spec-data.mjs` also extracts the 14.10 JSON block (heading \"### 14.10 3D character: races, slots and item models\") to `src/data/models.json`; update `scripts/extract-spec-data.d.mts`; the existing test that the data files equal the spec covers it",
+        "A small module with no React and no `data/index.ts` import (so a standalone script can use it), for example `src/model3d/data.ts`: `racesFor(faction)` (the 14.10 list), `modelId(race, gender)`, and `viewerItems(set)` returning `[viewerSlot, display][]` for a `BestSet` in sheet order (head, shoulder, back, chest, wrist, hands, waist, legs, feet, then main hand or two-hand, then off hand), skipping rows with no item, custom items and items with no 14.10 entry",
+        "Tests: every 14.10 item key is a section 12 item with a 14.5 entry, in a slot that shows on a character; the pinned values in the research findings; no Neck, Finger or Trinket item has an entry; `racesFor(\"Horde\")` is Orc, Troll, Tauren, Windshaper Skyborne with model IDs 3/4, 15/16, 11/12, 218/219; `racesFor(\"Alliance\")` is Dwarf only, 5/6; `viewerItems` of the default Dungeon boss Horde set is exactly the ten pairs listed in the research findings",
+        "`npm run typecheck`, `npm test` and `npm run build` pass"
+      ],
+      "priority": 1,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-002",
+      "title": "The model file relay",
+      "description": "As the site, I want Wowhead's model files served from our own domain, so the viewer can load them.",
+      "acceptanceCriteria": [
+        "`vercel.json` gains a rewrite `{ \"source\": \"/modelviewer/:path*\", \"destination\": \"https://wow.zamimg.com/modelviewer/:path*\" }` and, for `/modelviewer/(.*)`, the header `x-vercel-enable-rewrite-caching: 1` (Vercel then honours Wowhead's 30-day cache header); nothing else in `vercel.json` changes",
+        "`robots.txt` (written by `scripts/prerender.mjs`) gains `Disallow: /modelviewer/`",
+        "Dev: `vite.config.ts` proxies `/modelviewer` to `https://wow.zamimg.com` with `changeOrigin: true` and the request's `Origin` header removed, so `npm run dev` shows the real model",
+        "`scripts/serve-dist.mjs` gains an opt-in relay (an option such as `serveDist({ relay: true })`, and a `--relay` flag if the file is run directly) that forwards `/modelviewer/*` the same way; it is off by default and the smoke suite never turns it on",
+        "Tests: a unit test reads `vercel.json` and finds the rewrite and the header; the SEO tests find the new robots line",
+        "`npm run typecheck`, `npm test` and `npm run build` pass"
+      ],
+      "priority": 2,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-003",
+      "title": "The 3D character on the calculator's sheet",
+      "description": "As a player, I want the calculator's character sheet to show a 3D Shaman wearing the best set, so I can see my gear the way the game shows it.",
+      "acceptanceCriteria": [
+        "A plain TypeScript module (for example `src/model3d/viewer.ts`, no React) does the loading and the viewer call exactly as the research findings describe: jQuery from the `jquery` npm package (add `jquery@3.7.1`; import it dynamically and set `window.jQuery` and `window.$`), the `WH` globals, Wowhead's viewer script loaded once per page, the customization file, then `new ZamModelViewer(...)`. It returns a handle with `setItems(items)` (clears and sets only the slots that changed) and `destroy()`. Minimal type declarations for `ZamModelViewer`; no `any` leaks into the rest of the code",
+        "`CharacterSheet` puts a viewer container over the totem art in `.centre`, the same size, with no layout shift. Loading starts only when the sheet comes within 200 px of the viewport (IntersectionObserver) and only when the browser has WebGL. The totem art stays visible until the viewer is created, then hides. Any failure (script, file, WebGL) leaves the totem art in place with no visible error (a `console.warn` only)",
+        "The calculator draws the Horde Orc male (model 3) by default. When the best set changes (any input), the live viewer gets `setItems` with the new list; it is not rebuilt",
+        "Under the model, once it is ready, a one-line hint: \"Drag to turn. Ctrl + scroll to zoom.\"",
+        "Smoke (`test/smoke.mjs`, with the stub described in the research findings: the viewer script route returns a fake `ZamModelViewer` that stores its options and `method` calls on `window`, the customization route returns `{\"Options\":[{\"Id\":1,\"Name\":\"Skin Color\",\"Choices\":[{\"Id\":10},{\"Id\":11}]}]}`): after scrolling to the sheet on `/`, the viewer was created with `models.id` 3, `contentPath` ending `/modelviewer/classicplus/`, `charCustomization.options` `[{optionId:1, choiceId:10}]`, and `items` exactly the ten pairs of the research findings; after changing the level to 25 the stub recorded `setItems` calls and no second viewer; with the viewer script route aborted, the totem art is still visible and no page error is thrown; at 400 px wide no viewer is created",
+        "`npm run typecheck`, `npm test`, `npm run build` and `CHROMIUM_PATH=/opt/pw-browsers/chromium-1194/chrome-linux/chrome npm run smoke` pass"
+      ],
+      "priority": 3,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-004",
+      "title": "Race and gender",
+      "description": "As a player, I want to pick my Shaman's race and gender, so the character looks like mine.",
+      "acceptanceCriteria": [
+        "Once the model is ready, small buttons over the top of the centre: one per race in `racesFor(faction)` (the race name as its label and title), then Male and Female; the current choice is pressed (`aria-pressed`). For the Alliance only Dwarf is shown",
+        "A change rebuilds the viewer with the new model ID and the same items. The choice is kept in `localStorage` under `tidecaller-look-v1` as `{ \"race\": name, \"gender\": \"male\" | \"female\" }`, read and written inside try/catch; a stored race the current faction cannot be falls back to that faction's first race (switching the calculator to Alliance shows a Dwarf, switching back shows the stored Horde race again). It is not part of the calculator's saved state or share link",
+        "Smoke (stub as in US-003): click Troll, the newest viewer has `models.id` 15; click Female, 16; reload, still 16; switch the calculator's faction to Alliance, 6 (Dwarf female) and the only race button is Dwarf",
+        "`npm run typecheck`, `npm test`, `npm run build` and `CHROMIUM_PATH=/opt/pw-browsers/chromium-1194/chrome-linux/chrome npm run smoke` pass"
+      ],
+      "priority": 4,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-005",
+      "title": "The 3D character on the best-in-slot page",
+      "description": "As a visitor reading `/bis`, I want the Horde best set's sheet to show the same 3D character, without the page loading the calculator app.",
+      "acceptanceCriteria": [
+        "A second standalone Vite entry beside `tips` (for example `src/model3d/page.ts`, emitted as `assets/model3d-[hash].js`) finds each sheet marked for it (a data attribute carrying the faction and the `viewerItems` list as JSON, rendered by `CharacterSheet` into the prerendered HTML) and mounts the same viewer, lazy loading, fallback, hint, race and gender buttons and `tidecaller-look-v1` storage as the calculator. On `/bis` the sheet is the Horde set, so the Horde races are offered",
+        "`scripts/prerender.mjs` adds the script only to routes the route table marks (a new optional route field, set only on `/bis`), and fails the build if that entry plus its own chunks (jQuery's chunk excluded, it loads only when the model does) is over 8 KB gzipped, the way it checks the popup script",
+        "The SEO tests: `/bis` loads the popup script and the 3D script and no app JavaScript; every other content page is unchanged (popup script only)",
+        "Root `CLAUDE.md`, SEO rules: the line about scripts says `/bis` also loads the small 3D character script (Tom's answer, 19 Oct 2026), lazily, with the totem art as its no-JavaScript fallback",
+        "Smoke (stub as in US-003): on `/bis`, after scrolling to the sheet, the viewer has `models.id` 3 and the ten pairs; the prerendered HTML of `/bis` still contains the totem art image",
+        "`npm run typecheck`, `npm test`, `npm run build` and `CHROMIUM_PATH=/opt/pw-browsers/chromium-1194/chrome-linux/chrome npm run smoke` pass"
+      ],
+      "priority": 5,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-006",
+      "title": "Credit and wrap-up",
+      "description": "As the site owner, I want the 3D character's sources credited, and the whole run checked against the spec.",
+      "acceptanceCriteria": [
+        "About page sources: the 3D character uses Wowhead's model viewer and Blizzard's character and item models, with the files fetched from Wowhead through this site; item model numbers come from Wowhead's Forever item data (spec section 14.10)",
+        "The run 005 PR note that a 3D character is not used is not repeated anywhere in page copy (search `src/` for \"3D\")",
+        "`npm run typecheck`, `npm test`, `npm run build`, `CHROMIUM_PATH=/opt/pw-browsers/chromium-1194/chrome-linux/chrome npm run smoke` and `CHROMIUM_PATH=/opt/pw-browsers/chromium-1194/chrome-linux/chrome npm run reference` (26 of 26) pass"
+      ],
+      "priority": 6,
+      "passes": false,
+      "notes": ""
+    }
+  ]
+}
