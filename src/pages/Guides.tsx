@@ -72,6 +72,7 @@ export function StatWeightsGuide() {
     const line = priorityLine(r.weights);
     return { id, r, line };
   });
+  const crit = compute(presetState("boss"));
   return (
     <div className="wrap page wide">
       <Breadcrumbs trail={STAT_WEIGHTS_TRAIL} />
@@ -144,8 +145,25 @@ export function StatWeightsGuide() {
       <p>
         The mana pool is not a fixed number. It is the base mana for your level plus the mana from your Intellect: the
         first 20 points give 1 mana each and every point after that gives 15. A naked level 24 Shaman in the beta with
-        40 Intellect has 796 mana: 476 base plus 320 from Intellect. A smaller pool means each point of mana regen is
+        40 Intellect has 796 mana: 476 base plus 320 from Intellect, and the level 25 step matches too. A smaller pool means each point of mana regen is
         a bigger share of it, so mana stats are worth more.
+      </p>
+
+      <h2>What 1% crit is worth</h2>
+      <p>
+        Your crit chance is worked out from your level and Intellect: 2.3% base, plus your Intellect divided by the
+        Intellect a level {DEFAULTS.level} Shaman needs for 1% crit, plus any crit from gear and talents. With the
+        defaults that is {fmt(crit.crit, 2)}%. These are Classic values not yet checked in Forever.
+      </p>
+      <p>
+        At the Dungeon boss settings, 1% more crit is worth {fmt(crit.weights.crit, 2)} points of Healing. It has two
+        parts: {fmt(crit.critHeal, 2)} from crits healing for 150%, so you heal more, and {fmt(crit.critWS, 2)} from
+        Water Shield, which gives back mana on each crit (the mana part counts only as far as mana runs out).
+        Intellect also buys crit, so the crit weight is part of the Intellect weight.
+      </p>
+      <p>
+        Tidebringer&rsquo;s Claw adds 2% crit to Healing Wave and Lesser Healing Wave, and that now counts in its
+        score. Crit is shown per 1%, so it is not part of the priority line.
       </p>
 
       <h2>What moves the weights</h2>

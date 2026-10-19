@@ -508,10 +508,12 @@ try {
     eq((await sp.locator("main p.lead").innerText()).replace(/\s+/g, " ").includes("level 30 with 115 Intellect, 2,110 mana"), true, "bis intro");
     await sp.goto(BASE + "/about");
     const about = (await sp.locator("main").innerText()).replace(/\s+/g, " ");
-    eq(about.includes("A naked level 24 Shaman in the beta matches them exactly (796 mana at 40 Intellect)"), true, "about unconfirmed");
+    eq(about.includes("Naked level 24 and 25 Shamans in the beta match them (796 mana at 40 Intellect at level 24)"), true, "about unconfirmed");
     eq(about.includes("Wowpedia and Vanilla WoW Archive"), true, "about sources");
     await sp.goto(BASE + "/guides/stat-weights");
     eq((await sp.locator("main").innerText()).includes("base mana for your level plus the mana from your Intellect"), true, "guide paragraph");
+    eq((await sp.locator("main").innerText()).includes("What 1% crit is worth"), true, "guide crit section");
+    eq(about.includes("base_stats.go") && about.includes("Crit chance: the 2.3% base"), true, "about crit sources");
   });
   await check("/bis shows Holy Shroud 38.9 and a Horde total of 448.1 and has no module script", async () => {
     const res = await sp.goto(BASE + "/bis");

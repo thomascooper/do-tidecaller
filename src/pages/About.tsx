@@ -61,9 +61,13 @@ export function About() {
         <li>Spirit rate above 90 Spirit and at other levels.</li>
         <li>Whether the Polished Driftwood Icon stacks with Mindfulness.</li>
         <li>
-          Base mana uses Classic&apos;s documented Shaman values. A naked level 24 Shaman in the beta matches them
-          exactly (796 mana at 40 Intellect); other levels are not yet checked, and levels between documented values
-          are estimated.
+          Base mana uses Classic&apos;s documented Shaman values. Naked level 24 and 25 Shamans in the beta match
+          them (796 mana at 40 Intellect at level 24); other levels are not yet checked, and levels between documented
+          values are estimated.
+        </li>
+        <li>
+          Crit chance: the 2.3% base, the Intellect needed for 1% crit at each level (levels between the documented
+          rows are estimated) and that a crit heals for 150% are Classic values, not yet checked in Forever.
         </li>
       </ul>
       <p>Each of these stays editable in the calculator.</p>
@@ -79,6 +83,10 @@ export function About() {
           </li>
         ))}
         <li>wowvendor, classicwowforever.com and wowclassicforever.info Resto BiS lists.</li>
+        <li>
+          Base crit chance and crit per Intellect: the wowsims Season of Discovery simulator&rsquo;s base stats
+          (its base_stats.go file).
+        </li>
         <li>Base mana by level: the Wowpedia and Vanilla WoW Archive &ldquo;Base mana&rdquo; pages.</li>
         <li>
           Wowhead&rsquo;s Forever database, used for the &ldquo;View on Wowhead&rdquo; links, the item icons, and each

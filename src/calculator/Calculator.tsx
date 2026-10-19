@@ -134,7 +134,7 @@ export function Calculator() {
               <p className="hint field full">
                 Healing power is Healing plus Spell Power. Spell Damage on healing items does not heal. Buff MP5
                 covers Mana Spring, Blessing of Wisdom and similar. Max mana is base mana for your level (Classic's
-                documented Shaman values, which a naked level 24 Forever Shaman matches exactly) plus Intellect: the
+                documented Shaman values, which naked level 24 and 25 Forever Shamans match) plus Intellect: the
                 first 20 points give 1 mana each, then 15.
               </p>
             </div>
