@@ -21,3 +21,12 @@ Started: run 004 (item level and armor), 19 Oct 2026
 - (Run 003) `/items` tables: `table.items`, Item cell `td.nm` (a smoke check counts 155 of them), text columns `td.src` with `.eq` and `.wh`, sticky first column with an opaque `var(--bg)`.
 - (Run 003) Smoke "no module script" checks exclude the popup: `script[type="module"]:not([src*="/assets/tips-"])`.
 ---
+
+## 19 Oct 2026 - US-001
+- Extractor now writes `src/data/itemLevels.json` (spec 14.6, 152 entries; 3 items have none, e.g. Red Wool Cloak). `itemLevel(item)` and `itemArmor(item)` live in `src/lib/itemIcon.ts` beside `itemIconSrc` (import only small json, safe for the popup script).
+- Files: scripts/extract-spec-data.mjs/.d.mts, src/data/itemLevels.json, src/data/data.test.ts, src/lib/itemIcon.ts/.test.ts
+- Checks: typecheck ok, npm test 2665 passed, build ok. Broke itemLevels.json (first ilvl set to 1): 3 new/extended tests failed, restored.
+- **Learnings for future iterations:**
+  - `extract()` returns `itemLevels` too; the extractor test compares all four files.
+  - Armor is optional in the json: `itemArmor` undefined means none (rings, necks, weapons).
+---
