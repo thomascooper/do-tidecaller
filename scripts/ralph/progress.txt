@@ -42,3 +42,13 @@ Started: Tue Oct 20 00:51:52 UTC 2026
   - For US-005 the look storage is already shareable (`look.ts`); the observer, hint and buttons still live in the React `Figure` and need a React-free twin in `src/model3d/page.ts`.
   - Smoke: `getByRole("button", { name: "Male" })` also matches Female; use `exact: true`.
 ---
+
+## 20 Oct 2026 - US-005
+- `src/model3d/page.ts` is a second standalone Vite entry (`assets/model3d-[hash].js`, 5.1 KB gzipped with its look chunk). It finds each `[data-model3d]` figure (JSON with the faction and the `viewerItems` list, rendered by `CharacterSheet` when given `mark3d`) and mounts the same viewer: IntersectionObserver at 200 px, WebGL and 761 px checks, hint, race and gender buttons, `tidecaller-look-v1` storage; a failure removes the controls and leaves the totem art with a `console.warn`.
+- Route field `model3d` (only `/bis`); `renderDocument` adds the script for it. `scripts/prerender.mjs` now checks both standalone scripts with one helper (popup 12 KB, 3D 8 KB gzipped, static chunks counted, jQuery's dynamic chunk not). Root CLAUDE.md SEO line updated.
+- Files: src/model3d/page.ts, src/calculator/CharacterSheet.tsx, src/pages/Bis.tsx, src/routes.tsx, src/entry-server.tsx, vite.config.ts, scripts/prerender.mjs, test/seo.test.ts, test/smoke.mjs, CLAUDE.md.
+- Checks: typecheck, vitest 2693, build, smoke 65 of 65, reference 26 of 26. Broke the check by setting `model3d: false` on /bis: the SEO test failed, restored. The smoke check also failed once on a real bug (race button kept a stale look, so Troll then Female gave Orc female); fixed by building the next look at click time.
+- **Learnings for future iterations:**
+  - The smoke `siteCtx` now has `stubViewer`; any new site-page check on `/bis` gets the stub for free.
+  - The calculator's React `Figure` and `page.ts` are two implementations of the same behaviour; change both together.
+---
