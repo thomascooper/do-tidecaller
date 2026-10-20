@@ -11,8 +11,9 @@ The delivering session then read how sixtysim does it, and built a throwaway moc
 sheet with a 3D Orc wearing our default best set (it worked). Tom's answers, 19 Oct:
 
 1. Relaying Wowhead's model files through our own domain: *"fine for now"*.
-2. The item model numbers come *"from wowhead"*. They are now in **spec section 14.10**, read from
-   Wowhead's Forever item data in Tom's browser and checked against Wowhead's model files.
+2. The item model numbers were to come *"from wowhead"*. Wowhead blocked the reads (servers, then
+   Tom's browser), so on 20 Oct Tom chose sixtysim's table, with every number checked against
+   Wowhead's own model files. They are in **spec section 14.10** (119 items).
 3. Races: *"alliance is dwarf only"*; the Horde list comes from web research (section 14.10).
 4. Pages: *"the main calculator page"* and the best-in-slot page (`/bis`), which shows the main set.
 

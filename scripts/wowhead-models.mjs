@@ -5,8 +5,14 @@
 //
 //   node scripts/wowhead-models.mjs
 //     prints a script to paste into the browser console on any www.wowhead.com page. It reads
-//     Wowhead's Forever item data for every ID in spec section 14.5 and prints the result
-//     ({ id: [display, inventory slot, name, source] }) as one line to copy (also on window.TC).
+//     Wowhead's Forever item XML for every ID in spec section 14.5, one item every 1.5 seconds
+//     (about 4 minutes), and prints the result ({ id: [display, inventory slot, name, source] }) as
+//     one line to copy (also on window.TC). Run it once, never twice in a row: on 19 Oct 2026 two
+//     fast runs (two pages per item, 150 ms apart) got the owner's connection blocked by Wowhead.
+//     It stops at the first refusal.
+//
+// The numbers now in 14.10 came from sixtysim.com's item table and were checked with --check
+// (spec 14.10 says why).
 //
 //   node scripts/wowhead-models.mjs --apply <pasted.json>
 //     checks the pasted result and prints the "items" object for section 14.10. For every item it
@@ -46,13 +52,11 @@ const WEAPON_SLOTS = new Set(["Main hand", "Two-hand", "Off hand"]);
 function consoleScript() {
   const list = Object.values(ids).map((e) => e.id).join(",");
   return (
-    `(async()=>{const ids=[${list}];const out={};let n=0;for(const id of ids){let d=null,s=null,nm=null,src='x';` +
-    "try{const t=await(await fetch(`/forever/item=${id}&xml`)).text();d=t.match(/displayId=\"(\\d+)\"/)?.[1];" +
-    "s=t.match(/inventorySlot id=\"(\\d+)\"/)?.[1];nm=t.match(/<name><!\\[CDATA\\[(.*?)\\]\\]>/)?.[1];" +
-    "if(!d){const h=await(await fetch(`/forever/item=${id}`)).text();const i=h.indexOf(`\"${id}\":{`);" +
-    "if(i>=0){const c=h.slice(i,i+4000);d=c.match(/\"displayid\":(\\d+)/)?.[1];s=s||c.match(/\"slotbak\":(\\d+)/)?.[1];" +
-    "nm=nm||c.match(/\"name_enus\":\"(.*?)\"/)?.[1];src='p'}}}catch(e){src='e'}out[id]=[d?+d:null,s?+s:null,nm,src];" +
-    "if(++n%25==0)console.log(n+' of '+ids.length);await new Promise(r=>setTimeout(r,150))}window.TC=JSON.stringify(out);" +
+    `(async()=>{const ids=[${list}];const out={};let n=0;for(const id of ids){` +
+    "const r=await fetch(`/forever/item=${id}&xml`);if(!r.ok){console.log('Wowhead refused item '+id+' ('+r.status+'), stopping. Paste what follows anyway.');break}" +
+    "const t=await r.text();const d=t.match(/displayId=\"(\\d+)\"/)?.[1];const s=t.match(/inventorySlot id=\"(\\d+)\"/)?.[1];" +
+    "const nm=t.match(/<name><!\\[CDATA\\[(.*?)\\]\\]>/)?.[1];out[id]=[d?+d:null,s?+s:null,nm??null,'x'];" +
+    "if(++n%25==0)console.log(n+' of '+ids.length);await new Promise(r=>setTimeout(r,1500))}window.TC=JSON.stringify(out);" +
     "console.log('Done: '+Object.values(out).filter(v=>v[0]).length+' of '+ids.length+' have a model number. Copy the line below and paste it to Claude.');" +
     "console.log(window.TC)})()"
   );
