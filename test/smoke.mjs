@@ -27,6 +27,23 @@ function eq(actual, expected, what = "value") {
   if (actual !== expected) throw new Error(`${what}: expected ${JSON.stringify(expected)}, got ${JSON.stringify(actual)}`);
 }
 
+// Tests never reach Wowhead: the viewer script is a stub that records what it was asked to draw,
+// and the customization files are a fixture. The relay is off in this suite.
+async function stubViewer(context) {
+  await context.route("**/modelviewer/classicplus/viewer/viewer.min.js", (route) =>
+    route.fulfill({
+      contentType: "text/javascript",
+      body: `window.__viewers = [];
+window.ZamModelViewer = function (options) { this.options = options; this.calls = []; window.__viewers.push(this); };
+window.ZamModelViewer.prototype.method = function (name, arg) { this.calls.push([name, arg]); };`,
+    }),
+  );
+  await context.route("**/modelviewer/classicplus/meta/charactercustomization/*.json", (route) =>
+    route.fulfill({ contentType: "application/json", body: JSON.stringify({ Options: [{ Id: 1, Name: "Skin Color", Choices: [{ Id: 10 }, { Id: 11 }] }] }) }),
+  );
+}
+const TEN_PAIRS = [[1, 16826], [3, 11473], [20, 12216], [9, 16901], [10, 13348], [6, 737787], [7, 737498], [8, 4623], [21, 741039], [22, 4403]];
+
 const server = await serveDist({ port: PORT });
 const browser = await chromium.launch({ executablePath: CHROMIUM, args: ["--no-sandbox"] });
 
@@ -34,6 +51,7 @@ try {
   // ---- Calculator page: "/" -------------------------------------------------
   console.log("Calculator page /");
   const ctx = await browser.newContext({ viewport: { width: 1280, height: 900 } });
+  await stubViewer(ctx);
   const page = await ctx.newPage();
   const errors = [];
   page.on("console", (m) => {
@@ -414,6 +432,50 @@ try {
     const wide = await page.evaluate(() => document.documentElement.scrollWidth > document.documentElement.clientWidth);
     await page.setViewportSize(vp);
     eq(wide, false, "no sideways scroll at 400 px");
+  });
+  await check("3D character: the viewer draws model 3 with the ten items, gear changes call setItems on the same viewer, the hint shows", async () => {
+    await page.locator("#sheet").scrollIntoViewIfNeeded();
+    await page.waitForFunction(() => window.__viewers?.length === 1);
+    const v = await page.evaluate(() => {
+      const o = window.__viewers[0].options;
+      return { id: o.models.id, type: o.models.type, path: o.contentPath, options: o.charCustomization.options, items: o.items };
+    });
+    eq(v.id, 3, "model id");
+    eq(v.type, 16, "model type");
+    eq(v.path.endsWith("/modelviewer/classicplus/"), true, "content path");
+    eq(JSON.stringify(v.options), JSON.stringify([{ optionId: 1, choiceId: 10 }]), "default look");
+    eq(JSON.stringify(v.items), JSON.stringify(TEN_PAIRS), "ten items");
+    await page.locator(".doll .hint").waitFor();
+    eq((await page.locator(".doll .hint").innerText()).trim(), "Drag to turn. Ctrl + scroll to zoom.", "hint");
+    eq(await page.locator(".doll .fig img").evaluate((el) => getComputedStyle(el).visibility), "hidden", "totem art hidden once the viewer is up");
+    await page.locator("#level").fill("25");
+    await page.locator("#level").blur();
+    await page.waitForFunction(() => window.__viewers[0].calls.some((c) => c[0] === "setItems"));
+    eq(await page.evaluate(() => window.__viewers.length), 1, "still one viewer");
+    await page.locator("#level").fill("30");
+    await page.locator("#level").blur();
+  });
+  await check("3D character: a failing viewer script leaves the totem art and throws nothing; a phone loads no viewer", async () => {
+    const bad = await browser.newContext({ viewport: { width: 1280, height: 900 } });
+    await bad.route("**/modelviewer/**", (route) => route.abort());
+    const bp = await bad.newPage();
+    const thrown = [];
+    bp.on("pageerror", (e) => thrown.push(String(e)));
+    await bp.goto(BASE + "/");
+    await bp.locator("#sheet").scrollIntoViewIfNeeded();
+    await bp.waitForTimeout(800);
+    eq(await bp.locator(".doll .fig img").evaluate((el) => getComputedStyle(el).visibility), "visible", "totem art still there");
+    eq(await bp.locator(".doll .hint").count(), 0, "no hint");
+    eq(thrown.join(" | "), "", "page errors");
+    await bad.close();
+    const small = await browser.newContext({ viewport: { width: 400, height: 800 } });
+    await stubViewer(small);
+    const pp = await small.newPage();
+    await pp.goto(BASE + "/");
+    await pp.locator("#sheet").scrollIntoViewIfNeeded();
+    await pp.waitForTimeout(800);
+    eq(await pp.evaluate(() => window.__viewers?.length ?? 0), 0, "viewers on a phone");
+    await small.close();
   });
   await check("best set: Alliance replaces the Horde-only off hand, Tailoring changes picks", async () => {
     await page.locator("#faction").selectOption("Alliance");

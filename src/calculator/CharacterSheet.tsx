@@ -1,3 +1,6 @@
+import { useEffect, useRef, useState } from "react";
+import { createViewer, hasWebGL, type ViewerHandle } from "../model3d/viewer";
+import { modelId, racesFor, viewerItems } from "../model3d/data";
 import { itemIconSrc, itemQuality, RELIC } from "../lib/itemIcon";
 import { fmt } from "../lib/format";
 import { itemPath } from "../lib/slug";
@@ -96,6 +99,58 @@ function Slot({ cell, side }: { cell: Cell; side: "l" | "r" | "b" }) {
   );
 }
 
+/** The 3D character over the totem art. Loads when the sheet nears the viewport; any failure leaves the art. */
+function Figure({ set, faction }: { set: BestSet; faction: string }) {
+  const box = useRef<HTMLDivElement>(null);
+  const handle = useRef<ViewerHandle | undefined>(undefined);
+  const [ready, setReady] = useState(false);
+  const items = viewerItems(set);
+  const key = JSON.stringify(items);
+  const latest = useRef(items);
+  latest.current = items;
+
+  useEffect(() => {
+    const el = box.current;
+    if (!el || !hasWebGL() || !window.matchMedia("(min-width: 761px)").matches) return;
+    let dead = false;
+    const model = modelId(racesFor(faction)[0], "male");
+    const watch = new IntersectionObserver(
+      (seen) => {
+        if (!seen.some((e) => e.isIntersecting)) return;
+        watch.disconnect();
+        createViewer(el, model, latest.current).then(
+          (h) => {
+            if (dead) return h.destroy();
+            handle.current = h;
+            h.setItems(latest.current);
+            setReady(true);
+          },
+          (e) => console.warn("3D character unavailable:", e),
+        );
+      },
+      { rootMargin: "200px" },
+    );
+    watch.observe(el);
+    return () => {
+      dead = true;
+      watch.disconnect();
+      handle.current?.destroy();
+      handle.current = undefined;
+      setReady(false);
+    };
+  }, [faction]);
+
+  useEffect(() => handle.current?.setItems(latest.current), [key]);
+
+  return (
+    <div className={`fig${ready ? " live" : ""}`}>
+      <img src="/art/totem-figure.svg" alt="" width={360} height={440} />
+      <div className="viewer" ref={box} />
+      {ready && <p className="hint">Drag to turn. Ctrl + scroll to zoom.</p>}
+    </div>
+  );
+}
+
 /** The best set laid out like the game's character sheet. Always dark, like the game's frame. */
 export function CharacterSheet({ set, level, faction, heal, maxMana, crit, relic, relicNote = "Relic: turn on Polished Driftwood Icon" }: Props) {
   const all = cells(set, relic, relicNote);
@@ -122,7 +177,7 @@ export function CharacterSheet({ set, level, faction, heal, maxMana, crit, relic
           ))}
         </ul>
         <div className="centre">
-          <img src="/art/totem-figure.svg" alt="" width={360} height={440} />
+          <Figure set={set} faction={faction} />
           <div className="who">
             <div className="t">
               Level {level} Shaman, {faction}

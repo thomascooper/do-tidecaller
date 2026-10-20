@@ -20,3 +20,15 @@ Started: Tue Oct 20 00:51:52 UTC 2026
   - robots.txt text lives in `src/seo/sitemap.ts`, not in the prerender script.
   - The smoke suite serves `dist/` without the relay, so every `/modelviewer/*` request in smoke must be stubbed with `page.route`.
 ---
+
+## 20 Oct 2026 - US-003
+- `src/model3d/viewer.ts` (no React): `hasWebGL()`, `createViewer(el, model, items)` returning `{ setItems, destroy }`. Loads jQuery (dynamic import of the `jquery` package, sets window.jQuery and $), the WH globals, Wowhead's viewer script once per page, the customization file, then `new ZamModelViewer`. `setItems` clears and sets only changed slots. `jquery.d.ts` declares the module (no @types package added).
+- `CharacterSheet` has a `Figure`: totem art plus an absolutely placed `.viewer` of the same size (no layout shift); IntersectionObserver with 200 px margin, WebGL and min-width 761 px required; art hidden (visibility) once ready; hint under the model; failures only `console.warn`. A faction change rebuilds the viewer (first race of the faction); a set change calls `setItems`.
+- The viewer script is fetched through the relay path (`/modelviewer/classicplus/viewer/viewer.min.js`), not wow.zamimg.com directly, so the smoke stub and the Vercel rewrite cover it.
+- Files: package.json, package-lock.json, src/model3d/viewer.ts, src/model3d/jquery.d.ts, src/calculator/CharacterSheet.tsx, src/styles/app.css, test/smoke.mjs.
+- Checks: typecheck, vitest 2693, build, smoke 63 of 63, reference 26 of 26. Broke the set-change effect (deps `[]`): the new 3D smoke check failed (and the Alliance check after it, as a cascade); restored.
+- **Learnings for future iterations:**
+  - Smoke: `stubViewer(context)` fakes the viewer and customization routes and `TEN_PAIRS` is the expected list; every context that loads `/` and scrolls to the sheet needs the stub, or the unrelayed `/modelviewer/*` 404s log console errors.
+  - The stub keeps `window.__viewers` (each with `options` and `calls`); US-004 can read the newest one.
+  - For US-005 the mount logic (observer, hint, buttons, storage) is currently inside the React `Figure`; move the shared parts into a React-free module so `src/model3d/page.ts` can reuse them.
+---
