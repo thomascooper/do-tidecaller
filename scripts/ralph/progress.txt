@@ -52,3 +52,11 @@ Started: Tue Oct 20 00:51:52 UTC 2026
   - The smoke `siteCtx` now has `stubViewer`; any new site-page check on `/bis` gets the stub for free.
   - The calculator's React `Figure` and `page.ts` are two implementations of the same behaviour; change both together.
 ---
+
+## 20 Oct 2026 - US-006
+- About page sources list now credits the 3D character: Wowhead's model viewer, Blizzard's character and item models, files fetched from Wowhead through this site, item model numbers from Wowhead's Forever item data (spec section 14.10). A search of `src/` for "3D" finds no page copy saying a 3D character is not used.
+- Files: src/pages/About.tsx.
+- Checks: typecheck, vitest, build, smoke 65 of 65, reference 26 of 26.
+- **Learnings for future iterations:**
+  - The relay to Wowhead cannot be reached from the build container; the delivering session must check the real model on the preview URL.
+---
