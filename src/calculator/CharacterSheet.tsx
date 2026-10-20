@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { createViewer, hasWebGL, type ViewerHandle } from "../model3d/viewer";
-import { modelId, racesFor, viewerItems } from "../model3d/data";
+import { modelId, racesFor, viewerItems, type Gender } from "../model3d/data";
+import { raceFor, readLook, saveLook, type Look } from "../model3d/look";
 import { itemIconSrc, itemQuality, RELIC } from "../lib/itemIcon";
 import { fmt } from "../lib/format";
 import { itemPath } from "../lib/slug";
@@ -104,6 +105,8 @@ function Figure({ set, faction }: { set: BestSet; faction: string }) {
   const box = useRef<HTMLDivElement>(null);
   const handle = useRef<ViewerHandle | undefined>(undefined);
   const [ready, setReady] = useState(false);
+  const [look, setLook] = useState<Look>(readLook);
+  const race = raceFor(faction, look);
   const items = viewerItems(set);
   const key = JSON.stringify(items);
   const latest = useRef(items);
@@ -113,7 +116,7 @@ function Figure({ set, faction }: { set: BestSet; faction: string }) {
     const el = box.current;
     if (!el || !hasWebGL() || !window.matchMedia("(min-width: 761px)").matches) return;
     let dead = false;
-    const model = modelId(racesFor(faction)[0], "male");
+    const model = modelId(race, look.gender);
     const watch = new IntersectionObserver(
       (seen) => {
         if (!seen.some((e) => e.isIntersecting)) return;
@@ -125,7 +128,10 @@ function Figure({ set, faction }: { set: BestSet; faction: string }) {
             h.setItems(latest.current);
             setReady(true);
           },
-          (e) => console.warn("3D character unavailable:", e),
+          (e) => {
+            setReady(false);
+            console.warn("3D character unavailable:", e);
+          },
         );
       },
       { rootMargin: "200px" },
@@ -136,16 +142,34 @@ function Figure({ set, faction }: { set: BestSet; faction: string }) {
       watch.disconnect();
       handle.current?.destroy();
       handle.current = undefined;
-      setReady(false);
     };
-  }, [faction]);
+  }, [race.race, look.gender]);
 
   useEffect(() => handle.current?.setItems(latest.current), [key]);
+
+  const choose = (next: Look) => {
+    setLook(next);
+    saveLook(next);
+  };
 
   return (
     <div className={`fig${ready ? " live" : ""}`}>
       <img src="/art/totem-figure.svg" alt="" width={360} height={440} />
       <div className="viewer" ref={box} />
+      {ready && (
+        <div className="look" role="group" aria-label="Race and gender">
+          {racesFor(faction).map((r) => (
+            <button key={r.race} type="button" title={r.race} aria-pressed={r.race === race.race} onClick={() => choose({ ...look, race: r.race })}>
+              {r.race}
+            </button>
+          ))}
+          {(["male", "female"] as Gender[]).map((g) => (
+            <button key={g} type="button" aria-pressed={g === look.gender} onClick={() => choose({ ...look, gender: g })}>
+              {g === "male" ? "Male" : "Female"}
+            </button>
+          ))}
+        </div>
+      )}
       {ready && <p className="hint">Drag to turn. Ctrl + scroll to zoom.</p>}
     </div>
   );

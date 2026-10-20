@@ -455,6 +455,31 @@ try {
     await page.locator("#level").fill("30");
     await page.locator("#level").blur();
   });
+  await check("3D character: race and gender rebuild the viewer, the choice is kept, the Alliance offers only Dwarf", async () => {
+    const newest = () => page.evaluate(() => window.__viewers[window.__viewers.length - 1].options.models.id);
+    const items = () => page.evaluate(() => JSON.stringify(window.__viewers[window.__viewers.length - 1].options.items));
+    const look = page.locator(".doll .look");
+    const names = await look.locator("button").allInnerTexts();
+    eq(names.join(","), "Orc,Troll,Tauren,Windshaper Skyborne,Male,Female", "buttons");
+    eq(await look.getByRole("button", { name: "Orc" }).getAttribute("aria-pressed"), "true", "Orc pressed");
+    await look.getByRole("button", { name: "Troll" }).click();
+    await page.waitForFunction(() => window.__viewers.at(-1).options.models.id === 15);
+    eq(await items(), JSON.stringify(TEN_PAIRS), "same items after the race change");
+    await look.getByRole("button", { name: "Female", exact: true }).click();
+    await page.waitForFunction(() => window.__viewers.at(-1).options.models.id === 16);
+    await page.reload();
+    await page.locator("#sheet").scrollIntoViewIfNeeded();
+    await page.waitForFunction(() => window.__viewers?.length >= 1);
+    eq(await newest(), 16, "kept after reload");
+    await page.locator("#faction").selectOption("Alliance");
+    await page.waitForFunction(() => window.__viewers.at(-1).options.models.id === 6);
+    eq((await look.locator("button").allInnerTexts()).join(","), "Dwarf,Male,Female", "Alliance buttons");
+    await page.locator("#faction").selectOption("Horde");
+    await page.waitForFunction(() => window.__viewers.at(-1).options.models.id === 16);
+    await look.getByRole("button", { name: "Orc" }).click();
+    await look.getByRole("button", { name: "Male", exact: true }).click();
+    await page.waitForFunction(() => window.__viewers.at(-1).options.models.id === 3);
+  });
   await check("3D character: a failing viewer script leaves the totem art and throws nothing; a phone loads no viewer", async () => {
     const bad = await browser.newContext({ viewport: { width: 1280, height: 900 } });
     await bad.route("**/modelviewer/**", (route) => route.abort());
