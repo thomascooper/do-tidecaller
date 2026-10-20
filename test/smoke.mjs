@@ -596,6 +596,7 @@ try {
   // ---- Site pages: /about, redirects and the 404 -----------------------------
   console.log("Site pages");
   const siteCtx = await browser.newContext({ viewport: { width: 1280, height: 900 } });
+  await stubViewer(siteCtx);
   const sp = await siteCtx.newPage();
   const siteErrors = [];
   sp.on("console", (m) => {
@@ -629,11 +630,11 @@ try {
     eq((await sp.locator("main").innerText()).includes("What 1% crit is worth"), true, "guide crit section");
     eq(about.includes("base_stats.go") && about.includes("Crit chance: the 2.3% base"), true, "about crit sources");
   });
-  await check("/bis shows Holy Shroud 38.9 and a Horde total of 448.1 and has no module script", async () => {
+  await check("/bis shows Holy Shroud 38.9 and a Horde total of 448.1 and has no app script", async () => {
     const res = await sp.goto(BASE + "/bis");
     eq(res.status(), 200, "status");
     eq(await sp.locator("h1").innerText(), "Resto Shaman best in slot, level 30", "h1");
-    eq(await sp.locator('script[type="module"]:not([src*="/assets/tips-"])').count(), 0, "module scripts");
+    eq(await sp.locator('script[type="module"]:not([src*="/assets/tips-"]):not([src*="/assets/model3d-"])').count(), 0, "module scripts");
     const head = sp.locator("#hordeSet tbody tr").first();
     eq((await head.innerText()).replace(/\s+/g, " ").startsWith("Head Holy Shroud 38.9"), true, "head row");
     eq(await sp.locator("#hordeSet tfoot .score").innerText(), "448.1", "Horde total");
@@ -654,6 +655,31 @@ try {
     const wide = await sp.evaluate(() => document.documentElement.scrollWidth > document.documentElement.clientWidth);
     await sp.setViewportSize(vp);
     eq(wide, false, "no sideways scroll at 400 px");
+  });
+  await check("/bis: the 3D character draws model 3 with the ten items after scrolling to the sheet, with the buttons and hint; the totem art is in the prerendered HTML", async () => {
+    const html = await (await fetch(BASE + "/bis")).text();
+    eq(html.includes("/art/totem-figure.svg"), true, "totem art in the HTML");
+    await sp.goto(BASE + "/bis");
+    eq(await sp.locator('script[src*="/assets/model3d-"]').count(), 1, "3D script");
+    eq(await sp.evaluate(() => window.__viewers?.length ?? 0), 0, "no viewer before scrolling");
+    await sp.locator("#sheet").scrollIntoViewIfNeeded();
+    await sp.waitForFunction(() => window.__viewers?.length === 1);
+    const v = await sp.evaluate(() => {
+      const o = window.__viewers[0].options;
+      return { id: o.models.id, path: o.contentPath, items: o.items };
+    });
+    eq(v.id, 3, "model id");
+    eq(v.path.endsWith("/modelviewer/classicplus/"), true, "content path");
+    eq(JSON.stringify(v.items), JSON.stringify(TEN_PAIRS), "ten items");
+    await sp.locator(".doll .hint").waitFor();
+    eq((await sp.locator(".doll .look button").allInnerTexts()).join(","), "Orc,Troll,Tauren,Windshaper Skyborne,Male,Female", "race and gender buttons");
+    eq(await sp.locator(".doll .fig img").evaluate((el) => getComputedStyle(el).visibility), "hidden", "totem art hidden once the viewer is up");
+    await sp.locator(".doll .look button", { hasText: "Troll" }).click();
+    await sp.locator(".doll .look button", { hasText: "Female" }).click();
+    await sp.waitForFunction(() => window.__viewers.at(-1).options.models.id === 16);
+    eq(await sp.locator(".doll .look button", { hasText: "Troll" }).getAttribute("aria-pressed"), "true", "Troll pressed");
+    eq(JSON.stringify(await sp.evaluate(() => window.__viewers.at(-1).options.items)), JSON.stringify(TEN_PAIRS), "same items after rebuild");
+    await sp.evaluate(() => localStorage.removeItem("tidecaller-look-v1"));
   });
   await check("every slot page returns 200; /bis/head lists Holy Shroud first at 38.9; /bis/main-hand names Tidebringer's Claw", async () => {
     for (const slug of "head neck shoulder back chest wrist hands waist legs feet finger trinket main-hand off-hand two-hand".split(" ")) {

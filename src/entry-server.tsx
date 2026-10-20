@@ -18,7 +18,7 @@ export const ANALYTICS_SCRIPT = '<script defer src="/_vercel/insights/script.js"
 export function renderDocument(
   route: Route,
   template: string,
-  options: { analytics?: boolean; tipsScript?: string } = {},
+  options: { analytics?: boolean; tipsScript?: string; model3dScript?: string } = {},
 ): string {
   const head = headTags({
     path: route.path,
@@ -42,6 +42,7 @@ export function renderDocument(
   }
   // The item popup script goes on every page, after the app script where there is one.
   if (options.tipsScript) html = html.replace("</body>", () => `<script type="module" src="${options.tipsScript}"></script></body>`);
+  if (route.model3d && options.model3dScript) html = html.replace("</body>", () => `<script type="module" src="${options.model3dScript}"></script></body>`);
   if (options.analytics) html = html.replace("</body>", () => `${ANALYTICS_SCRIPT}</body>`);
   return html;
 }

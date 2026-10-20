@@ -36,6 +36,8 @@ export interface Route {
   /** True for the one page that ships app JavaScript and hydrates. */
   hydrate: boolean;
   noindex?: boolean;
+  /** True for the pages that also load the small 3D character script (only /bis). */
+  model3d?: boolean;
   /** Trail from Home to the page itself; every indexable page but the home page has one. */
   breadcrumbs?: Crumb[];
   jsonLd: JsonLd[];
@@ -69,6 +71,7 @@ export const routes: Route[] = [
     ogImage: "/og/bis.png",
     ogType: "article",
     hydrate: false,
+    model3d: true,
     breadcrumbs: BIS_TRAIL,
     jsonLd: [
       article({ headline: "Resto Shaman best in slot, level 30", description: BIS_DESCRIPTION, path: "/bis", dateModified: DATA_UPDATED }),

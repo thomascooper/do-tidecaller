@@ -18,8 +18,9 @@ export default defineConfig(({ isSsrBuild }) => ({
   build: isSsrBuild ? {} : {
     rollupOptions: {
       // The item popup script is its own entry: every page loads it, only the calculator loads the app.
-      input: { index: "index.html", tips: "src/tips/tips.ts" },
-      output: { entryFileNames: (chunk) => (chunk.name === "tips" ? "assets/tips-[hash].js" : "assets/[name]-[hash].js") },
+      // The 3D character script is another: only /bis loads it.
+      input: { index: "index.html", tips: "src/tips/tips.ts", model3d: "src/model3d/page.ts" },
+      output: { entryFileNames: (chunk) => "assets/[name]-[hash].js" },
     },
   },
   server: { proxy: modelRelay },
