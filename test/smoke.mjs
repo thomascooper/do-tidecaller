@@ -27,6 +27,28 @@ function eq(actual, expected, what = "value") {
   if (actual !== expected) throw new Error(`${what}: expected ${JSON.stringify(expected)}, got ${JSON.stringify(actual)}`);
 }
 
+// Tests never reach Wowhead: the viewer script is a stub that records what it was asked to draw,
+// and the customization files are a fixture. The relay is off in this suite.
+async function stubViewer(context) {
+  await context.route("**/modelviewer/classicplus/viewer/viewer.min.js", (route) =>
+    route.fulfill({
+      contentType: "text/javascript",
+      // Like Wowhead's viewer, the stub writes an inline height and position onto its container.
+      body: `window.__viewers = [];
+window.ZamModelViewer = function (options) {
+  var el = options.container && options.container[0];
+  if (el) { el.style.height = el.clientHeight + "px"; el.style.position = "relative"; }
+  this.options = options; this.calls = []; window.__viewers.push(this);
+};
+window.ZamModelViewer.prototype.method = function (name, arg) { this.calls.push([name, arg]); };`,
+    }),
+  );
+  await context.route("**/modelviewer/classicplus/meta/charactercustomization/*.json", (route) =>
+    route.fulfill({ contentType: "application/json", body: JSON.stringify({ Options: [{ Id: 1, Name: "Skin Color", Choices: [{ Id: 10 }, { Id: 11 }] }] }) }),
+  );
+}
+const TEN_PAIRS = [[1, 16826], [3, 11473], [20, 12216], [9, 16901], [10, 13348], [6, 737787], [7, 737498], [8, 4623], [21, 741039], [22, 4403]];
+
 const server = await serveDist({ port: PORT });
 const browser = await chromium.launch({ executablePath: CHROMIUM, args: ["--no-sandbox"] });
 
@@ -34,6 +56,7 @@ try {
   // ---- Calculator page: "/" -------------------------------------------------
   console.log("Calculator page /");
   const ctx = await browser.newContext({ viewport: { width: 1280, height: 900 } });
+  await stubViewer(ctx);
   const page = await ctx.newPage();
   const errors = [];
   page.on("console", (m) => {
@@ -415,6 +438,76 @@ try {
     await page.setViewportSize(vp);
     eq(wide, false, "no sideways scroll at 400 px");
   });
+  await check("3D character: the viewer draws model 3 with the ten items, gear changes call setItems on the same viewer, the hint shows", async () => {
+    await page.locator("#sheet").scrollIntoViewIfNeeded();
+    await page.waitForFunction(() => window.__viewers?.length === 1);
+    const v = await page.evaluate(() => {
+      const o = window.__viewers[0].options;
+      return { id: o.models.id, type: o.models.type, path: o.contentPath, options: o.charCustomization.options, items: o.items };
+    });
+    eq(v.id, 3, "model id");
+    eq(v.type, 16, "model type");
+    eq(v.path.endsWith("/modelviewer/classicplus/"), true, "content path");
+    eq(JSON.stringify(v.options), JSON.stringify([{ optionId: 1, choiceId: 10 }]), "default look");
+    eq(JSON.stringify(v.items), JSON.stringify(TEN_PAIRS), "ten items");
+    await page.locator(".doll .hint").waitFor();
+    eq((await page.locator(".doll .hint").innerText()).trim(), "Drag to turn. Ctrl + scroll to zoom.", "hint");
+    eq(await page.locator(".doll .fig img").evaluate((el) => getComputedStyle(el).visibility), "hidden", "totem art hidden once the viewer is up");
+    eq(await page.locator(".doll .fig").evaluate((f) => f.getBoundingClientRect().height === f.querySelector("img").getBoundingClientRect().height), true, "the viewer sits over the art, the sheet keeps its height");
+    await page.locator("#level").fill("25");
+    await page.locator("#level").blur();
+    await page.waitForFunction(() => window.__viewers[0].calls.some((c) => c[0] === "setItems"));
+    eq(await page.evaluate(() => window.__viewers.length), 1, "still one viewer");
+    await page.locator("#level").fill("30");
+    await page.locator("#level").blur();
+  });
+  await check("3D character: race and gender rebuild the viewer, the choice is kept, the Alliance offers only Dwarf", async () => {
+    const newest = () => page.evaluate(() => window.__viewers[window.__viewers.length - 1].options.models.id);
+    const items = () => page.evaluate(() => JSON.stringify(window.__viewers[window.__viewers.length - 1].options.items));
+    const look = page.locator(".doll .look");
+    const names = await look.locator("button").allInnerTexts();
+    eq(names.join(","), "Orc,Troll,Tauren,Windshaper Skyborne,Male,Female", "buttons");
+    eq(await look.getByRole("button", { name: "Orc" }).getAttribute("aria-pressed"), "true", "Orc pressed");
+    await look.getByRole("button", { name: "Troll" }).click();
+    await page.waitForFunction(() => window.__viewers.at(-1).options.models.id === 15);
+    eq(await items(), JSON.stringify(TEN_PAIRS), "same items after the race change");
+    await look.getByRole("button", { name: "Female", exact: true }).click();
+    await page.waitForFunction(() => window.__viewers.at(-1).options.models.id === 16);
+    await page.reload();
+    await page.locator("#sheet").scrollIntoViewIfNeeded();
+    await page.waitForFunction(() => window.__viewers?.length >= 1);
+    eq(await newest(), 16, "kept after reload");
+    await page.locator("#faction").selectOption("Alliance");
+    await page.waitForFunction(() => window.__viewers.at(-1).options.models.id === 6);
+    eq((await look.locator("button").allInnerTexts()).join(","), "Dwarf,Male,Female", "Alliance buttons");
+    await page.locator("#faction").selectOption("Horde");
+    await page.waitForFunction(() => window.__viewers.at(-1).options.models.id === 16);
+    await look.getByRole("button", { name: "Orc" }).click();
+    await look.getByRole("button", { name: "Male", exact: true }).click();
+    await page.waitForFunction(() => window.__viewers.at(-1).options.models.id === 3);
+  });
+  await check("3D character: a failing viewer script leaves the totem art and throws nothing; a phone loads no viewer", async () => {
+    const bad = await browser.newContext({ viewport: { width: 1280, height: 900 } });
+    await bad.route("**/modelviewer/**", (route) => route.abort());
+    const bp = await bad.newPage();
+    const thrown = [];
+    bp.on("pageerror", (e) => thrown.push(String(e)));
+    await bp.goto(BASE + "/");
+    await bp.locator("#sheet").scrollIntoViewIfNeeded();
+    await bp.waitForTimeout(800);
+    eq(await bp.locator(".doll .fig img").evaluate((el) => getComputedStyle(el).visibility), "visible", "totem art still there");
+    eq(await bp.locator(".doll .hint").count(), 0, "no hint");
+    eq(thrown.join(" | "), "", "page errors");
+    await bad.close();
+    const small = await browser.newContext({ viewport: { width: 400, height: 800 } });
+    await stubViewer(small);
+    const pp = await small.newPage();
+    await pp.goto(BASE + "/");
+    await pp.locator("#sheet").scrollIntoViewIfNeeded();
+    await pp.waitForTimeout(800);
+    eq(await pp.evaluate(() => window.__viewers?.length ?? 0), 0, "viewers on a phone");
+    await small.close();
+  });
   await check("best set: Alliance replaces the Horde-only off hand, Tailoring changes picks", async () => {
     await page.locator("#faction").selectOption("Alliance");
     const alliance = await picks();
@@ -509,6 +602,7 @@ try {
   // ---- Site pages: /about, redirects and the 404 -----------------------------
   console.log("Site pages");
   const siteCtx = await browser.newContext({ viewport: { width: 1280, height: 900 } });
+  await stubViewer(siteCtx);
   const sp = await siteCtx.newPage();
   const siteErrors = [];
   sp.on("console", (m) => {
@@ -542,11 +636,11 @@ try {
     eq((await sp.locator("main").innerText()).includes("What 1% crit is worth"), true, "guide crit section");
     eq(about.includes("base_stats.go") && about.includes("Crit chance: the 2.3% base"), true, "about crit sources");
   });
-  await check("/bis shows Holy Shroud 38.9 and a Horde total of 448.1 and has no module script", async () => {
+  await check("/bis shows Holy Shroud 38.9 and a Horde total of 448.1 and has no app script", async () => {
     const res = await sp.goto(BASE + "/bis");
     eq(res.status(), 200, "status");
     eq(await sp.locator("h1").innerText(), "Resto Shaman best in slot, level 30", "h1");
-    eq(await sp.locator('script[type="module"]:not([src*="/assets/tips-"])').count(), 0, "module scripts");
+    eq(await sp.locator('script[type="module"]:not([src*="/assets/tips-"]):not([src*="/assets/model3d-"])').count(), 0, "module scripts");
     const head = sp.locator("#hordeSet tbody tr").first();
     eq((await head.innerText()).replace(/\s+/g, " ").startsWith("Head Holy Shroud 38.9"), true, "head row");
     eq(await sp.locator("#hordeSet tfoot .score").innerText(), "448.1", "Horde total");
@@ -567,6 +661,32 @@ try {
     const wide = await sp.evaluate(() => document.documentElement.scrollWidth > document.documentElement.clientWidth);
     await sp.setViewportSize(vp);
     eq(wide, false, "no sideways scroll at 400 px");
+  });
+  await check("/bis: the 3D character draws model 3 with the ten items after scrolling to the sheet, with the buttons and hint; the totem art is in the prerendered HTML", async () => {
+    const html = await (await fetch(BASE + "/bis")).text();
+    eq(html.includes("/art/totem-figure.svg"), true, "totem art in the HTML");
+    await sp.goto(BASE + "/bis");
+    eq(await sp.locator('script[src*="/assets/model3d-"]').count(), 1, "3D script");
+    eq(await sp.evaluate(() => window.__viewers?.length ?? 0), 0, "no viewer before scrolling");
+    await sp.locator("#sheet").scrollIntoViewIfNeeded();
+    await sp.waitForFunction(() => window.__viewers?.length === 1);
+    const v = await sp.evaluate(() => {
+      const o = window.__viewers[0].options;
+      return { id: o.models.id, path: o.contentPath, items: o.items };
+    });
+    eq(v.id, 3, "model id");
+    eq(v.path.endsWith("/modelviewer/classicplus/"), true, "content path");
+    eq(JSON.stringify(v.items), JSON.stringify(TEN_PAIRS), "ten items");
+    await sp.locator(".doll .hint").waitFor();
+    eq((await sp.locator(".doll .look button").allInnerTexts()).join(","), "Orc,Troll,Tauren,Windshaper Skyborne,Male,Female", "race and gender buttons");
+    eq(await sp.locator(".doll .fig img").evaluate((el) => getComputedStyle(el).visibility), "hidden", "totem art hidden once the viewer is up");
+    eq(await sp.locator(".doll .fig").evaluate((f) => f.getBoundingClientRect().height === f.querySelector("img").getBoundingClientRect().height), true, "the viewer sits over the art, the sheet keeps its height");
+    await sp.locator(".doll .look button", { hasText: "Troll" }).click();
+    await sp.locator(".doll .look button", { hasText: "Female" }).click();
+    await sp.waitForFunction(() => window.__viewers.at(-1).options.models.id === 16);
+    eq(await sp.locator(".doll .look button", { hasText: "Troll" }).getAttribute("aria-pressed"), "true", "Troll pressed");
+    eq(JSON.stringify(await sp.evaluate(() => window.__viewers.at(-1).options.items)), JSON.stringify(TEN_PAIRS), "same items after rebuild");
+    await sp.evaluate(() => localStorage.removeItem("tidecaller-look-v1"));
   });
   await check("every slot page returns 200; /bis/head lists Holy Shroud first at 38.9; /bis/main-hand names Tidebringer's Claw", async () => {
     for (const slug of "head neck shoulder back chest wrist hands waist legs feet finger trinket main-hand off-hand two-hand".split(" ")) {

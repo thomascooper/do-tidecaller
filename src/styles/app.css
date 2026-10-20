@@ -263,7 +263,14 @@ main:focus{outline:none}
 .doll .slot.empty .ic{border-style:dashed;border-color:#2a3a41}
 .doll .slot.empty .nm{color:#6f858c}
 .doll .centre{display:flex;flex-direction:column;align-items:center;justify-content:flex-end}
-.doll .centre img{width:100%;max-width:330px;height:auto;display:block}
+.doll .centre img{width:100%;height:auto;display:block}
+.doll .fig{position:relative;width:100%;max-width:330px}
+.doll .fig .viewer{position:absolute!important;inset:0;height:auto!important}
+.doll .fig.live img{visibility:hidden}
+.doll .fig .look{position:absolute;top:0;left:0;right:0;display:flex;flex-wrap:wrap;justify-content:center;gap:4px;z-index:1}
+.doll .fig .look button{font:inherit;font-size:11.5px;padding:2px 7px;border:1px solid #2a3a41;border-radius:4px;background:rgba(10,18,22,.8);color:#8fa6ad;cursor:pointer}
+.doll .fig .look button[aria-pressed="true"]{color:#f2fbfc;border-color:#5fb7c9}
+.doll .fig .hint{position:absolute;left:0;right:0;bottom:0;margin:0;text-align:center;font-size:11.5px;color:#8fa6ad;pointer-events:none;text-shadow:0 1px 2px #000}
 .doll .who{text-align:center;margin-top:-8px}
 .doll .who .t{font-family:var(--f-display);font-size:19px;color:#f2fbfc}
 .doll .who .s{font-size:12.5px;color:#9fc2c9;margin-top:2px}

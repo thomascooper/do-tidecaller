@@ -94,7 +94,7 @@ describe("slugs", () => {
 describe("extractor", () => {
   it("produces exactly the spec's JSON", () => {
     const spec = readFileSync(resolve(__dirname, "../../docs/spec.md"), "utf8");
-    const { spells, items, wowhead, itemLevels, itemCrit, quality } = extract(spec);
+    const { spells, items, wowhead, itemLevels, itemCrit, quality, models } = extract(spec);
     const onDisk = (f: string) => JSON.parse(readFileSync(resolve(__dirname, f), "utf8"));
     expect(onDisk("spells.json")).toEqual(spells);
     expect(onDisk("items.json")).toEqual(items);
@@ -102,6 +102,7 @@ describe("extractor", () => {
     expect(onDisk("itemLevels.json")).toEqual(itemLevels);
     expect(onDisk("itemCrit.json")).toEqual(itemCrit);
     expect(onDisk("quality.json")).toEqual(quality);
+    expect(onDisk("models.json")).toEqual(models);
     expect(items).toHaveLength(155);
   });
 });

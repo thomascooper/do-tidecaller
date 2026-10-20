@@ -8,7 +8,8 @@ import { canonicalUrl, DATA_UPDATED, SITE_URL } from "../src/site";
 const STUB = `<!doctype html><html lang="en"><head><meta charset="utf-8" /><!--app-head--></head><body><!--app-header--><main id="main"><div id="root"><!--app-html--></div></main><!--app-footer--><script type="module" src="/src/entry-client.tsx"></script></body></html>`;
 
 const TIPS = "/assets/tips-test.js";
-const pages = routes.map((route) => ({ route, doc: parse(renderDocument(route, STUB, { tipsScript: TIPS })) }));
+const MODEL3D = "/assets/model3d-test.js";
+const pages = routes.map((route) => ({ route, doc: parse(renderDocument(route, STUB, { tipsScript: TIPS, model3dScript: MODEL3D })) }));
 
 const content = (doc: ReturnType<typeof parse>, selector: string) => doc.querySelector(selector)?.getAttribute("content");
 
@@ -74,10 +75,12 @@ describe.each(pages)("SEO for $route.path", ({ route, doc }) => {
     if (!route.noindex) expect(blocks.length).toBeGreaterThan(0);
     for (const b of blocks) expect(() => JSON.parse(b.text)).not.toThrow();
   });
-  it("keeps the app script only on pages that hydrate, and the item popup script on every page", () => {
+  it("keeps the app script only on pages that hydrate, the item popup script on every page, and the 3D script on /bis only", () => {
     const srcs = doc.querySelectorAll('script[type="module"]').map((s) => s.getAttribute("src"));
     expect(srcs.filter((src) => src === TIPS).length).toBe(1);
-    expect(srcs.length).toBe(route.hydrate ? 2 : 1);
+    expect(srcs.filter((src) => src === MODEL3D).length).toBe(route.path === "/bis" ? 1 : 0);
+    expect(srcs.length).toBe((route.hydrate ? 2 : 1) + (route.path === "/bis" ? 1 : 0));
+    expect(!!route.model3d).toBe(route.path === "/bis");
   });
 });
 
@@ -316,8 +319,8 @@ describe("sitemap, robots, icons and social images", () => {
     expect(sitemapXml(indexablePaths).match(/<lastmod>/g)?.length).toBe(locs.length);
     expect(sitemapXml(indexablePaths)).toContain(`<lastmod>${DATA_UPDATED}</lastmod>`);
   });
-  it("robots allows everything and names the sitemap", () => {
-    expect(robotsTxt()).toBe(`User-agent: *\nAllow: /\n\nSitemap: ${SITE_URL}/sitemap.xml\n`);
+  it("robots allows everything except the model file relay and names the sitemap", () => {
+    expect(robotsTxt()).toBe(`User-agent: *\nAllow: /\nDisallow: /modelviewer/\n\nSitemap: ${SITE_URL}/sitemap.xml\n`);
   });
   it.each(pages)("$route.path og:image file exists in public/", ({ route }) => {
     expect(existsSync(join(__dirname, "..", "public", route.ogImage)), route.ogImage).toBe(true);

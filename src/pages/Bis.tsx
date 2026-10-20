@@ -91,6 +91,7 @@ export function Bis() {
         crit={calcCrit(DEFAULTS).total}
         relic={DEFAULTS.icon}
         relicNote="Relic"
+        mark3d
       />
       <SetTable id="hordeSet" set={horde} />
 

@@ -93,6 +93,11 @@ export function About() {
           item&rsquo;s item level and armor, cached from it (spec section 14.6); its other stats are not used.
         </li>
         <li>Mindfulness ranks: Wowhead Forever spell 1223033.</li>
+        <li>
+          The 3D character: Wowhead&rsquo;s model viewer, showing Blizzard&rsquo;s character and item models, with the
+          model files fetched from Wowhead through this site. Item model numbers come from sixtysim.com&rsquo;s item
+          table, each checked against Wowhead&rsquo;s model files (spec section 14.10).
+        </li>
         <li>Spirit readings and the Water Shield tooltip: measured in the beta by the site owner.</li>
       </ul>
 

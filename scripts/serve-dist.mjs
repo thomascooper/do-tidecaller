@@ -28,8 +28,29 @@ async function isFile(path) {
   }
 }
 
-/** Start the server on `port` (0 picks a free one). Resolves to the http.Server. */
-export function serveDist({ port = 4173, dir } = {}) {
+const RELAY_HOST = "https://wow.zamimg.com";
+
+/** Forward a /modelviewer/* request to Wowhead's CDN, as the vercel.json rewrite does. No Origin is sent. */
+async function relayModelFile(url, res) {
+  try {
+    const upstream = await fetch(RELAY_HOST + url.pathname + url.search);
+    const headers = { "Content-Type": upstream.headers.get("content-type") ?? "application/octet-stream" };
+    const cache = upstream.headers.get("cache-control");
+    if (cache) headers["Cache-Control"] = cache;
+    res.writeHead(upstream.status, headers);
+    res.end(Buffer.from(await upstream.arrayBuffer()));
+  } catch {
+    res.writeHead(502);
+    res.end("Relay failed");
+  }
+}
+
+/**
+ * Start the server on `port` (0 picks a free one). Resolves to the http.Server.
+ * `relay: true` forwards /modelviewer/* to Wowhead like production; it is off by default
+ * and the smoke suite never turns it on.
+ */
+export function serveDist({ port = 4173, dir, relay = false } = {}) {
   const root = resolve(dir ?? join(fileURLToPath(new URL("..", import.meta.url)), "dist"));
   const server = createServer(async (req, res) => {
     const url = new URL(req.url ?? "/", "http://localhost");
@@ -37,6 +58,10 @@ export function serveDist({ port = 4173, dir } = {}) {
     if (path.length > 1 && path.endsWith("/")) {
       res.writeHead(308, { Location: path.slice(0, -1) + url.search });
       res.end();
+      return;
+    }
+    if (relay && path.startsWith("/modelviewer/")) {
+      await relayModelFile(url, res);
       return;
     }
     const safe = normalize(path).replace(/^(\.\.[/\\])+/, "");
@@ -59,6 +84,6 @@ export function serveDist({ port = 4173, dir } = {}) {
 }
 
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
-  const server = await serveDist({ port: Number(process.env.PORT ?? 4173) });
+  const server = await serveDist({ port: Number(process.env.PORT ?? 4173), relay: process.argv.includes("--relay") });
   console.log(`Serving dist on http://127.0.0.1:${server.address().port}`);
 }

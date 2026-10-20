@@ -1,0 +1,62 @@
+# Ralph Progress Log
+Started: Tue Oct 20 00:51:52 UTC 2026
+---
+
+## 20 Oct 2026 - US-001
+- Extractor now also writes `src/data/models.json` from spec 14.10 (races by faction, 119 item entries); `.d.mts` typed; the existing "produces exactly the spec's JSON" test covers it.
+- `src/model3d/data.ts` (no React, no data/index.ts import): `racesFor(faction)` (Both falls back to Horde), `modelId(race, gender)`, `viewerItems(set)` in sheet order, skipping empty rows, custom items and items with no entry.
+- Files: scripts/extract-spec-data.mjs/.d.mts, src/data/models.json, src/data/data.test.ts, src/model3d/data.ts, src/model3d/data.test.ts.
+- Checks: typecheck, vitest 2691, build. Broke the sheet order in `ORDER` (Wrist and Hands swapped): the ten-pairs test failed, restored.
+- **Learnings for future iterations:**
+  - `BestSet.rows` is already in sheet order (SET_ORDER, then Two-hand or Main hand + Off hand); `viewerItems` looks rows up by slot.
+  - Smoke/stub work in US-003 can reuse the ten pairs: [1,16826],[3,11473],[20,12216],[9,16901],[10,13348],[6,737787],[7,737498],[8,4623],[21,741039],[22,4403].
+---
+
+## 20 Oct 2026 - US-002
+- `vercel.json`: rewrite `/modelviewer/:path*` to wow.zamimg.com and the `x-vercel-enable-rewrite-caching: 1` header for `/modelviewer/(.*)`. `robotsTxt()` now adds `Disallow: /modelviewer/` (the prerender writes it from there). `vite.config.ts` dev proxy with `changeOrigin` and the `Origin` header removed. `scripts/serve-dist.mjs`: opt-in `serveDist({ relay: true })` and `--relay` flag, off by default.
+- Files: vercel.json, vite.config.ts, scripts/serve-dist.mjs, src/seo/sitemap.ts, src/vercel-config.test.ts (new), test/seo.test.ts.
+- Checks: typecheck, vitest 2693, build, smoke 61 of 61. Broke the header key in vercel.json (the new vercel test failed) and removed the Disallow line (the SEO robots test failed), restored both. The relay itself could not reach Wowhead from this container (agent proxy), it answers 502 cleanly; the delivering session checks it for real on the preview.
+- **Learnings for future iterations:**
+  - robots.txt text lives in `src/seo/sitemap.ts`, not in the prerender script.
+  - The smoke suite serves `dist/` without the relay, so every `/modelviewer/*` request in smoke must be stubbed with `page.route`.
+---
+
+## 20 Oct 2026 - US-003
+- `src/model3d/viewer.ts` (no React): `hasWebGL()`, `createViewer(el, model, items)` returning `{ setItems, destroy }`. Loads jQuery (dynamic import of the `jquery` package, sets window.jQuery and $), the WH globals, Wowhead's viewer script once per page, the customization file, then `new ZamModelViewer`. `setItems` clears and sets only changed slots. `jquery.d.ts` declares the module (no @types package added).
+- `CharacterSheet` has a `Figure`: totem art plus an absolutely placed `.viewer` of the same size (no layout shift); IntersectionObserver with 200 px margin, WebGL and min-width 761 px required; art hidden (visibility) once ready; hint under the model; failures only `console.warn`. A faction change rebuilds the viewer (first race of the faction); a set change calls `setItems`.
+- The viewer script is fetched through the relay path (`/modelviewer/classicplus/viewer/viewer.min.js`), not wow.zamimg.com directly, so the smoke stub and the Vercel rewrite cover it.
+- Files: package.json, package-lock.json, src/model3d/viewer.ts, src/model3d/jquery.d.ts, src/calculator/CharacterSheet.tsx, src/styles/app.css, test/smoke.mjs.
+- Checks: typecheck, vitest 2693, build, smoke 63 of 63, reference 26 of 26. Broke the set-change effect (deps `[]`): the new 3D smoke check failed (and the Alliance check after it, as a cascade); restored.
+- **Learnings for future iterations:**
+  - Smoke: `stubViewer(context)` fakes the viewer and customization routes and `TEN_PAIRS` is the expected list; every context that loads `/` and scrolls to the sheet needs the stub, or the unrelayed `/modelviewer/*` 404s log console errors.
+  - The stub keeps `window.__viewers` (each with `options` and `calls`); US-004 can read the newest one.
+  - For US-005 the mount logic (observer, hint, buttons, storage) is currently inside the React `Figure`; move the shared parts into a React-free module so `src/model3d/page.ts` can reuse them.
+---
+
+## 20 Oct 2026 - US-004
+- Race and gender buttons (`.look`, `aria-pressed`) over the top of the centre once the model is ready: one per race in `racesFor(faction)`, then Male and Female. A change rebuilds the viewer with the new model ID and the same items. Choice kept under `tidecaller-look-v1` by the new React-free `src/model3d/look.ts` (`readLook`, `saveLook`, `raceFor`, all in try/catch); a stored race the faction cannot be falls back to its first race, and switching back shows the stored one again. Not part of the saved state or share link.
+- The ready flag is no longer reset on a rebuild (buttons stay up); it resets only if a rebuild fails, so the totem art returns.
+- Files: src/model3d/look.ts, src/calculator/CharacterSheet.tsx, src/styles/app.css, test/smoke.mjs.
+- Checks: typecheck, vitest 2693, build, smoke 64 of 64, reference 26 of 26. Broke the save (commented out `saveLook`): the new smoke check failed at "kept after reload: expected 16, got 3"; restored.
+- **Learnings for future iterations:**
+  - For US-005 the look storage is already shareable (`look.ts`); the observer, hint and buttons still live in the React `Figure` and need a React-free twin in `src/model3d/page.ts`.
+  - Smoke: `getByRole("button", { name: "Male" })` also matches Female; use `exact: true`.
+---
+
+## 20 Oct 2026 - US-005
+- `src/model3d/page.ts` is a second standalone Vite entry (`assets/model3d-[hash].js`, 5.1 KB gzipped with its look chunk). It finds each `[data-model3d]` figure (JSON with the faction and the `viewerItems` list, rendered by `CharacterSheet` when given `mark3d`) and mounts the same viewer: IntersectionObserver at 200 px, WebGL and 761 px checks, hint, race and gender buttons, `tidecaller-look-v1` storage; a failure removes the controls and leaves the totem art with a `console.warn`.
+- Route field `model3d` (only `/bis`); `renderDocument` adds the script for it. `scripts/prerender.mjs` now checks both standalone scripts with one helper (popup 12 KB, 3D 8 KB gzipped, static chunks counted, jQuery's dynamic chunk not). Root CLAUDE.md SEO line updated.
+- Files: src/model3d/page.ts, src/calculator/CharacterSheet.tsx, src/pages/Bis.tsx, src/routes.tsx, src/entry-server.tsx, vite.config.ts, scripts/prerender.mjs, test/seo.test.ts, test/smoke.mjs, CLAUDE.md.
+- Checks: typecheck, vitest 2693, build, smoke 65 of 65, reference 26 of 26. Broke the check by setting `model3d: false` on /bis: the SEO test failed, restored. The smoke check also failed once on a real bug (race button kept a stale look, so Troll then Female gave Orc female); fixed by building the next look at click time.
+- **Learnings for future iterations:**
+  - The smoke `siteCtx` now has `stubViewer`; any new site-page check on `/bis` gets the stub for free.
+  - The calculator's React `Figure` and `page.ts` are two implementations of the same behaviour; change both together.
+---
+
+## 20 Oct 2026 - US-006
+- About page sources list now credits the 3D character: Wowhead's model viewer, Blizzard's character and item models, files fetched from Wowhead through this site, item model numbers from Wowhead's Forever item data (spec section 14.10). A search of `src/` for "3D" finds no page copy saying a 3D character is not used.
+- Files: src/pages/About.tsx.
+- Checks: typecheck, vitest, build, smoke 65 of 65, reference 26 of 26.
+- **Learnings for future iterations:**
+  - The relay to Wowhead cannot be reached from the build container; the delivering session must check the real model on the preview URL.
+---

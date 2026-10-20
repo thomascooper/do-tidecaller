@@ -1,3 +1,7 @@
+import { useEffect, useRef, useState } from "react";
+import { createViewer, hasWebGL, type ViewerHandle } from "../model3d/viewer";
+import { modelId, racesFor, viewerItems, type Gender } from "../model3d/data";
+import { raceFor, readLook, saveLook, type Look } from "../model3d/look";
 import { itemIconSrc, itemQuality, RELIC } from "../lib/itemIcon";
 import { fmt } from "../lib/format";
 import { itemPath } from "../lib/slug";
@@ -22,6 +26,8 @@ interface Props {
   relic: boolean;
   /** What the empty relic slot says; the calculator tells the visitor how to turn the Icon on. */
   relicNote?: string;
+  /** Marks the figure for the standalone 3D script (pages that do not hydrate the app). */
+  mark3d?: boolean;
 }
 
 interface Cell {
@@ -96,8 +102,83 @@ function Slot({ cell, side }: { cell: Cell; side: "l" | "r" | "b" }) {
   );
 }
 
+/** The 3D character over the totem art. Loads when the sheet nears the viewport; any failure leaves the art. */
+function Figure({ set, faction, mark }: { set: BestSet; faction: string; mark?: boolean }) {
+  const box = useRef<HTMLDivElement>(null);
+  const handle = useRef<ViewerHandle | undefined>(undefined);
+  const [ready, setReady] = useState(false);
+  const [look, setLook] = useState<Look>(readLook);
+  const race = raceFor(faction, look);
+  const items = viewerItems(set);
+  const key = JSON.stringify(items);
+  const latest = useRef(items);
+  latest.current = items;
+
+  useEffect(() => {
+    const el = box.current;
+    if (!el || !hasWebGL() || !window.matchMedia("(min-width: 761px)").matches) return;
+    let dead = false;
+    const model = modelId(race, look.gender);
+    const watch = new IntersectionObserver(
+      (seen) => {
+        if (!seen.some((e) => e.isIntersecting)) return;
+        watch.disconnect();
+        createViewer(el, model, latest.current).then(
+          (h) => {
+            if (dead) return h.destroy();
+            handle.current = h;
+            h.setItems(latest.current);
+            setReady(true);
+          },
+          (e) => {
+            setReady(false);
+            console.warn("3D character unavailable:", e);
+          },
+        );
+      },
+      { rootMargin: "200px" },
+    );
+    watch.observe(el);
+    return () => {
+      dead = true;
+      watch.disconnect();
+      handle.current?.destroy();
+      handle.current = undefined;
+    };
+  }, [race.race, look.gender]);
+
+  useEffect(() => handle.current?.setItems(latest.current), [key]);
+
+  const choose = (next: Look) => {
+    setLook(next);
+    saveLook(next);
+  };
+
+  return (
+    <div className={`fig${ready ? " live" : ""}`} data-model3d={mark ? JSON.stringify({ faction, items }) : undefined}>
+      <img src="/art/totem-figure.svg" alt="" width={360} height={440} />
+      <div className="viewer" ref={box} />
+      {ready && (
+        <div className="look" role="group" aria-label="Race and gender">
+          {racesFor(faction).map((r) => (
+            <button key={r.race} type="button" title={r.race} aria-pressed={r.race === race.race} onClick={() => choose({ ...look, race: r.race })}>
+              {r.race}
+            </button>
+          ))}
+          {(["male", "female"] as Gender[]).map((g) => (
+            <button key={g} type="button" aria-pressed={g === look.gender} onClick={() => choose({ ...look, gender: g })}>
+              {g === "male" ? "Male" : "Female"}
+            </button>
+          ))}
+        </div>
+      )}
+      {ready && <p className="hint">Drag to turn. Ctrl + scroll to zoom.</p>}
+    </div>
+  );
+}
+
 /** The best set laid out like the game's character sheet. Always dark, like the game's frame. */
-export function CharacterSheet({ set, level, faction, heal, maxMana, crit, relic, relicNote = "Relic: turn on Polished Driftwood Icon" }: Props) {
+export function CharacterSheet({ set, level, faction, heal, maxMana, crit, relic, relicNote = "Relic: turn on Polished Driftwood Icon", mark3d }: Props) {
   const all = cells(set, relic, relicNote);
   const left = all.slice(0, 8);
   const right = all.slice(8, 16);
@@ -122,7 +203,7 @@ export function CharacterSheet({ set, level, faction, heal, maxMana, crit, relic
           ))}
         </ul>
         <div className="centre">
-          <img src="/art/totem-figure.svg" alt="" width={360} height={440} />
+          <Figure set={set} faction={faction} mark={mark3d} />
           <div className="who">
             <div className="t">
               Level {level} Shaman, {faction}

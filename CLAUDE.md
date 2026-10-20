@@ -71,7 +71,7 @@ never the expected value.
 ## SEO rules (the site exists to be found)
 
 - Every page is prerendered HTML with real content before any JavaScript runs. Only the calculator
-  page hydrates; content pages ship no app JavaScript. Every page also loads the one small item popup script (`src/tips/tips.ts`, under 12 KB gzipped).
+  page hydrates; content pages ship no app JavaScript. Every page also loads the one small item popup script (`src/tips/tips.ts`, under 12 KB gzipped). `/bis` also loads the small 3D character script (`src/model3d/page.ts`, under 8 KB gzipped; Tom's answer, 19 Oct 2026), lazily, with the totem art as its no-JavaScript fallback.
 - Every indexable page has a unique `<title>` and meta description, exactly one `<h1>`, a canonical
   URL on the production host with no trailing slash, Open Graph and Twitter tags, and a
   BreadcrumbList (except the home page). The SEO tests enforce this for every route.

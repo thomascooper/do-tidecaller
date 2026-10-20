@@ -1858,3 +1858,171 @@ shows it in the relic slot while its toggle is on. It is not an item in section 
   "relic": {"name": "Polished Driftwood Icon", "id": 249398, "icon": "spell_shaman_totemrecall", "quality": 3}
 }
 ```
+
+### 14.10 3D character: races, slots and item models
+
+Tom, 19 Oct 2026, after seeing sixtysim.com: *"i want 3d model charactrers with the gear"*. His
+answers the same day: relaying Wowhead's model files through this site is *"fine for now"*; the 3D
+character goes on *"the main calculator page"* and the best-in-slot page (`/bis`); *"alliance is
+dwarf only"*, and the Horde races come from web research. Race only chooses the model: it changes
+no number anywhere.
+
+**Races.** Shamans in Forever can be Orc, Troll, Tauren or Windshaper Skyborne (Horde) and Dwarf
+(Alliance only), per Tom and the Forever race guides found by web search on 19 Oct 2026 (Blizzard's
+Forever announcement, and the Shaman guides at warcrafttavern.com, talentsforever.com and
+mobalytics.gg). Each race's two character models are Wowhead's (`meta/character/<id>.json` on
+wow.zamimg.com records the race and gender of each: male is gender 0, female 1). The first race of
+a faction is its default, and male is the default gender.
+
+**Viewer slots.** Wowhead's viewer takes each piece of gear as `[slot, display]`: head 1, shoulder
+3, back 16, chest 5 (a robe 20), wrist 9, hands 10, waist 6, legs 7, feet 8, every main-hand and
+two-hand weapon 21, every off hand (shield or held item) 22. Necks, rings and trinkets show no model
+and have no entry.
+
+**Item model numbers** (Wowhead's "display IDs"). Wowhead blocks automated reads of its item pages,
+from servers and, after two quick runs on 19 Oct, from Tom's browser too. So the numbers come from
+sixtysim.com's item table (read 19 Oct 2026), Tom's choice on 20 Oct. Every number was then checked
+against Wowhead's own model files with `node scripts/wowhead-models.mjs --check`: the file exists,
+and its inventory type matches the item's section 12 slot (a chest whose model is a robe's gets slot
+20). Four models are filed under another armor class than section 12 gives (Bridgebreaker
+Bindings, Renewing Footpads, Defiler's Cloth Girdle, Kodohide Legguards); Wowhead files a model that
+several items share under one of them, so they are kept. Items with no entry are not drawn: Tattered
+Kirin Tor Cloak and Roused Nature Footwraps (not in sixtysim's table), and Red Wool Cloak and
+Darkspear Raider's Cloak (no Wowhead ID in section 14.5).
+
+```json
+{
+  "races": {
+    "Horde": [
+      {"race": "Orc", "male": 3, "female": 4},
+      {"race": "Troll", "male": 15, "female": 16},
+      {"race": "Tauren", "male": 11, "female": 12},
+      {"race": "Windshaper Skyborne", "male": 218, "female": 219}
+    ],
+    "Alliance": [
+      {"race": "Dwarf", "male": 5, "female": 6}
+    ]
+  },
+  "items": {
+    "Holy Shroud": {"display": 16826, "slot": 1},
+    "Enduring Cap": {"display": 21292, "slot": 1},
+    "Embalmed Shroud": {"display": 15391, "slot": 1},
+    "Wild Headdress": {"display": 13323, "slot": 1},
+    "Sorrow's Shroud": {"display": 15616, "slot": 1},
+    "Filigreed Pristine Circlet": {"display": 747756, "slot": 1},
+    "Wisdom's Leather Helm": {"display": 714591, "slot": 1},
+    "Death Speaker Mantle": {"display": 11473, "slot": 3},
+    "Batwing Mantle": {"display": 5116, "slot": 3},
+    "Bloodmage Mantle": {"display": 10791, "slot": 3},
+    "Berylline Pads": {"display": 12980, "slot": 3},
+    "Magician's Mantle": {"display": 20715, "slot": 3},
+    "Ghostly Mantle": {"display": 21457, "slot": 3},
+    "Fairywing Mantle": {"display": 18901, "slot": 3},
+    "Moonlit Amice": {"display": 9440, "slot": 3},
+    "Rose Mantle": {"display": 17135, "slot": 3},
+    "Naga Priestess's Mantle": {"display": 9746, "slot": 3},
+    "Repairman's Cape": {"display": 23100, "slot": 16},
+    "Brilliant Cloak": {"display": 15181, "slot": 16},
+    "Glowing Thresher Cape": {"display": 23002, "slot": 16},
+    "Battle Healer's Cloak": {"display": 23071, "slot": 16},
+    "Windsong Drape": {"display": 28303, "slot": 16},
+    "Thornweaver Drape": {"display": 23008, "slot": 16},
+    "Prelacy Cape": {"display": 15042, "slot": 16},
+    "Death Speaker Robes": {"display": 12216, "slot": 20},
+    "Beguiler Robes": {"display": 19109, "slot": 20},
+    "Civinad Robes": {"display": 14760, "slot": 20},
+    "Pristine Gown": {"display": 715246, "slot": 5},
+    "Violet Sorcerer's Robes": {"display": 737494, "slot": 20},
+    "Wisdom's Leather Tunic": {"display": 714589, "slot": 5},
+    "Doomsayer's Robe": {"display": 12718, "slot": 20},
+    "Zealot's Robe": {"display": 15820, "slot": 20},
+    "Spidertank Oilrag": {"display": 11204, "slot": 9},
+    "Mindthrust Bracers": {"display": 16901, "slot": 9},
+    "Glowing Magical Bracelets": {"display": 22593, "slot": 9},
+    "Nightsky Wristbands": {"display": 14618, "slot": 9},
+    "Silkstream Cuffs": {"display": 17646, "slot": 9},
+    "Knife-Polishing Rag": {"display": 22593, "slot": 9},
+    "Graveweave Bindings": {"display": 715413, "slot": 9},
+    "Bridgebreaker Bindings": {"display": 12955, "slot": 9},
+    "Prospector Gloves": {"display": 5435, "slot": 10},
+    "Truefaith Gloves": {"display": 11097, "slot": 10},
+    "Gloves of Old": {"display": 13348, "slot": 10},
+    "Hotshot Pilot's Gloves": {"display": 12468, "slot": 10},
+    "Restorer's Fine Gloves": {"display": 11532, "slot": 10},
+    "Pristine Gloves": {"display": 715240, "slot": 10},
+    "Wisdom's Leather Gloves": {"display": 714587, "slot": 10},
+    "Naga Battle Gloves": {"display": 3524, "slot": 10},
+    "Oilrag Handwraps": {"display": 9366, "slot": 10},
+    "Shilly Mitts": {"display": 18991, "slot": 10},
+    "Mender's Leather Belt": {"display": 714448, "slot": 6},
+    "Blightleaf Rope": {"display": 737787, "slot": 6},
+    "Skycaller's Leather Belt": {"display": 714494, "slot": 6},
+    "Violet Sash": {"display": 714142, "slot": 6},
+    "Razzeric's Customized Seatbelt": {"display": 4306, "slot": 6},
+    "Belt of Arugal": {"display": 11172, "slot": 6},
+    "Budding Leaf Belt": {"display": 10269, "slot": 6},
+    "Pristine Sash": {"display": 715247, "slot": 6},
+    "Wisdom's Leather Leggings": {"display": 714590, "slot": 7},
+    "Violet Sorcerer's Leggings": {"display": 737498, "slot": 7},
+    "Pristine Leggings": {"display": 715248, "slot": 7},
+    "Filigreed Pristine Leggings": {"display": 715248, "slot": 7},
+    "Magistrate's Pantaloons": {"display": 27755, "slot": 7},
+    "Wisdom's Leather Pants": {"display": 714588, "slot": 7},
+    "Gaze Dreamer Pants": {"display": 7587, "slot": 7},
+    "Gilded Slippers": {"display": 715316, "slot": 8},
+    "Renewing Footpads": {"display": 8348, "slot": 8},
+    "Acidic Walkers": {"display": 4623, "slot": 8},
+    "Wisdom's Leather Boots": {"display": 714585, "slot": 8},
+    "Violet Sorcerer's Sandals": {"display": 21154, "slot": 8},
+    "Gnomebot Operating Boots": {"display": 16059, "slot": 8},
+    "Rotmender's Treads": {"display": 734651, "slot": 8},
+    "Everlast Boots": {"display": 14325, "slot": 8},
+    "Wind Spirit Staff": {"display": 20325, "slot": 21},
+    "Healer's Staff": {"display": 5554, "slot": 21},
+    "Fallen Dragon's Scepter": {"display": 24445, "slot": 21},
+    "Odo's Ley Staff": {"display": 20335, "slot": 21},
+    "Tidebringer's Claw": {"display": 741039, "slot": 21},
+    "Royal Diplomatic Scepter": {"display": 18373, "slot": 21},
+    "Death Speaker Scepter": {"display": 19669, "slot": 21},
+    "Forcestone Buckler": {"display": 4403, "slot": 22},
+    "Elementalist's Guard": {"display": 741451, "slot": 22},
+    "Heart of Agamaggan": {"display": 18454, "slot": 22},
+    "Seedcloud Buckler": {"display": 2210, "slot": 22},
+    "Painwalker Buckler": {"display": 18698, "slot": 22},
+    "Salve and Salvation": {"display": 752990, "slot": 22},
+    "Orb of Souls": {"display": 21597, "slot": 22},
+    "Geomancer Headdress": {"display": 8753, "slot": 1},
+    "Pristine Circlet": {"display": 747756, "slot": 1},
+    "Wisdom's Leather Hood": {"display": 714592, "slot": 1},
+    "Whisperwind Headdress": {"display": 7009, "slot": 1},
+    "Invoker's Mantle": {"display": 4904, "slot": 3},
+    "Feline Mantle": {"display": 10169, "slot": 3},
+    "Heavy Woolen Cloak": {"display": 23093, "slot": 16},
+    "Robes of Arugal": {"display": 11528, "slot": 20},
+    "Wisdom's Leather Armor": {"display": 714583, "slot": 5},
+    "Ceremonial Gown": {"display": 28064, "slot": 5},
+    "Witherbite Bracers": {"display": 734653, "slot": 9},
+    "Tattered Mittens": {"display": 27753, "slot": 10},
+    "Gloves of Meditation": {"display": 4620, "slot": 10},
+    "Jutebraid Gloves": {"display": 11985, "slot": 10},
+    "Defiler's Cloth Girdle": {"display": 9965, "slot": 6},
+    "Wisdom's Leather Belt": {"display": 714584, "slot": 6},
+    "Daewyn's Girdle": {"display": 11172, "slot": 6},
+    "Earthen Leggings": {"display": 715294, "slot": 7},
+    "Ogre Loincloth": {"display": 10098, "slot": 7},
+    "Kodohide Legguards": {"display": 13331, "slot": 7},
+    "Stormrider's Leather Pants": {"display": 714526, "slot": 7},
+    "Black Whelp Slippers": {"display": 714356, "slot": 8},
+    "Wingborne Boots": {"display": 14660, "slot": 8},
+    "Pristine Boots": {"display": 747019, "slot": 8},
+    "Bottle of Powderfuse Port": {"display": 6530, "slot": 21},
+    "Lightning's Grasp": {"display": 741038, "slot": 21},
+    "Eye of Paleth": {"display": 21596, "slot": 22},
+    "Alliance Outrunner Healing Rod": {"display": 13109, "slot": 22},
+    "Orb of Mistmantle": {"display": 28803, "slot": 22},
+    "Omega Orb": {"display": 15884, "slot": 22},
+    "Raptor's Gaze": {"display": 21603, "slot": 22},
+    "Staff of the Friar": {"display": 20339, "slot": 21}
+  }
+}
+```

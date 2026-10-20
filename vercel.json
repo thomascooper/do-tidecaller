@@ -4,10 +4,17 @@
   "framework": "vite",
   "buildCommand": "npm run build",
   "outputDirectory": "dist",
+  "rewrites": [
+    { "source": "/modelviewer/:path*", "destination": "https://wow.zamimg.com/modelviewer/:path*" }
+  ],
   "headers": [
     {
       "source": "/assets/(.*)",
       "headers": [{ "key": "Cache-Control", "value": "public, max-age=31536000, immutable" }]
+    },
+    {
+      "source": "/modelviewer/(.*)",
+      "headers": [{ "key": "x-vercel-enable-rewrite-caching", "value": "1" }]
     },
     {
       "source": "/(.*)",
