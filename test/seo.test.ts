@@ -316,8 +316,8 @@ describe("sitemap, robots, icons and social images", () => {
     expect(sitemapXml(indexablePaths).match(/<lastmod>/g)?.length).toBe(locs.length);
     expect(sitemapXml(indexablePaths)).toContain(`<lastmod>${DATA_UPDATED}</lastmod>`);
   });
-  it("robots allows everything and names the sitemap", () => {
-    expect(robotsTxt()).toBe(`User-agent: *\nAllow: /\n\nSitemap: ${SITE_URL}/sitemap.xml\n`);
+  it("robots allows everything except the model file relay and names the sitemap", () => {
+    expect(robotsTxt()).toBe(`User-agent: *\nAllow: /\nDisallow: /modelviewer/\n\nSitemap: ${SITE_URL}/sitemap.xml\n`);
   });
   it.each(pages)("$route.path og:image file exists in public/", ({ route }) => {
     expect(existsSync(join(__dirname, "..", "public", route.ogImage)), route.ogImage).toBe(true);

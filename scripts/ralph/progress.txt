@@ -11,3 +11,12 @@ Started: Tue Oct 20 00:51:52 UTC 2026
   - `BestSet.rows` is already in sheet order (SET_ORDER, then Two-hand or Main hand + Off hand); `viewerItems` looks rows up by slot.
   - Smoke/stub work in US-003 can reuse the ten pairs: [1,16826],[3,11473],[20,12216],[9,16901],[10,13348],[6,737787],[7,737498],[8,4623],[21,741039],[22,4403].
 ---
+
+## 20 Oct 2026 - US-002
+- `vercel.json`: rewrite `/modelviewer/:path*` to wow.zamimg.com and the `x-vercel-enable-rewrite-caching: 1` header for `/modelviewer/(.*)`. `robotsTxt()` now adds `Disallow: /modelviewer/` (the prerender writes it from there). `vite.config.ts` dev proxy with `changeOrigin` and the `Origin` header removed. `scripts/serve-dist.mjs`: opt-in `serveDist({ relay: true })` and `--relay` flag, off by default.
+- Files: vercel.json, vite.config.ts, scripts/serve-dist.mjs, src/seo/sitemap.ts, src/vercel-config.test.ts (new), test/seo.test.ts.
+- Checks: typecheck, vitest 2693, build, smoke 61 of 61. Broke the header key in vercel.json (the new vercel test failed) and removed the Disallow line (the SEO robots test failed), restored both. The relay itself could not reach Wowhead from this container (agent proxy), it answers 502 cleanly; the delivering session checks it for real on the preview.
+- **Learnings for future iterations:**
+  - robots.txt text lives in `src/seo/sitemap.ts`, not in the prerender script.
+  - The smoke suite serves `dist/` without the relay, so every `/modelviewer/*` request in smoke must be stubbed with `page.route`.
+---

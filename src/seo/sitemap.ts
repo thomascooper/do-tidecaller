@@ -9,5 +9,5 @@ export function sitemapXml(paths: string[]): string {
 }
 
 export function robotsTxt(): string {
-  return `User-agent: *\nAllow: /\n\nSitemap: ${SITE_URL}/sitemap.xml\n`;
+  return `User-agent: *\nAllow: /\nDisallow: /modelviewer/\n\nSitemap: ${SITE_URL}/sitemap.xml\n`;
 }
