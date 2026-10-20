@@ -5,8 +5,8 @@
 //
 //   node scripts/wowhead-models.mjs
 //     prints a script to paste into the browser console on any www.wowhead.com page. It reads
-//     Wowhead's Forever item data for every ID in spec section 14.5 and copies the result
-//     ({ id: [display, inventory slot, name, source] }) to the clipboard.
+//     Wowhead's Forever item data for every ID in spec section 14.5 and prints the result
+//     ({ id: [display, inventory slot, name, source] }) as one line to copy (also on window.TC).
 //
 //   node scripts/wowhead-models.mjs --apply <pasted.json>
 //     checks the pasted result and prints the "items" object for section 14.10. For every item it
@@ -52,8 +52,9 @@ function consoleScript() {
     "if(!d){const h=await(await fetch(`/forever/item=${id}`)).text();const i=h.indexOf(`\"${id}\":{`);" +
     "if(i>=0){const c=h.slice(i,i+4000);d=c.match(/\"displayid\":(\\d+)/)?.[1];s=s||c.match(/\"slotbak\":(\\d+)/)?.[1];" +
     "nm=nm||c.match(/\"name_enus\":\"(.*?)\"/)?.[1];src='p'}}}catch(e){src='e'}out[id]=[d?+d:null,s?+s:null,nm,src];" +
-    "if(++n%25==0)console.log(n+' of '+ids.length);await new Promise(r=>setTimeout(r,150))}copy(JSON.stringify(out));" +
-    "console.log('Done: '+Object.values(out).filter(v=>v[0]).length+' of '+ids.length+' have a model number. Copied, paste it to Claude.')})()"
+    "if(++n%25==0)console.log(n+' of '+ids.length);await new Promise(r=>setTimeout(r,150))}window.TC=JSON.stringify(out);" +
+    "console.log('Done: '+Object.values(out).filter(v=>v[0]).length+' of '+ids.length+' have a model number. Copy the line below and paste it to Claude.');" +
+    "console.log(window.TC)})()"
   );
 }
 
