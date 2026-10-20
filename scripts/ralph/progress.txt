@@ -1,0 +1,13 @@
+# Ralph Progress Log
+Started: Tue Oct 20 00:51:52 UTC 2026
+---
+
+## 20 Oct 2026 - US-001
+- Extractor now also writes `src/data/models.json` from spec 14.10 (races by faction, 119 item entries); `.d.mts` typed; the existing "produces exactly the spec's JSON" test covers it.
+- `src/model3d/data.ts` (no React, no data/index.ts import): `racesFor(faction)` (Both falls back to Horde), `modelId(race, gender)`, `viewerItems(set)` in sheet order, skipping empty rows, custom items and items with no entry.
+- Files: scripts/extract-spec-data.mjs/.d.mts, src/data/models.json, src/data/data.test.ts, src/model3d/data.ts, src/model3d/data.test.ts.
+- Checks: typecheck, vitest 2691, build. Broke the sheet order in `ORDER` (Wrist and Hands swapped): the ten-pairs test failed, restored.
+- **Learnings for future iterations:**
+  - `BestSet.rows` is already in sheet order (SET_ORDER, then Two-hand or Main hand + Off hand); `viewerItems` looks rows up by slot.
+  - Smoke/stub work in US-003 can reuse the ten pairs: [1,16826],[3,11473],[20,12216],[9,16901],[10,13348],[6,737787],[7,737498],[8,4623],[21,741039],[22,4403].
+---
