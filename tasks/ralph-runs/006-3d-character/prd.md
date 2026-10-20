@@ -153,7 +153,7 @@ render by hand.
 **Description:** As the site owner, I want the 3D character's sources credited, and the whole run checked against the spec.
 
 **Acceptance Criteria:**
-- [ ] About page sources: the 3D character uses Wowhead's model viewer and Blizzard's character and item models, with the files fetched from Wowhead through this site; item model numbers come from Wowhead's Forever item data (spec section 14.10)
+- [ ] About page sources: the 3D character uses Wowhead's model viewer and Blizzard's character and item models, with the files fetched from Wowhead through this site; item model numbers come from sixtysim.com's item table, each checked against Wowhead's model files (spec section 14.10). (Corrected at delivery: this line still named Wowhead's item data, the source before Tom's 20 Oct choice; the About page was fixed to match.)
 - [ ] The run 005 PR note that a 3D character is not used is not repeated anywhere in page copy (search `src/` for "3D")
 - [ ] `npm run typecheck`, `npm test`, `npm run build`, `CHROMIUM_PATH=/opt/pw-browsers/chromium-1194/chrome-linux/chrome npm run smoke` and `CHROMIUM_PATH=/opt/pw-browsers/chromium-1194/chrome-linux/chrome npm run reference` (26 of 26) pass
 
@@ -169,3 +169,15 @@ render by hand.
 
 - If Wowhead ever stops answering the relay, the sheet quietly falls back to the totem art; the
   owner decides then whether to drop the feature.
+
+## Delivery notes (run 006)
+
+- **Sheet height fix.** Wowhead's viewer writes `height` and `position: relative` onto its container,
+  which pushed the model under the hidden totem art and doubled the sheet's height (found in the
+  real render, not by the stub). Fixed in CSS (`.doll .fig .viewer` keeps `position: absolute` and
+  `height: auto` with `!important`); the smoke stub now writes the same inline styles, and a check on
+  `/` and `/bis` asserts the figure stays the height of the art.
+- **Viewer script through the relay.** Ralph loads `viewer.min.js` from `/modelviewer/classicplus/viewer/`
+  (through our relay) instead of straight from wow.zamimg.com. Same file; the site then loads no
+  third-party script. Kept.
+

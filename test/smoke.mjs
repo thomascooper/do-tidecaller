@@ -33,8 +33,13 @@ async function stubViewer(context) {
   await context.route("**/modelviewer/classicplus/viewer/viewer.min.js", (route) =>
     route.fulfill({
       contentType: "text/javascript",
+      // Like Wowhead's viewer, the stub writes an inline height and position onto its container.
       body: `window.__viewers = [];
-window.ZamModelViewer = function (options) { this.options = options; this.calls = []; window.__viewers.push(this); };
+window.ZamModelViewer = function (options) {
+  var el = options.container && options.container[0];
+  if (el) { el.style.height = el.clientHeight + "px"; el.style.position = "relative"; }
+  this.options = options; this.calls = []; window.__viewers.push(this);
+};
 window.ZamModelViewer.prototype.method = function (name, arg) { this.calls.push([name, arg]); };`,
     }),
   );
@@ -448,6 +453,7 @@ try {
     await page.locator(".doll .hint").waitFor();
     eq((await page.locator(".doll .hint").innerText()).trim(), "Drag to turn. Ctrl + scroll to zoom.", "hint");
     eq(await page.locator(".doll .fig img").evaluate((el) => getComputedStyle(el).visibility), "hidden", "totem art hidden once the viewer is up");
+    eq(await page.locator(".doll .fig").evaluate((f) => f.getBoundingClientRect().height === f.querySelector("img").getBoundingClientRect().height), true, "the viewer sits over the art, the sheet keeps its height");
     await page.locator("#level").fill("25");
     await page.locator("#level").blur();
     await page.waitForFunction(() => window.__viewers[0].calls.some((c) => c[0] === "setItems"));
@@ -674,6 +680,7 @@ try {
     await sp.locator(".doll .hint").waitFor();
     eq((await sp.locator(".doll .look button").allInnerTexts()).join(","), "Orc,Troll,Tauren,Windshaper Skyborne,Male,Female", "race and gender buttons");
     eq(await sp.locator(".doll .fig img").evaluate((el) => getComputedStyle(el).visibility), "hidden", "totem art hidden once the viewer is up");
+    eq(await sp.locator(".doll .fig").evaluate((f) => f.getBoundingClientRect().height === f.querySelector("img").getBoundingClientRect().height), true, "the viewer sits over the art, the sheet keeps its height");
     await sp.locator(".doll .look button", { hasText: "Troll" }).click();
     await sp.locator(".doll .look button", { hasText: "Female" }).click();
     await sp.waitForFunction(() => window.__viewers.at(-1).options.models.id === 16);

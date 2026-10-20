@@ -265,7 +265,7 @@ main:focus{outline:none}
 .doll .centre{display:flex;flex-direction:column;align-items:center;justify-content:flex-end}
 .doll .centre img{width:100%;height:auto;display:block}
 .doll .fig{position:relative;width:100%;max-width:330px}
-.doll .fig .viewer{position:absolute;inset:0}
+.doll .fig .viewer{position:absolute!important;inset:0;height:auto!important}
 .doll .fig.live img{visibility:hidden}
 .doll .fig .look{position:absolute;top:0;left:0;right:0;display:flex;flex-wrap:wrap;justify-content:center;gap:4px;z-index:1}
 .doll .fig .look button{font:inherit;font-size:11.5px;padding:2px 7px;border:1px solid #2a3a41;border-radius:4px;background:rgba(10,18,22,.8);color:#8fa6ad;cursor:pointer}
