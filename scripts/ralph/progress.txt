@@ -32,3 +32,13 @@ Started: Tue Oct 20 00:51:52 UTC 2026
   - The stub keeps `window.__viewers` (each with `options` and `calls`); US-004 can read the newest one.
   - For US-005 the mount logic (observer, hint, buttons, storage) is currently inside the React `Figure`; move the shared parts into a React-free module so `src/model3d/page.ts` can reuse them.
 ---
+
+## 20 Oct 2026 - US-004
+- Race and gender buttons (`.look`, `aria-pressed`) over the top of the centre once the model is ready: one per race in `racesFor(faction)`, then Male and Female. A change rebuilds the viewer with the new model ID and the same items. Choice kept under `tidecaller-look-v1` by the new React-free `src/model3d/look.ts` (`readLook`, `saveLook`, `raceFor`, all in try/catch); a stored race the faction cannot be falls back to its first race, and switching back shows the stored one again. Not part of the saved state or share link.
+- The ready flag is no longer reset on a rebuild (buttons stay up); it resets only if a rebuild fails, so the totem art returns.
+- Files: src/model3d/look.ts, src/calculator/CharacterSheet.tsx, src/styles/app.css, test/smoke.mjs.
+- Checks: typecheck, vitest 2693, build, smoke 64 of 64, reference 26 of 26. Broke the save (commented out `saveLook`): the new smoke check failed at "kept after reload: expected 16, got 3"; restored.
+- **Learnings for future iterations:**
+  - For US-005 the look storage is already shareable (`look.ts`); the observer, hint and buttons still live in the React `Figure` and need a React-free twin in `src/model3d/page.ts`.
+  - Smoke: `getByRole("button", { name: "Male" })` also matches Female; use `exact: true`.
+---
